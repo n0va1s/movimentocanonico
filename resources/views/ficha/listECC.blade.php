@@ -11,7 +11,7 @@
             <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Gerenciar Fichas do ECC</h1>
             @if ($evento?->exists)
                 <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-1">
-                    Evento: <strong>{{ $evento->des_evento }}</strong>
+                    Evento: <strong>{{ $evento->des_evento }}</strong> 
                 </p>
             @endif
         </div>
