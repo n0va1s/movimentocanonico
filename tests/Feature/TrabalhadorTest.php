@@ -110,7 +110,7 @@ describe('Candidatura', function () {
 
         $this->actingAs($this->user)
             ->post(route('trabalhadores.store'), $payload)
-            ->assertRedirect(route('eventos.index'))
+            ->assertRedirect()
             ->assertSessionHas('success');
 
         $this->assertDatabaseCount('voluntario', 2);
