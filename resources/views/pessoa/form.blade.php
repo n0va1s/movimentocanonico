@@ -53,7 +53,6 @@
                                 Foto
                             </label>
                             <input type="file" name="med_foto" id="med_foto" accept="image/*"
-                                x-bind:disabled="bloqueado"
                                 @change="
                                     const file = $event.target.files[0];
                                     if (file) {
@@ -76,7 +75,7 @@
                             CPF <span class="text-red-600" aria-hidden="true">*</span><span class="sr-only">(obrigatório)</span>
                         </label>
                         <input type="text" name="num_cpf_pessoa" id="num_cpf_pessoa"
-                            x-bind:disabled="bloqueado" required maxlength="14" autocomplete="off"
+                            required maxlength="14" autocomplete="off"
                             value="{{ old('num_cpf_pessoa', $pessoa->num_cpf_pessoa) }}"
                             @blur="buscarPorCpf()"
                             placeholder="000.000.000-00" aria-required="true"
@@ -253,7 +252,6 @@
                         <div class="flex items-center pt-0.5">
                             <input type="hidden" name="ind_restricao" value="0">
                             <input type="checkbox" name="ind_restricao" value="1" x-model="mostrarRestricoes"
-                                x-bind:disabled="bloqueado"
                                 {{ old('ind_restricao', $pessoa->ind_restricao) ? 'checked' : '' }}
                                 class="w-5 h-5 rounded border-amber-400 text-amber-500 focus:ring-amber-400">
                         </div>

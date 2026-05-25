@@ -84,6 +84,7 @@ class FichaSGMRequest extends FormRequest
             'eml_pai.email' => 'Informe um e-mail válido para o pai.',
             'med_foto.image' => 'A foto deve ser uma imagem.',
             'med_foto.max' => 'A foto não pode ter mais de 10MB.',
+            'med_foto.uploaded' => 'A foto não pôde ser enviada. Verifique se o tamanho não excede o limite do servidor (normalmente 2MB) ou tente uma imagem menor.',
         ];
     }
 }
