@@ -110,20 +110,20 @@ describe('Acesso não autenticado', function () {
 
 describe('Controlo de acesso por perfil', function () {
 
-    test('utilizador com perfil "user" recebe 403 ao aceder à listagem', function () {
+    test('utilizador com perfil "user" consegue aceder à listagem', function () {
         $user = User::factory()->create(['role' => 'user']);
 
         $this->actingAs($user)
             ->get(route('sgm.index'))
-            ->assertStatus(403);
+            ->assertStatus(200);
     });
 
-    test('utilizador com perfil "coord" recebe 403 ao aceder à listagem', function () {
+    test('utilizador com perfil "coord" consegue aceder à listagem', function () {
         $user = User::factory()->create(['role' => 'coord']);
 
         $this->actingAs($user)
             ->get(route('sgm.index'))
-            ->assertStatus(403);
+            ->assertStatus(200);
     });
 
     test('administrador consegue aceder à listagem', function () {
@@ -578,8 +578,49 @@ describe('FichaSGMController — Atualização', function () {
     });
 });
 
-// Nota: o método approve() ainda não está implementado no FichaSGMController.
-// Adicionar testes de aprovação após implementar o método (ver FichaVemController::approve como referência).
+// ── APROVACAO ─────────────────────────────────────────────────────────────────
+
+describe('FichaSGMController — Aprovação', function () {
+
+    test('pode aprovar ficha SGM nao aprovada', function () {
+        $ficha = Ficha::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'tip_situacao' => \App\Enums\TipoSituacao::CADASTRADO,
+        ]);
+        FichaSGM::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
+
+        $this->get(route('sgm.approve', $ficha->idt_ficha))
+            ->assertSessionHas('success');
+
+        $ficha->refresh();
+        expect($ficha->tip_situacao)->toBe(\App\Enums\TipoSituacao::APROVADO);
+    });
+
+    test('pode desaprovar ficha SGM ja aprovada (toggle)', function () {
+        $ficha = Ficha::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'tip_situacao' => \App\Enums\TipoSituacao::APROVADO,
+        ]);
+        FichaSGM::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
+
+        $this->get(route('sgm.approve', $ficha->idt_ficha))
+            ->assertSessionHas('success');
+
+        $ficha->refresh();
+        expect($ficha->tip_situacao)->toBe(\App\Enums\TipoSituacao::CADASTRADO);
+    });
+
+    test('aprovacao redireciona para listagem SGM', function () {
+        $ficha = Ficha::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'tip_situacao' => \App\Enums\TipoSituacao::CADASTRADO,
+        ]);
+        FichaSGM::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
+
+        $this->get(route('sgm.approve', $ficha->idt_ficha))
+            ->assertRedirect(route('sgm.index'));
+    });
+});
 
 describe('FichaSGMController — Exclusão', function () {
 

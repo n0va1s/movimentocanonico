@@ -12,7 +12,7 @@
         @endphp
 
         <div x-data="{
-                bloqueado: {{ $ficha->ind_aprovado ? 'true' : 'false' }},
+                bloqueado: {{ $ficha->tip_situacao === \App\Enums\TipoSituacao::APROVADO ? 'true' : 'false' }},
                 enviando: false,
                 selectedEventoId: '{{ old('idt_evento', $ficha->idt_evento ?? ($eventos->count() === 1 ? $eventos->first()->idt_evento : '')) }}',
                 eventosData: {{ $eventosJson }},
@@ -958,14 +958,14 @@
                     @if ($ficha->exists)
                         <a href="{{ route('sgm.approve', $ficha->idt_ficha) }}"
                             class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 text-white font-medium rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus-visible:ring-offset-2
-                            {{ $ficha->ind_aprovado ? 'bg-red-500 hover:bg-red-600 focus:ring-red-500' : 'bg-green-500 hover:bg-green-600 focus:ring-green-500' }}"
-                            aria-label="{{ $ficha->ind_aprovado ? 'Desfazer aprovação desta ficha' : 'Aprovar esta ficha' }}">
-                            @if ($ficha->ind_aprovado)
+                            {{ $ficha->tip_situacao === \App\Enums\TipoSituacao::APROVADO ? 'bg-red-500 hover:bg-red-600 focus:ring-red-500' : 'bg-green-500 hover:bg-green-600 focus:ring-green-500' }}"
+                            aria-label="{{ $ficha->tip_situacao === \App\Enums\TipoSituacao::APROVADO ? 'Desfazer aprovação desta ficha' : 'Aprovar esta ficha' }}">
+                            @if ($ficha->tip_situacao === \App\Enums\TipoSituacao::APROVADO)
                                 <x-heroicon-o-x-mark class="w-5 h-5 mr-2" aria-hidden="true" />
                             @else
                                 <x-heroicon-o-check class="w-5 h-5 mr-2" aria-hidden="true" />
                             @endif
-                            {{ $ficha->ind_aprovado ? 'Desfazer aprovação' : 'Aprovar' }}
+                            {{ $ficha->tip_situacao === \App\Enums\TipoSituacao::APROVADO ? 'Desfazer aprovação' : 'Aprovar' }}
                         </a>
                     @endif
                 </div>

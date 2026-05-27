@@ -95,10 +95,10 @@ Cada movimento possui um formulário especializado. A ficha base (`ficha`) armaz
 
 #### Fluxo de aprovação (comum a todos os tipos)
 1. Coordenação revisa a ficha
-2. Clique em "Aprovar" inverte `ind_aprovado`
+2. Clique em "Aprovar" transiciona a ficha para 'Aprovado' (situação 'D')
 3. Sistema cria automaticamente `Pessoa` (e `User` se não existir), `PessoaSaude` e `Participante`
 4. Foto da ficha é movida para a pasta da pessoa
-5. Clique em "Desaprovar" remove os participantes vinculados (reversível)
+5. Clique em "Desaprovar" remove os participantes vinculados e redefine a situação para 'Cadastrado' (reversível)
 
 ---
 
@@ -357,7 +357,7 @@ O banco segue convenção de prefixos em todas as colunas:
 | `nom_` | Nomes próprios | `nom_pessoa`, `nom_apelido` |
 | `des_` | Descrições curtas | `des_endereco`, `des_evento` |
 | `txt_` | Textos longos | `txt_observacao`, `txt_relatorio` |
-| `ind_` | Booleanos | `ind_aprovado`, `ind_restricao` |
+| `ind_` | Booleanos | `ind_consentimento`, `ind_restricao` |
 | `dat_` | Datas | `dat_nascimento`, `dat_inicio` |
 | `tip_` | Tipos/enums | `tip_evento`, `tip_genero` |
 | `val_` | Valores financeiros | `val_investimento`, `val_despesa` |

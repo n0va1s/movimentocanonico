@@ -13,6 +13,8 @@ class FichaVem extends Model
 
     protected $primaryKey = 'idt_ficha';
 
+    public $incrementing = false;
+
     public $timestamps = false;
 
     protected $fillable = [

@@ -31,7 +31,7 @@ describe('Ficha – Comportamentos comuns por movimento', function () {
     test('ficha VEM aprovada altera flag corretamente', function () {
         $ficha = Ficha::factory()->create([
             'idt_evento' => $this->eventoVem->idt_evento,
-            'ind_aprovado' => false,
+            'tip_situacao' => \App\Enums\TipoSituacao::CADASTRADO,
         ]);
 
         FichaVem::factory()->create([
@@ -41,13 +41,13 @@ describe('Ficha – Comportamentos comuns por movimento', function () {
         $this->get(route('vem.approve', $ficha->idt_ficha));
 
         $ficha->refresh();
-        expect($ficha->ind_aprovado)->toBeTrue();
+        expect($ficha->tip_situacao)->toBe(\App\Enums\TipoSituacao::APROVADO);
     });
 
     test('ficha ECC aprovada altera flag corretamente', function () {
         $ficha = Ficha::factory()->create([
             'idt_evento' => $this->eventoEcc->idt_evento,
-            'ind_aprovado' => false,
+            'tip_situacao' => \App\Enums\TipoSituacao::CADASTRADO,
         ]);
 
         FichaEcc::factory()->create([
@@ -57,13 +57,13 @@ describe('Ficha – Comportamentos comuns por movimento', function () {
         $this->get(route('ecc.approve', $ficha->idt_ficha));
 
         $ficha->refresh();
-        expect($ficha->ind_aprovado)->toBeTrue();
+        expect($ficha->tip_situacao)->toBe(\App\Enums\TipoSituacao::APROVADO);
     });
 
     test('ficha ECC pode ser desaprovada', function () {
         $ficha = Ficha::factory()->create([
             'idt_evento' => $this->eventoEcc->idt_evento,
-            'ind_aprovado' => false,
+            'tip_situacao' => \App\Enums\TipoSituacao::APROVADO,
         ]);
 
         FichaEcc::factory()->create([
@@ -73,7 +73,7 @@ describe('Ficha – Comportamentos comuns por movimento', function () {
         $this->get(route('ecc.approve', $ficha->idt_ficha));
 
         $ficha->refresh();
-        expect($ficha->ind_aprovado)->toBeTrue();
+        expect($ficha->tip_situacao)->toBe(\App\Enums\TipoSituacao::CADASTRADO);
     });
 
     test('ficha VEM mantém integridade ao ser excluída', function () {

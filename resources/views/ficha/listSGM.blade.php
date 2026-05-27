@@ -64,7 +64,7 @@
                             <th class="p-3 font-semibold">Apelido</th>
                             <th class="p-3 font-semibold">Nascimento</th>
                             <th class="p-3 font-semibold">Evento</th>
-                            <th class="p-3 font-semibold">Aprovado</th>
+                            <th class="p-3 font-semibold">Situação</th>
                             <th class="p-3 font-semibold text-center w-24">Ações</th>
                         </tr>
                     </thead>
@@ -80,13 +80,18 @@
                                     {{ $ficha->evento->des_evento ?? '—' }}
                                 </td>
                                 <td class="p-3 dark:text-gray-100">
-                                    @if ($ficha->ind_aprovado)
-                                        <span
-                                            class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Sim</span>
-                                    @else
-                                        <span
-                                            class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">Não</span>
-                                    @endif
+                                    @php
+                                        $situacaoColors = [
+                                            'C' => 'bg-gray-100 text-gray-700',
+                                            'A' => 'bg-blue-100 text-blue-700',
+                                            'V' => 'bg-yellow-100 text-yellow-700',
+                                            'D' => 'bg-green-100 text-green-800',
+                                        ];
+                                        $cor = $situacaoColors[$ficha->tip_situacao?->value ?? 'C'] ?? 'bg-gray-100 text-gray-700';
+                                    @endphp
+                                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium {{ $cor }}">
+                                        {{ $ficha->tip_situacao?->label() ?? '—' }}
+                                    </span>
                                 </td>
                                 <td class="p-3 flex justify-end items-center gap-2">
                                     <a href="{{ route('sgm.edit', $ficha) }}"
@@ -115,7 +120,7 @@
                     <div
                         class="flex flex-col items-center justify-center text-center p-10 bg-white dark:bg-zinc-800 rounded-xl shadow border border-dashed border-gray-300 dark:border-zinc-600">
                         <x-heroicon-o-document-text class="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-                        <p class="text-lg font-medium text-gray-600 dark:text-gray-300">Nenhuma ficha do VEM encontrada
+                        <p class="text-lg font-medium text-gray-600 dark:text-gray-300">Nenhuma ficha do Segue-me encontrada
                         </p>
                         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                             Quando houver fichas cadastradas, elas aparecerão aqui.

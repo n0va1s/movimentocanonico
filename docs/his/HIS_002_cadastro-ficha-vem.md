@@ -16,7 +16,7 @@
 - ✅ Ao salvar, os dados devem ser persistidos corretamente nas tabelas relacionadas (`ficha`, `ficha_vem`, `ficha_saude`, etc.).
 - ✅ O sistema deve redirecionar para a listagem após o cadastro com uma mensagem de sucesso.
 - ✅ O layout deve ser responsivo e aderente ao padrão visual do sistema (Tailwind CSS).
-- ✅ O formulário deve ser bloqueado para edição se a ficha estiver com `ind_aprovado = true`.
+- ✅ O formulário deve ser bloqueado para edição se a ficha estiver na situação Aprovada (D).
 - ✅ Deve ser possível visualizar os dados mesmo quando bloqueados.
 - ✅ As opções de restrição alimentar devem aparecer apenas quando selecionada a opção "Possui restrição alimentar".
 - ✅ Caso a opção de restrição alimentar seja desmarcada, o sistema deve apagar quaisquer informações anteriormente preenchidas sobre as restrições.

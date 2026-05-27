@@ -123,7 +123,7 @@ class FichaVemController extends Controller
             'ind_catolico',
             'ind_toca_instrumento',
             'ind_consentimento',
-            'ind_aprovado',
+            'tip_situacao',
             'ind_restricao',
             'txt_observacao',
         ]);
@@ -289,7 +289,7 @@ class FichaVemController extends Controller
             'ind_catolico',
             'ind_toca_instrumento',
             'ind_consentimento',
-            'ind_aprovado',
+            'tip_situacao',
             'ind_restricao',
             'txt_observacao',
         ]);

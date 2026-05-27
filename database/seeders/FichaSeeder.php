@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Enums\ComoSoube;
 use App\Enums\Genero;
 use App\Enums\TamanhoCamiseta;
+use App\Enums\TipoSituacao;
 use App\Models\Evento;
 use App\Models\Ficha;
 use App\Models\FichaEcc;
@@ -55,7 +56,7 @@ class FichaSeeder extends Seeder
                 'ind_catolico' => fake()->boolean,
                 'ind_toca_instrumento' => fake()->boolean,
                 'ind_consentimento' => true,
-                'ind_aprovado' => fake()->boolean(80),
+                'tip_situacao' => fake()->randomElement(TipoSituacao::cases()),
                 'ind_restricao' => fake()->boolean(20),
                 'usu_inclusao' => $user,
                 'txt_observacao' => fake()->sentence,

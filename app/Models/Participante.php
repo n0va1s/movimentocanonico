@@ -33,7 +33,7 @@ class Participante extends Model
         parent::boot();
 
         static::created(function (Participante $participante) {
-            $pontos = ($participante->evento->tip_evento === 'D') ? 3 : 1;
+            $pontos = ($participante->evento->tip_evento === \App\Enums\TipoEvento::DESAFIO) ? 3 : 1;
             Gamificacao::create([
                 'idt_pessoa' => $participante->idt_pessoa,
                 'qtd_pontos' => $pontos,
