@@ -37,8 +37,8 @@ $rotasAuth = [
     '/aniversario',
     '/termo-sgm',
     '/termo-vem',
-    '/quadrante',
     '/montagem',
+    '/quadrante',
     '/avaliacao',
     '/trabalhadores/create',
     '/trabalhadores/review',
@@ -128,25 +128,47 @@ test('user recebe 403 em /trabalhadores', function () {
 // Rotas de listagem — todos os perfis autenticados acessam
 // ---------------------------------------------------------------------------
 
-$rotasListagem = [
+// Rotas de listagem acessíveis a TODOS os perfis autenticados
+$rotasListagemTodos = [
     '/eventos',
-    '/pessoas',
-    '/fichas/vem',
-    '/fichas/ecc',
-    '/fichas/sgm',
+    '/participantes',
     '/dashboard',
     '/timeline',
-    '/participantes',
     '/aniversario',
 ];
 
-foreach ($rotasListagem as $rota) {
+foreach ($rotasListagemTodos as $rota) {
     foreach (['admin', 'coord', 'espec', 'user'] as $perfil) {
         test("{$perfil} acessa listagem {$rota}", function () use ($rota, $perfil) {
             createMovimentos();
             $this->actingAs(userComRole($perfil))
                 ->get($rota)
                 ->assertStatus(200);
+        });
+    }
+}
+
+// Rotas de listagem somente ADMIN
+$rotasListagemAdmin = [
+    '/pessoas',
+    '/fichas/vem',
+    '/fichas/ecc',
+    '/fichas/sgm',
+];
+
+foreach ($rotasListagemAdmin as $rota) {
+    test("admin acessa listagem {$rota}", function () use ($rota) {
+        createMovimentos();
+        $this->actingAs(userComRole('admin'))
+            ->get($rota)
+            ->assertStatus(200);
+    });
+
+    foreach (['coord', 'espec', 'user'] as $perfil) {
+        test("{$perfil} recebe 403 em listagem {$rota}", function () use ($rota, $perfil) {
+            $this->actingAs(userComRole($perfil))
+                ->get($rota)
+                ->assertStatus(403);
         });
     }
 }

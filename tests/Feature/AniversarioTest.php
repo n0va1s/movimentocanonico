@@ -41,7 +41,7 @@ describe('Comando de console para aniversários (aniversario:enviar)', function 
             'eml_pessoa' => 'amanha@example.com',
         ]);
 
-        $exitCode = Artisan::call('aniversario:enviar');
+        $exitCode = Artisan::call('mov:enviar-emails-aniversario');
 
         // Assegurar que foi enviado APENAS 1 email.
         Mail::assertSent(AniversarioMail::class, 1);
@@ -70,7 +70,7 @@ describe('Comando de console para aniversários (aniversario:enviar)', function 
             'dat_nascimento' => $amanha,
         ]);
 
-        $exitCode = Artisan::call('aniversario:enviar');
+        $exitCode = Artisan::call('mov:enviar-emails-aniversario');
 
         Mail::assertNothingSent();
 
