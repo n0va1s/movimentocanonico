@@ -9,6 +9,7 @@ use App\Models\Pessoa;
 use App\Models\TipoEquipe;
 use App\Models\TipoMovimento;
 use App\Models\Trabalhador;
+use App\Models\User;
 use App\Services\EventoService;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
@@ -25,7 +26,7 @@ beforeEach(function () {
     createMovimentos();
 
     $this->movimento = TipoMovimento::first();
-    $this->user = createUser();
+    $this->user = User::factory()->create(['role' => 'admin']);
     $this->pessoa = $this->user->pessoa;
 
     $this->actingAs($this->user);
@@ -418,6 +419,7 @@ describe('EventoController — Store', function () {
 
     test('faz upload de med_logo e persiste em evento_foto', function () {
         $payload = eventoPayloadValido($this->movimento->idt_movimento, [
+            'med_foto' => UploadedFile::fake()->image('foto.png'),
             'med_logo' => UploadedFile::fake()->image('logo.png'),
         ]);
 

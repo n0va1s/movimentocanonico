@@ -33,13 +33,9 @@ $rotasAuth = [
     '/ecc',
     '/sgm',
     '/timeline',
-    '/participantes',
     '/aniversario',
     '/termo-sgm',
     '/termo-vem',
-    '/quadrante',
-    '/montagem',
-    '/avaliacao',
     '/trabalhadores/create',
     '/trabalhadores/review',
     '/eventos',
@@ -71,9 +67,13 @@ $rotasAdmin = [
     '/configuracoes/responsavel',
     '/configuracoes/restricao',
     '/eventos/create',
+    '/pessoas',
     '/pessoas/create',
+    '/fichas/vem',
     '/fichas/vem/create',
+    '/fichas/ecc',
     '/fichas/ecc/create',
+    '/fichas/sgm',
     '/fichas/sgm/create',
 ];
 
@@ -130,13 +130,8 @@ test('user recebe 403 em /trabalhadores', function () {
 
 $rotasListagem = [
     '/eventos',
-    '/pessoas',
-    '/fichas/vem',
-    '/fichas/ecc',
-    '/fichas/sgm',
     '/dashboard',
     '/timeline',
-    '/participantes',
     '/aniversario',
 ];
 

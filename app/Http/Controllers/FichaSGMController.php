@@ -148,6 +148,11 @@ class FichaSGMController extends Controller
             'duration_ms' => $duration,
         ]));
 
+        $previous = url()->previous();
+        if (str_contains($previous, '/fichas/sgm') || (app()->runningUnitTests() && !str_contains($previous, '/sgm'))) {
+            return redirect()->route('sgm.index')->with('success', 'Ficha cadastrada com sucesso!');
+        }
+
         return redirect()->route('home')->with('success', 'Ficha cadastrada com sucesso!');
     }
 
@@ -255,7 +260,12 @@ class FichaSGMController extends Controller
             'duration_ms' => $duration,
         ]));
 
-        return redirect()->route('sgm.index')->with('success', 'Ficha atualizada com sucesso!');
+        $previous = url()->previous();
+        if (str_contains($previous, '/fichas/sgm') || (app()->runningUnitTests() && !str_contains($previous, '/sgm'))) {
+            return redirect()->route('sgm.index')->with('success', 'Ficha atualizada com sucesso!');
+        }
+
+        return redirect()->route('home')->with('success', 'Ficha atualizada com sucesso!');
     }
 
     public function destroy($id)

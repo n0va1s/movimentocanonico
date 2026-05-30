@@ -6,6 +6,7 @@ use App\Enums\ComoSoube;
 use App\Enums\Genero;
 use App\Enums\HabilidadePrincipal;
 use App\Enums\TamanhoCamiseta;
+use App\Enums\TipoSituacao;
 use App\Models\Evento;
 use App\Models\Ficha;
 use App\Models\Pessoa;
@@ -35,7 +36,7 @@ class FichaFactory extends Factory
             'ind_catolico' => $this->faker->boolean(),
             'ind_toca_instrumento' => $this->faker->boolean(),
             'ind_consentimento' => true,
-            'ind_aprovado' => false,
+            'tip_situacao' => TipoSituacao::CADASTRADO,
             'ind_restricao' => $this->faker->boolean(),
             'txt_observacao' => $this->faker->sentence(),
             'nom_profissao' => $this->faker->jobTitle(),

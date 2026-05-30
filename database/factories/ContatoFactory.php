@@ -16,7 +16,7 @@ class ContatoFactory extends Factory
         $dataTermino = (clone $dataInicio)->modify('+3 days');
 
         return [
-            'idt_movimento' => $this->faker->numberBetween(1, 3) ?? TipoMovimento::inRandomOrder()->first()?->idt_movimento,
+            'idt_movimento' => fn () => TipoMovimento::inRandomOrder()->first()?->idt_movimento ?? TipoMovimento::factory()->create()->idt_movimento,
             'dat_contato' => now(),
             'nom_contato' => $this->faker->name(),
             'eml_contato' => $this->faker->email(),

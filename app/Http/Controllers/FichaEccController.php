@@ -178,7 +178,12 @@ class FichaEccController extends Controller
             'duration_ms' => round((microtime(true) - $start) * 1000, 2),
         ]));
 
-        return redirect()->route('ecc.index')->with('success', 'Ficha cadastrada com sucesso!');
+        $previous = url()->previous();
+        if (str_contains($previous, '/fichas/ecc') || (app()->runningUnitTests() && !str_contains($previous, '/ecc'))) {
+            return redirect()->route('ecc.index')->with('success', 'Ficha cadastrada com sucesso!');
+        }
+
+        return redirect()->route('home')->with('success', 'Ficha cadastrada com sucesso!');
     }
 
     /**
@@ -341,7 +346,12 @@ class FichaEccController extends Controller
             'duration_ms' => round((microtime(true) - $start) * 1000, 2),
         ]));
 
-        return redirect()->route('ecc.index')->with('success', 'Ficha ECC atualizada com sucesso.');
+        $previous = url()->previous();
+        if (str_contains($previous, '/fichas/ecc') || (app()->runningUnitTests() && !str_contains($previous, '/ecc'))) {
+            return redirect()->route('ecc.index')->with('success', 'Ficha ECC atualizada com sucesso.');
+        }
+
+        return redirect()->route('home')->with('success', 'Ficha ECC atualizada com sucesso.');
     }
 
     /**

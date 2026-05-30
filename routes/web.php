@@ -67,6 +67,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/ecc', [HomeController::class, 'fichaEcc'])->name('home.ficha.ecc');
     Route::get('/sgm', [HomeController::class, 'fichaSgm'])->name('home.ficha.sgm');
 
+    // Submissão de fichas por candidatos (todos perfis autenticados)
+    Route::post('/fichas/vem', [FichaVemController::class, 'store'])->name('vem.store');
+    Route::post('/fichas/ecc', [FichaEccController::class, 'store'])->name('ecc.store');
+    Route::post('/fichas/sgm', [FichaSGMController::class, 'store'])->name('sgm.store');
+
     Route::redirect('settings', 'settings/profile');
 
     Route::get('/timeline', [EventoController::class, 'timeline'])->name('timeline.index');
@@ -94,7 +99,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/pessoas/{pessoa}', [PessoaController::class, 'update']);
 
     // Visualização de pessoa — todos os perfis autenticados (ex: coordenadores vendo membros da equipe)
-    Route::get('/pessoas/{pessoa}', [PessoaController::class, 'show'])->name('pessoas.show');
+    Route::get('/pessoas/{pessoa}', [PessoaController::class, 'show'])->name('pessoas.show')->where('pessoa', '[0-9]+');
 
     // Settings — todos autenticados
     Volt::route('settings/profile', 'settings.profile')->name('settings.profile');
@@ -147,7 +152,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/fichas/vem', [FichaVemController::class, 'index'])->name('vem.index');
         Route::get('fichas/vem/{id}/approve', [FichaVemController::class, 'approve'])->name('vem.approve');
         Route::get('/fichas/vem/create', [FichaVemController::class, 'create'])->name('vem.create');
-        Route::post('/fichas/vem', [FichaVemController::class, 'store'])->name('vem.store');
         Route::get('/fichas/vem/{vem}', [FichaVemController::class, 'show'])->name('vem.show');
         Route::get('/fichas/vem/{vem}/edit', [FichaVemController::class, 'edit'])->name('vem.edit');
         Route::put('/fichas/vem/{vem}', [FichaVemController::class, 'update'])->name('vem.update');
@@ -158,7 +162,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/fichas/ecc', [FichaEccController::class, 'index'])->name('ecc.index');
         Route::get('fichas/ecc/{id}/approve', [FichaEccController::class, 'approve'])->name('ecc.approve');
         Route::get('/fichas/ecc/create', [FichaEccController::class, 'create'])->name('ecc.create');
-        Route::post('/fichas/ecc', [FichaEccController::class, 'store'])->name('ecc.store');
         Route::get('/fichas/ecc/{ecc}', [FichaEccController::class, 'show'])->name('ecc.show');
         Route::get('/fichas/ecc/{ecc}/edit', [FichaEccController::class, 'edit'])->name('ecc.edit');
         Route::put('/fichas/ecc/{ecc}', [FichaEccController::class, 'update'])->name('ecc.update');
@@ -169,7 +172,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/fichas/sgm', [FichaSGMController::class, 'index'])->name('sgm.index');
         Route::get('fichas/sgm/{id}/approve', [FichaSGMController::class, 'approve'])->name('sgm.approve');
         Route::get('/fichas/sgm/create', [FichaSGMController::class, 'create'])->name('sgm.create');
-        Route::post('/fichas/sgm', [FichaSGMController::class, 'store'])->name('sgm.store');
         Route::get('/fichas/sgm/{sgm}', [FichaSGMController::class, 'show'])->name('sgm.show');
         Route::get('/fichas/sgm/{sgm}/edit', [FichaSGMController::class, 'edit'])->name('sgm.edit');
         Route::put('/fichas/sgm/{sgm}', [FichaSGMController::class, 'update'])->name('sgm.update');

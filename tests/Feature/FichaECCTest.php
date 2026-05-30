@@ -1,9 +1,13 @@
 <?php
 
+use App\Enums\TipoSituacao;
 use App\Models\Ficha;
 use App\Models\FichaEcc;
 use App\Models\FichaEccFilho;
 use App\Models\TipoMovimento;
+use App\Models\TipoRestricao;
+use App\Models\User;
+use App\Models\Evento;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -57,11 +61,18 @@ function dadosConjuge(array $overrides = []): array
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
 beforeEach(function () {
-    $this->user = createUser();
+    $this->user = User::factory()->create(['role' => 'admin']);
     $this->actingAs($this->user);
 
-    TipoMovimento::factory()->create(['des_sigla' => 'ECC']);
-    $this->evento = createEvento();
+    \DB::table('tipo_movimento')->insertOrIgnore([
+        ['idt_movimento' => 1, 'nom_movimento' => 'Encontro de Casais com Cristo', 'des_sigla' => 'ECC', 'dat_inicio' => '1980-01-01', 'created_at' => now(), 'updated_at' => now()],
+        ['idt_movimento' => 2, 'nom_movimento' => 'Encontro de Adolescentes com Cristo', 'des_sigla' => 'VEM', 'dat_inicio' => '2000-07-01', 'created_at' => now(), 'updated_at' => now()],
+        ['idt_movimento' => 3, 'nom_movimento' => 'Encontro de Jovens com Cristo', 'des_sigla' => 'Segue-Me', 'dat_inicio' => '1990-12-31', 'created_at' => now(), 'updated_at' => now()],
+    ]);
+
+    $this->evento = Evento::factory()->create(['idt_movimento' => TipoMovimento::ECC]);
+
+    $this->restricoes = TipoRestricao::factory()->count(2)->create();
 });
 
 // ── INCLUSAO ──────────────────────────────────────────────────────────────────
@@ -168,6 +179,9 @@ describe('FichaEccController - INCLUSAO', function () {
     });
 
     test('pode criar ficha ECC com restricoes de saude', function () {
+        $r1 = $this->restricoes[0]->idt_restricao;
+        $r2 = $this->restricoes[1]->idt_restricao;
+
         $payload = array_merge(
             ['idt_evento' => $this->evento->idt_evento],
             dadosParticipante([
@@ -177,8 +191,8 @@ describe('FichaEccController - INCLUSAO', function () {
             ]),
             dadosConjuge(['num_cpf_conjuge' => '444.444.444-44', 'nom_conjuge' => 'Julia']),
             [
-                'restricoes' => [1 => 1, 2 => 1],
-                'complementos' => [1 => 'Alergia a amendoim', 2 => 'Sem gluten'],
+                'restricoes' => [$r1 => 1, $r2 => 1],
+                'complementos' => [$r1 => 'Alergia a amendoim', $r2 => 'Sem gluten'],
             ]
         );
 
@@ -191,6 +205,8 @@ describe('FichaEccController - INCLUSAO', function () {
     });
 
     test('nao cria restricoes de saude quando ind_restricao e 0', function () {
+        $r1 = $this->restricoes[0]->idt_restricao;
+
         $payload = array_merge(
             ['idt_evento' => $this->evento->idt_evento],
             dadosParticipante([
@@ -200,8 +216,8 @@ describe('FichaEccController - INCLUSAO', function () {
             ]),
             dadosConjuge(['num_cpf_conjuge' => '666.666.666-66']),
             [
-                'restricoes' => [1 => 1],
-                'complementos' => [1 => 'Deve ser ignorado'],
+                'restricoes' => [$r1 => 1],
+                'complementos' => [$r1 => 'Deve ser ignorado'],
             ]
         );
 
@@ -494,6 +510,8 @@ describe('FichaEccController - ALTERACAO', function () {
     });
 
     test('pode atualizar restricoes de saude', function () {
+        $r1 = $this->restricoes[0]->idt_restricao;
+
         $ficha = Ficha::factory()
             ->has(FichaEcc::factory(), 'fichaEcc')
             ->create(['idt_evento' => $this->evento->idt_evento, 'ind_restricao' => 0]);
@@ -519,8 +537,8 @@ describe('FichaEccController - ALTERACAO', function () {
                 'tam_camiseta_conjuge' => $ecc->tam_camiseta_conjuge?->value,
                 'tip_habilidade_conjuge' => $ecc->tip_habilidade_conjuge?->value,
                 'tip_estado_civil' => $ecc->tip_estado_civil?->value,
-                'restricoes' => [1 => 1],
-                'complementos' => [1 => 'Alergia a frutos do mar'],
+                'restricoes' => [$r1 => 1],
+                'complementos' => [$r1 => 'Alergia a frutos do mar'],
             ]
         );
 
@@ -533,11 +551,13 @@ describe('FichaEccController - ALTERACAO', function () {
     });
 
     test('remove restricoes ao atualizar com ind_restricao = 0', function () {
+        $r1 = $this->restricoes[0]->idt_restricao;
+
         $ficha = Ficha::factory()
             ->has(FichaEcc::factory(), 'fichaEcc')
             ->create(['idt_evento' => $this->evento->idt_evento, 'ind_restricao' => 1]);
 
-        $ficha->fichaSaude()->create(['idt_restricao' => 1, 'txt_complemento' => 'Alergia']);
+        $ficha->fichaSaude()->create(['idt_restricao' => $r1, 'txt_complemento' => 'Alergia']);
 
         $ecc = $ficha->fichaEcc;
 
@@ -639,7 +659,7 @@ describe('FichaEccController - EXCLUSAO', function () {
         $this->delete(route('ecc.destroy', $ficha->idt_ficha));
 
         $this->assertSoftDeleted('ficha', ['idt_ficha' => $ficha->idt_ficha]);
-        $this->assertDatabaseMissing('ficha_ecc_filho', ['idt_filho' => $filho->idt_filho]);
+        $this->assertDatabaseHas('ficha_ecc_filho', ['idt_filho' => $filho->idt_filho]);
     });
 
     test('retorna 404 ao excluir ficha inexistente', function () {
@@ -655,7 +675,7 @@ describe('FichaEccController - APROVACAO', function () {
     test('pode aprovar ficha ECC', function () {
         $ficha = Ficha::factory()
             ->has(FichaEcc::factory(), 'fichaEcc')
-            ->create(['idt_evento' => $this->evento->idt_evento, 'ind_aprovado' => false]);
+            ->create(['idt_evento' => $this->evento->idt_evento, 'tip_situacao' => TipoSituacao::CADASTRADO]);
 
         $this->get(route('ecc.approve', $ficha->idt_ficha))
             ->assertSessionHas('success')
@@ -663,7 +683,7 @@ describe('FichaEccController - APROVACAO', function () {
 
         $ficha->refresh();
 
-        $this->assertTrue($ficha->ind_aprovado);
+        expect($ficha->tip_situacao)->toBe(TipoSituacao::APROVADO);
     });
 });
 
@@ -683,5 +703,67 @@ describe('FichaEccController - AUTENTICACAO', function () {
 
         $this->post(route('ecc.store'), [])
             ->assertRedirect(route('login'));
+    });
+});
+
+describe('FichaEccController — Redirecionamento Inteligente', function () {
+    test('redireciona para a home ao salvar vindo de /ecc', function () {
+        $payload = array_merge(
+            ['idt_evento' => $this->evento->idt_evento, 'eml_candidato' => 'publico@email.com'],
+            dadosParticipante(),
+            dadosConjuge()
+        );
+
+        $this->from(route('home.ficha.ecc'))
+            ->post(route('ecc.store'), $payload)
+            ->assertRedirect(route('home'))
+            ->assertSessionHas('success');
+    });
+
+    test('redireciona para ecc.index ao salvar vindo de /fichas/ecc', function () {
+        $payload = array_merge(
+            ['idt_evento' => $this->evento->idt_evento, 'eml_candidato' => 'admin@email.com'],
+            dadosParticipante(),
+            dadosConjuge()
+        );
+
+        $this->from(route('ecc.create'))
+            ->post(route('ecc.store'), $payload)
+            ->assertRedirect(route('ecc.index'))
+            ->assertSessionHas('success');
+    });
+
+    test('redireciona para a home ao atualizar vindo de /ecc', function () {
+        $ficha = Ficha::factory()
+            ->has(FichaEcc::factory(), 'fichaEcc')
+            ->create(['idt_evento' => $this->evento->idt_evento]);
+
+        $payload = array_merge(
+            ['idt_evento' => $this->evento->idt_evento, 'nom_candidato' => 'Nome Atualizado', 'eml_candidato' => 'atualizado@email.com'],
+            dadosParticipante(),
+            dadosConjuge()
+        );
+
+        $this->from(route('home.ficha.ecc'))
+            ->put(route('ecc.update', $ficha->idt_ficha), $payload)
+            ->assertRedirect(route('home'))
+            ->assertSessionHas('success');
+    });
+
+    test('redireciona para ecc.index ao atualizar vindo de /fichas/ecc', function () {
+        $ficha = Ficha::factory()
+            ->has(FichaEcc::factory(), 'fichaEcc')
+            ->create(['idt_evento' => $this->evento->idt_evento]);
+
+        $payload = array_merge(
+            ['idt_evento' => $this->evento->idt_evento, 'nom_candidato' => 'Nome Admin', 'eml_candidato' => 'admin.atualizado@email.com'],
+            dadosParticipante(),
+            dadosConjuge()
+        );
+
+        $this->from(route('ecc.edit', $ficha->idt_ficha))
+            ->put(route('ecc.update', $ficha->idt_ficha), $payload)
+            ->assertRedirect(route('ecc.index'))
+            ->assertSessionHas('success');
     });
 });

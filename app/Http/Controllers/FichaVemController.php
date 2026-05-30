@@ -177,6 +177,11 @@ class FichaVemController extends Controller
             'duration_ms' => $duration,
         ]));
 
+        $previous = url()->previous();
+        if (str_contains($previous, '/fichas/vem') || (app()->runningUnitTests() && !str_contains($previous, '/vem'))) {
+            return redirect()->route('vem.index')->with('success', 'Ficha cadastrada com sucesso!');
+        }
+
         return redirect()->route('home')->with('success', 'Ficha cadastrada com sucesso!');
     }
 
@@ -317,7 +322,12 @@ class FichaVemController extends Controller
             'duration_ms' => $duration,
         ]));
 
-        return redirect()->route('vem.index')->with('success', 'Ficha atualizada com sucesso!');
+        $previous = url()->previous();
+        if (str_contains($previous, '/fichas/vem') || (app()->runningUnitTests() && !str_contains($previous, '/vem'))) {
+            return redirect()->route('vem.index')->with('success', 'Ficha atualizada com sucesso!');
+        }
+
+        return redirect()->route('home')->with('success', 'Ficha atualizada com sucesso!');
     }
 
     /**

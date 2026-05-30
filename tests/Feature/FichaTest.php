@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\TipoSituacao;
 use App\Models\Evento;
 use App\Models\Ficha;
 use App\Models\FichaEcc;
@@ -11,7 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->user = User::factory()->create();
+    $this->user = User::factory()->create(['role' => 'admin']);
     $this->actingAs($this->user);
 
     $this->movimentoVem = TipoMovimento::factory()->create(['des_sigla' => 'VEM']);
@@ -31,7 +32,6 @@ describe('Ficha – Comportamentos comuns por movimento', function () {
     test('ficha VEM aprovada altera flag corretamente', function () {
         $ficha = Ficha::factory()->create([
             'idt_evento' => $this->eventoVem->idt_evento,
-            'ind_aprovado' => false,
         ]);
 
         FichaVem::factory()->create([
@@ -41,13 +41,12 @@ describe('Ficha – Comportamentos comuns por movimento', function () {
         $this->get(route('vem.approve', $ficha->idt_ficha));
 
         $ficha->refresh();
-        expect($ficha->ind_aprovado)->toBeTrue();
+        expect($ficha->tip_situacao)->toBe(TipoSituacao::APROVADO);
     });
 
     test('ficha ECC aprovada altera flag corretamente', function () {
         $ficha = Ficha::factory()->create([
             'idt_evento' => $this->eventoEcc->idt_evento,
-            'ind_aprovado' => false,
         ]);
 
         FichaEcc::factory()->create([
@@ -57,13 +56,13 @@ describe('Ficha – Comportamentos comuns por movimento', function () {
         $this->get(route('ecc.approve', $ficha->idt_ficha));
 
         $ficha->refresh();
-        expect($ficha->ind_aprovado)->toBeTrue();
+        expect($ficha->tip_situacao)->toBe(TipoSituacao::APROVADO);
     });
 
     test('ficha ECC pode ser desaprovada', function () {
         $ficha = Ficha::factory()->create([
             'idt_evento' => $this->eventoEcc->idt_evento,
-            'ind_aprovado' => false,
+            'tip_situacao' => TipoSituacao::APROVADO,
         ]);
 
         FichaEcc::factory()->create([
@@ -73,7 +72,7 @@ describe('Ficha – Comportamentos comuns por movimento', function () {
         $this->get(route('ecc.approve', $ficha->idt_ficha));
 
         $ficha->refresh();
-        expect($ficha->ind_aprovado)->toBeTrue();
+        expect($ficha->tip_situacao)->toBe(TipoSituacao::CADASTRADO);
     });
 
     test('ficha VEM mantém integridade ao ser excluída', function () {

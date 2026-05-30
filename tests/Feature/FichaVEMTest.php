@@ -1,10 +1,13 @@
 <?php
 
+use App\Enums\TipoSituacao;
 use App\Models\Ficha;
 use App\Models\FichaVem;
 use App\Models\TipoMovimento;
 use App\Models\TipoResponsavel;
 use App\Models\TipoRestricao;
+use App\Models\User;
+use App\Models\Evento;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -55,11 +58,16 @@ function dadosVem(array $overrides = []): array
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
 beforeEach(function () {
-    $this->user = createUser();
+    $this->user = User::factory()->create(['role' => 'admin']);
     $this->actingAs($this->user);
 
-    TipoMovimento::factory()->create(['des_sigla' => 'VEM']);
-    $this->evento = createEvento();
+    \DB::table('tipo_movimento')->insertOrIgnore([
+        ['idt_movimento' => 1, 'nom_movimento' => 'Encontro de Casais com Cristo', 'des_sigla' => 'ECC', 'dat_inicio' => '1980-01-01', 'created_at' => now(), 'updated_at' => now()],
+        ['idt_movimento' => 2, 'nom_movimento' => 'Encontro de Adolescentes com Cristo', 'des_sigla' => 'VEM', 'dat_inicio' => '2000-07-01', 'created_at' => now(), 'updated_at' => now()],
+        ['idt_movimento' => 3, 'nom_movimento' => 'Encontro de Jovens com Cristo', 'des_sigla' => 'Segue-Me', 'dat_inicio' => '1990-12-31', 'created_at' => now(), 'updated_at' => now()],
+    ]);
+
+    $this->evento = Evento::factory()->create(['idt_movimento' => TipoMovimento::VEM]);
 
     $this->responsavel = TipoResponsavel::factory()->create();
     $this->restricoes = TipoRestricao::factory()->count(3)->create();
@@ -582,7 +590,7 @@ describe('FichaVemController - APROVACAO', function () {
     test('pode aprovar ficha VEM nao aprovada', function () {
         $ficha = Ficha::factory()->create([
             'idt_evento' => $this->evento->idt_evento,
-            'ind_aprovado' => false,
+            'tip_situacao' => TipoSituacao::CADASTRADO,
         ]);
         FichaVem::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
 
@@ -590,13 +598,13 @@ describe('FichaVemController - APROVACAO', function () {
             ->assertSessionHas('success');
 
         $ficha->refresh();
-        expect($ficha->ind_aprovado)->toBeTrue();
+        expect($ficha->tip_situacao)->toBe(TipoSituacao::APROVADO);
     });
 
     test('pode desaprovar ficha VEM ja aprovada (toggle)', function () {
         $ficha = Ficha::factory()->create([
             'idt_evento' => $this->evento->idt_evento,
-            'ind_aprovado' => true,
+            'tip_situacao' => TipoSituacao::APROVADO,
         ]);
         FichaVem::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
 
@@ -604,13 +612,13 @@ describe('FichaVemController - APROVACAO', function () {
             ->assertSessionHas('success');
 
         $ficha->refresh();
-        expect($ficha->ind_aprovado)->toBeFalse();
+        expect($ficha->tip_situacao)->toBe(TipoSituacao::CADASTRADO);
     });
 
     test('aprovacao redireciona para listagem VEM', function () {
         $ficha = Ficha::factory()->create([
             'idt_evento' => $this->evento->idt_evento,
-            'ind_aprovado' => false,
+            'tip_situacao' => TipoSituacao::CADASTRADO,
         ]);
         FichaVem::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
 
@@ -672,5 +680,83 @@ describe('FichaVemController - EXCLUSAO', function () {
 
         $this->assertSoftDeleted('ficha', ['idt_ficha' => $fichaId]);
         $this->assertDatabaseHas('ficha_saude', ['idt_ficha' => $fichaId]);
+    });
+});
+
+describe('FichaVemController — Redirecionamento Inteligente', function () {
+    test('redireciona para a home ao salvar vindo de /vem', function () {
+        $payload = array_merge(
+            dadosCandidatoVem(['eml_candidato' => 'publico@email.com']),
+            dadosVem(),
+            [
+                'idt_evento' => $this->evento->idt_evento,
+                'idt_falar_com' => $this->responsavel->idt_responsavel,
+            ]
+        );
+
+        $this->from(route('home.ficha.vem'))
+            ->post(route('vem.store'), $payload)
+            ->assertRedirect(route('home'))
+            ->assertSessionHas('success');
+    });
+
+    test('redireciona para vem.index ao salvar vindo de /fichas/vem', function () {
+        $payload = array_merge(
+            dadosCandidatoVem(['eml_candidato' => 'admin@email.com']),
+            dadosVem(),
+            [
+                'idt_evento' => $this->evento->idt_evento,
+                'idt_falar_com' => $this->responsavel->idt_responsavel,
+            ]
+        );
+
+        $this->from(route('vem.create'))
+            ->post(route('vem.store'), $payload)
+            ->assertRedirect(route('vem.index'))
+            ->assertSessionHas('success');
+    });
+
+    test('redireciona para a home ao atualizar vindo de /vem', function () {
+        $ficha = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento]);
+        FichaVem::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
+
+        $payload = array_merge(
+            dadosCandidatoVem([
+                'nom_candidato' => 'Nome Atualizado',
+                'eml_candidato' => 'atualizado@email.com',
+            ]),
+            dadosVem(),
+            [
+                'idt_evento' => $this->evento->idt_evento,
+                'idt_falar_com' => $this->responsavel->idt_responsavel,
+            ]
+        );
+
+        $this->from(route('home.ficha.vem'))
+            ->put(route('vem.update', $ficha->idt_ficha), $payload)
+            ->assertRedirect(route('home'))
+            ->assertSessionHas('success');
+    });
+
+    test('redireciona para vem.index ao atualizar vindo de /fichas/vem', function () {
+        $ficha = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento]);
+        FichaVem::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
+
+        $payload = array_merge(
+            dadosCandidatoVem([
+                'nom_candidato' => 'Nome Admin',
+                'eml_candidato' => 'admin.atualizado@email.com',
+            ]),
+            dadosVem(),
+            [
+                'idt_evento' => $this->evento->idt_evento,
+                'idt_falar_com' => $this->responsavel->idt_responsavel,
+            ]
+        );
+
+        $this->from(route('vem.edit', $ficha->idt_ficha))
+            ->put(route('vem.update', $ficha->idt_ficha), $payload)
+            ->assertRedirect(route('vem.index'))
+            ->assertSessionHas('success');
     });
 });
