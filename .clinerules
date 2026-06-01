@@ -1,0 +1,18 @@
+# Regras do Projeto (WSL & Laravel Sail)
+
+## Contexto do Ambiente
+- **Host:** Windows (PowerShell)
+- **Runtime:** Linux / WSL (Laravel Sail / Docker)
+
+## Diretivas de Execução de Comandos
+Sempre que precisar executar qualquer comando de terminal (Artisan, Composer, PHP, npm), **NUNCA** execute diretamente no Windows PowerShell. Você deve envelopar o comando usando o prefixo do WSL e do Laravel Sail.
+
+### Exemplos de Tradução:
+- **Artisan:** `wsl ./vendor/bin/sail artisan <comando>`
+- **Testes:** `wsl ./vendor/bin/sail test`
+- **Composer:** `wsl ./vendor/bin/sail composer <comando>`
+- **Node/NPM:** `wsl ./vendor/bin/sail npm <comando>`
+- **Tinker:** `wsl ./vendor/bin/sail tinker`
+
+## Leitura/Escrita de Arquivos
+- Continue usando as ferramentas nativas (`view_file`, `write_to_file`, `replace_file_content`, `grep_search`) com os caminhos do Windows (`c:\Users\S852362501\Documents\Projects\pnsl-ntm\...`). A tradução de arquivos é automática.

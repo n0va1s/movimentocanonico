@@ -121,4 +121,9 @@ class Ficha extends Model
             ? $this->dat_nascimento->format('Y-m-d')
             : null;
     }
+
+    public function getIndAprovadoAttribute(): bool
+    {
+        return $this->tip_situacao === TipoSituacao::APROVADA;
+    }
 }

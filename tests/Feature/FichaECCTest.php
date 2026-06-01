@@ -675,7 +675,7 @@ describe('FichaEccController - APROVACAO', function () {
     test('pode aprovar ficha ECC', function () {
         $ficha = Ficha::factory()
             ->has(FichaEcc::factory(), 'fichaEcc')
-            ->create(['idt_evento' => $this->evento->idt_evento, 'tip_situacao' => TipoSituacao::CADASTRADO]);
+            ->create(['idt_evento' => $this->evento->idt_evento, 'tip_situacao' => TipoSituacao::NOVA]);
 
         $this->get(route('ecc.approve', $ficha->idt_ficha))
             ->assertSessionHas('success')
@@ -683,7 +683,20 @@ describe('FichaEccController - APROVACAO', function () {
 
         $ficha->refresh();
 
-        expect($ficha->tip_situacao)->toBe(TipoSituacao::APROVADO);
+        expect($ficha->tip_situacao)->toBe(TipoSituacao::APROVADA);
+    });
+
+    test('pode mudar situacao da ficha ECC pela rota de situacao', function () {
+        $ficha = Ficha::factory()
+            ->has(FichaEcc::factory(), 'fichaEcc')
+            ->create(['idt_evento' => $this->evento->idt_evento, 'tip_situacao' => TipoSituacao::NOVA]);
+
+        $this->post(route('ecc.situacao', $ficha->idt_ficha), ['tip_situacao' => 'A'])
+            ->assertSessionHas('success')
+            ->assertRedirect();
+
+        $ficha->refresh();
+        expect($ficha->tip_situacao)->toBe(TipoSituacao::APROVADA);
     });
 });
 

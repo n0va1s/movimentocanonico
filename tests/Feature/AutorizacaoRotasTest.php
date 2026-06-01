@@ -33,19 +33,14 @@ $rotasAuth = [
     '/ecc',
     '/sgm',
     '/timeline',
-    '/aniversario',
     '/termo-sgm',
     '/termo-vem',
     '/trabalhadores/create',
-    '/trabalhadores/review',
     '/eventos',
-    '/pessoas',
-    '/fichas/vem',
-    '/fichas/ecc',
-    '/fichas/sgm',
     '/settings/profile',
     '/settings/password',
     '/settings/appearance',
+    '/eventos/importar',
 ];
 
 foreach ($rotasAuth as $rota) {
@@ -60,7 +55,6 @@ foreach ($rotasAuth as $rota) {
 
 $rotasAdmin = [
     '/contatos',
-    '/configuracoes',
     '/configuracoes/role',
     '/configuracoes/equipe',
     '/configuracoes/movimento',
@@ -69,12 +63,7 @@ $rotasAdmin = [
     '/eventos/create',
     '/pessoas',
     '/pessoas/create',
-    '/fichas/vem',
-    '/fichas/vem/create',
-    '/fichas/ecc',
-    '/fichas/ecc/create',
-    '/fichas/sgm',
-    '/fichas/sgm/create',
+    '/aniversario',
 ];
 
 foreach ($rotasAdmin as $rota) {
@@ -93,6 +82,46 @@ foreach ($rotasAdmin as $rota) {
         });
     }
 }
+
+// ---------------------------------------------------------------------------
+// Rotas ADMIN e ESPEC — outros perfis recebem 403
+// ---------------------------------------------------------------------------
+
+$rotasAdminEspec = [
+    '/configuracoes',
+    '/eventos/importar',
+    '/fichas/vem',
+    '/fichas/vem/create',
+    '/fichas/ecc',
+    '/fichas/ecc/create',
+    '/fichas/sgm',
+    '/fichas/sgm/create',
+];
+
+foreach ($rotasAdminEspec as $rota) {
+    test("admin acessa {$rota} (admin,espec)", function () use ($rota) {
+        createMovimentos();
+        $this->actingAs(userComRole('admin'))
+            ->get($rota)
+            ->assertStatus(200);
+    });
+
+    test("espec acessa {$rota} (admin,espec)", function () use ($rota) {
+        createMovimentos();
+        $this->actingAs(userComRole('espec'))
+            ->get($rota)
+            ->assertStatus(200);
+    });
+
+    foreach (['coord', 'user'] as $perfil) {
+        test("{$perfil} recebe 403 em {$rota} (admin,espec)", function () use ($rota, $perfil) {
+            $this->actingAs(userComRole($perfil))
+                ->get($rota)
+                ->assertStatus(403);
+        });
+    }
+}
+
 
 // ---------------------------------------------------------------------------
 // Rota /trabalhadores — admin e coord acessam, espec e user recebem 403
@@ -132,7 +161,6 @@ $rotasListagem = [
     '/eventos',
     '/dashboard',
     '/timeline',
-    '/aniversario',
 ];
 
 foreach ($rotasListagem as $rota) {

@@ -590,7 +590,7 @@ describe('FichaVemController - APROVACAO', function () {
     test('pode aprovar ficha VEM nao aprovada', function () {
         $ficha = Ficha::factory()->create([
             'idt_evento' => $this->evento->idt_evento,
-            'tip_situacao' => TipoSituacao::CADASTRADO,
+            'tip_situacao' => TipoSituacao::NOVA,
         ]);
         FichaVem::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
 
@@ -598,13 +598,13 @@ describe('FichaVemController - APROVACAO', function () {
             ->assertSessionHas('success');
 
         $ficha->refresh();
-        expect($ficha->tip_situacao)->toBe(TipoSituacao::APROVADO);
+        expect($ficha->tip_situacao)->toBe(TipoSituacao::APROVADA);
     });
 
     test('pode desaprovar ficha VEM ja aprovada (toggle)', function () {
         $ficha = Ficha::factory()->create([
             'idt_evento' => $this->evento->idt_evento,
-            'tip_situacao' => TipoSituacao::APROVADO,
+            'tip_situacao' => TipoSituacao::APROVADA,
         ]);
         FichaVem::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
 
@@ -612,18 +612,33 @@ describe('FichaVemController - APROVACAO', function () {
             ->assertSessionHas('success');
 
         $ficha->refresh();
-        expect($ficha->tip_situacao)->toBe(TipoSituacao::CADASTRADO);
+        expect($ficha->tip_situacao)->toBe(TipoSituacao::NOVA);
     });
 
     test('aprovacao redireciona para listagem VEM', function () {
         $ficha = Ficha::factory()->create([
             'idt_evento' => $this->evento->idt_evento,
-            'tip_situacao' => TipoSituacao::CADASTRADO,
+            'tip_situacao' => TipoSituacao::NOVA,
         ]);
         FichaVem::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
 
         $this->get(route('vem.approve', $ficha->idt_ficha))
             ->assertRedirect(route('vem.index'));
+    });
+
+    test('pode mudar situacao da ficha VEM pela rota de situacao', function () {
+        $ficha = Ficha::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'tip_situacao' => TipoSituacao::NOVA,
+        ]);
+        FichaVem::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
+
+        $this->post(route('vem.situacao', $ficha->idt_ficha), ['tip_situacao' => 'A'])
+            ->assertSessionHas('success')
+            ->assertRedirect();
+
+        $ficha->refresh();
+        expect($ficha->tip_situacao)->toBe(TipoSituacao::APROVADA);
     });
 });
 

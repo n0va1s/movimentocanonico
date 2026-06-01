@@ -386,4 +386,20 @@ class FichaVemController extends Controller
 
         return redirect()->route('vem.index')->with('success', 'Ficha aprovada com sucesso!');
     }
+
+    public function updateSituacao(Request $request, $id)
+    {
+        $request->validate([
+            'tip_situacao' => 'required|string|in:N,S,E,R,P,C,A',
+        ]);
+
+        $novaSituacao = \App\Enums\TipoSituacao::from($request->input('tip_situacao'));
+
+        try {
+            FichaService::atualizarSituacaoFicha($id, $novaSituacao);
+            return redirect()->back()->with('success', 'Situação da ficha atualizada com sucesso!');
+        } catch (\RuntimeException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
 }

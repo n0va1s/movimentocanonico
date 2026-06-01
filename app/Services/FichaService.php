@@ -47,9 +47,9 @@ class FichaService
             $ficha->tip_situacao = $novaSituacao;
             $ficha->save();
 
-            if ($novaSituacao === TipoSituacao::APROVADO) {
+            if ($novaSituacao === TipoSituacao::APROVADA) {
                 self::aprovarFicha($ficha);
-            } elseif ($situacaoAnterior === TipoSituacao::APROVADO) {
+            } elseif ($situacaoAnterior === TipoSituacao::APROVADA) {
                 self::desaprovarFicha($ficha);
             }
 
@@ -60,9 +60,9 @@ class FichaService
     public static function atualizarAprovacaoFicha(int $id): Ficha
     {
         $ficha = Ficha::findOrFail($id);
-        $novaSituacao = $ficha->tip_situacao === TipoSituacao::APROVADO 
-            ? TipoSituacao::CADASTRADO 
-            : TipoSituacao::APROVADO;
+        $novaSituacao = $ficha->tip_situacao === TipoSituacao::APROVADA 
+            ? TipoSituacao::NOVA 
+            : TipoSituacao::APROVADA;
 
         return self::atualizarSituacaoFicha($id, $novaSituacao);
     }

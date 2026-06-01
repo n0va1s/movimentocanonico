@@ -57,4 +57,5 @@ Documentos de referência para desenvolvimento e manutenção do sistema.
 |-----------|-----------|
 | [Arquitetura](arquitetura.md) | Diagrama e descrição da arquitetura Docker: containers, redes, volumes, segurança e healthchecks |
 | [Padrões de Banco de Dados](padroes_banco_dados.md) | Convenções de nomenclatura de tabelas e colunas (prefixos `nom_`, `ind_`, `dat_`, etc.) |
+| [Esquema Resumido do Banco](schema_resumido.md) | Mapa enxuto de tabelas, chaves e relacionamentos para consulta ultra-rápida |
 | [Perfis de Acesso](perfis-de-acesso.md) | Mapeamento completo de rotas e permissões por perfil (`user`, `coord`, `espec`, `admin`) |
