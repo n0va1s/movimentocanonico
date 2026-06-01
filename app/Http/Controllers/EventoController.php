@@ -81,6 +81,11 @@ class EventoController extends Controller
             DB::beginTransaction();
 
             $dados = $request->validated();
+            
+            // Remove os campos para não tentar salvar med_foto e med_logo na tabela de evento diretamente
+            unset($dados['med_foto']);
+            unset($dados['med_logo']);
+
             $evento = Evento::create($dados);
 
             // Prepara o nome customizado: "2026-04-11-nome-do-evento"

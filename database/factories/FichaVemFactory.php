@@ -14,7 +14,7 @@ class FichaVemFactory extends Factory
     {
         return [
             'idt_ficha' => null, // Será preenchido pelo Seeder para evitar recursividade
-            'idt_falar_com' => TipoResponsavel::inRandomOrder()->first()?->idt_responsavel,
+            'idt_falar_com' => TipoResponsavel::inRandomOrder()->first()?->idt_responsavel ?? TipoResponsavel::factory(),
             'des_onde_estuda' => $this->faker->company(),
             'des_mora_quem' => $this->faker->words(3, true),
             'nom_pai' => $this->faker->name('male'),

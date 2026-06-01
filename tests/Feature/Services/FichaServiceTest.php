@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\TipoEvento;
+use App\Enums\TipoSituacao;
 use App\Models\Evento;
 use App\Models\Ficha;
 use App\Models\FichaEcc;
@@ -45,7 +46,7 @@ function fichaVemComCpf(Evento $evento, array $overrides = []): Ficha
         'num_cpf_candidato' => '12345678901',
         'nom_candidato'     => 'Candidato Teste',
         'eml_candidato'     => 'candidato@teste.com',
-        'ind_aprovado'      => false,
+        'tip_situacao'      => TipoSituacao::NOVA,
         'idt_pessoa'        => null,
     ], $overrides));
 
@@ -63,7 +64,7 @@ function fichaVemSemCpf(Evento $evento): Ficha
         'idt_evento'        => $evento->idt_evento,
         'num_cpf_candidato' => null,
         'nom_candidato'     => 'Sem CPF',
-        'ind_aprovado'      => false,
+        'tip_situacao'      => TipoSituacao::NOVA,
         'idt_pessoa'        => null,
     ]);
 
@@ -87,12 +88,12 @@ describe('FichaService — Aprovação VEM', function () {
         expect(Pessoa::where('eml_pessoa', 'candidato@teste.com')->exists())->toBeTrue();
     });
 
-    test('aprovar ficha atualiza ind_aprovado para true', function () {
+    test('aprovar ficha atualiza tip_situacao para APROVADA', function () {
         $ficha = fichaVemComCpf($this->evento);
 
         FichaService::atualizarAprovacaoFicha($ficha->idt_ficha);
 
-        expect($ficha->fresh()->ind_aprovado)->toBeTrue();
+        expect($ficha->fresh()->tip_situacao)->toBe(TipoSituacao::APROVADA);
     });
 
     test('aprovar ficha vincula idt_pessoa na ficha', function () {
@@ -112,7 +113,7 @@ describe('FichaService — Aprovação VEM', function () {
         expect(Participante::where('idt_evento', $this->evento->idt_evento)->count())->toBe(0);
     });
 
-    test('aprovar ficha sem CPF não altera ind_aprovado (transação revertida)', function () {
+    test('aprovar ficha sem CPF não altera tip_situacao (transação revertida)', function () {
         $ficha = fichaVemSemCpf($this->evento);
 
         try {
@@ -120,7 +121,7 @@ describe('FichaService — Aprovação VEM', function () {
         } catch (\RuntimeException) {
         }
 
-        expect($ficha->fresh()->ind_aprovado)->toBeFalse();
+        expect($ficha->fresh()->tip_situacao)->toBe(TipoSituacao::NOVA);
     });
 
     test('desaprovar ficha remove Participante', function () {
@@ -135,13 +136,13 @@ describe('FichaService — Aprovação VEM', function () {
         expect(Participante::where('idt_evento', $this->evento->idt_evento)->count())->toBe(0);
     });
 
-    test('desaprovar ficha atualiza ind_aprovado para false', function () {
+    test('desaprovar ficha atualiza tip_situacao para NOVA', function () {
         $ficha = fichaVemComCpf($this->evento);
 
         FichaService::atualizarAprovacaoFicha($ficha->idt_ficha); // aprova
         FichaService::atualizarAprovacaoFicha($ficha->idt_ficha); // desaprova
 
-        expect($ficha->fresh()->ind_aprovado)->toBeFalse();
+        expect($ficha->fresh()->tip_situacao)->toBe(TipoSituacao::NOVA);
     });
 
     test('re-aprovação não duplica Participante (updateOrCreate)', function () {
@@ -187,7 +188,7 @@ describe('FichaService — Aprovação ECC', function () {
             'idt_evento'        => $this->eventoEcc->idt_evento,
             'num_cpf_candidato' => '11111111111',
             'eml_candidato'     => 'candidato.ecc@teste.com',
-            'ind_aprovado'      => false,
+            'tip_situacao'      => TipoSituacao::NOVA,
             'idt_pessoa'        => null,
         ]);
 
@@ -207,7 +208,7 @@ describe('FichaService — Aprovação ECC', function () {
             'idt_evento'        => $this->eventoEcc->idt_evento,
             'num_cpf_candidato' => '33333333333',
             'eml_candidato'     => 'pai.ecc@teste.com',
-            'ind_aprovado'      => false,
+            'tip_situacao'      => TipoSituacao::NOVA,
             'idt_pessoa'        => null,
         ]);
 
@@ -240,7 +241,7 @@ describe('FichaService — Aprovação ECC', function () {
             'idt_evento'        => $this->eventoEcc->idt_evento,
             'num_cpf_candidato' => '77777777777',
             'eml_candidato'     => 'pai2.ecc@teste.com',
-            'ind_aprovado'      => false,
+            'tip_situacao'      => TipoSituacao::NOVA,
             'idt_pessoa'        => null,
         ]);
 
@@ -268,7 +269,7 @@ describe('FichaService — Aprovação ECC', function () {
             'idt_evento'        => $this->eventoEcc->idt_evento,
             'num_cpf_candidato' => '99999999901',
             'eml_candidato'     => 'desp.ecc@teste.com',
-            'ind_aprovado'      => false,
+            'tip_situacao'      => TipoSituacao::NOVA,
             'idt_pessoa'        => null,
         ]);
 
@@ -317,7 +318,7 @@ describe('FichaService — Gamificação', function () {
             'idt_evento'        => $eventoDesafio->idt_evento,
             'num_cpf_candidato' => '10203040506',
             'eml_candidato'     => 'desafio@teste.com',
-            'ind_aprovado'      => false,
+            'tip_situacao'      => TipoSituacao::NOVA,
             'idt_pessoa'        => null,
         ]);
         FichaVem::factory()->create(['idt_ficha' => $ficha->idt_ficha]);

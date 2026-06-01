@@ -55,7 +55,7 @@ class FichaSeeder extends Seeder
                 'ind_catolico' => fake()->boolean,
                 'ind_toca_instrumento' => fake()->boolean,
                 'ind_consentimento' => true,
-                'ind_aprovado' => fake()->boolean(80),
+                'tip_situacao' => fake()->boolean(80) ? \App\Enums\TipoSituacao::APROVADA : \App\Enums\TipoSituacao::NOVA,
                 'ind_restricao' => fake()->boolean(20),
                 'usu_inclusao' => $user,
                 'txt_observacao' => fake()->sentence,

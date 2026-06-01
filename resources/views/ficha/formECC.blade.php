@@ -105,6 +105,54 @@
                 @csrf
                 @if ($ficha->exists) @method('PUT') @endif
 
+                @if (Auth::user()?->hasRole('admin', 'espec', 'coord') && $ficha->exists)
+                    <div class="bg-white dark:bg-zinc-800 rounded-xl shadow border border-gray-200 dark:border-zinc-700 p-4 sm:p-6 mb-6">
+                        <p class="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-3">Mudar Situação para:</p>
+                        <div class="flex flex-wrap gap-2">
+                            @php
+                                $situacoes = \App\Enums\TipoSituacao::cases();
+                            @endphp
+                            @foreach($situacoes as $situacao)
+                                @php
+                                    $isCurrent = $ficha->tip_situacao === $situacao;
+                                    $style = $situacao->badge();
+                                @endphp
+                                
+                                @if($isCurrent)
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold text-white {{ $style['bg'] }} shadow-sm">
+                                        <x-heroicon-s-check class="w-4 h-4" />
+                                        {{ $situacao->label() }}
+                                    </span>
+                                @else
+                                    <form method="POST" action="{{ route('ecc.situacao', $ficha->idt_ficha) }}" class="inline">
+                                        @csrf
+                                        <input type="hidden" name="tip_situacao" value="{{ $situacao->value }}">
+                                        <button type="submit" 
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border transition-all duration-200 cursor-pointer hover:text-white {{ $style['light'] }} {{ $style['hover'] }}">
+                                            @if($situacao->value === 'N')
+                                                <x-heroicon-o-document-text class="w-4 h-4" />
+                                            @elseif($situacao->value === 'S')
+                                                <x-heroicon-o-check-circle class="w-4 h-4" />
+                                            @elseif($situacao->value === 'E')
+                                                <x-heroicon-o-envelope class="w-4 h-4" />
+                                            @elseif($situacao->value === 'R')
+                                                <x-heroicon-o-document-check class="w-4 h-4" />
+                                            @elseif($situacao->value === 'P')
+                                                <x-heroicon-o-credit-card class="w-4 h-4" />
+                                            @elseif($situacao->value === 'C')
+                                                <x-heroicon-o-x-circle class="w-4 h-4" />
+                                            @elseif($situacao->value === 'A')
+                                                <x-heroicon-o-sparkles class="w-4 h-4" />
+                                            @endif
+                                            {{ $situacao->label() }}
+                                        </button>
+                                    </form>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
                 {{-- ===== DADOS DO(A) PARTICIPANTE ===== --}}
                 <fieldset class="bg-white dark:bg-zinc-800 rounded-md shadow p-4 sm:p-6">
                     <legend class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
@@ -149,17 +197,17 @@
 
                         {{-- CPF --}}
                         <div>
-                            <label for="num_cpf_conjuge"
+                            <label for="num_cpf_candidato"
                                 class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
                                 CPF <span class="text-red-600" aria-hidden="true">*</span><span class="sr-only">(obrigatório)</span>
                             </label>
-                            <input type="text" name="num_cpf_conjuge" id="num_cpf_conjuge"
+                            <input type="text" name="num_cpf_candidato" id="num_cpf_candidato"
                                 x-bind:disabled="bloqueado" required maxlength="14" autocomplete="off"
-                                value="{{ old('num_cpf_conjuge', $ficha->num_cpf_conjuge) }}"
+                                value="{{ old('num_cpf_candidato', $ficha->num_cpf_candidato) }}"
                                 @blur="buscarPorCpf()"
                                 placeholder="000.000.000-00" aria-required="true"
-                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('num_cpf_conjuge') border-red-500 @enderror" />
-                            @error('num_cpf_conjuge')
+                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('num_cpf_candidato') border-red-500 @enderror" />
+                            @error('num_cpf_candidato')
                                 <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
                             @enderror
                         </div>
@@ -973,22 +1021,6 @@
                         <x-heroicon-o-check class="w-5 h-5 mr-2" aria-hidden="true" />
                         <span x-text="enviando ? 'Salvando...' : 'Salvar'"></span>
                     </button>
-
-                    @if ($ficha->exists)
-                        <a href="{{ route('ecc.approve', $ficha->idt_ficha) }}"
-                            class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 text-white font-medium rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus-visible:ring-offset-2
-                                {{ $ficha->ind_aprovado
-                                    ? 'bg-red-500 hover:bg-red-600 focus:ring-red-500'
-                                    : 'bg-green-500 hover:bg-green-600 focus:ring-green-500' }}"
-                            aria-label="{{ $ficha->ind_aprovado ? 'Desfazer aprovação desta ficha' : 'Aprovar esta ficha' }}">
-                            @if ($ficha->ind_aprovado)
-                                <x-heroicon-o-x-mark class="w-5 h-5 mr-2" aria-hidden="true" />
-                            @else
-                                <x-heroicon-o-check class="w-5 h-5 mr-2" aria-hidden="true" />
-                            @endif
-                            {{ $ficha->ind_aprovado ? 'Desfazer' : 'Aprovar' }}
-                        </a>
-                    @endif
                 </div>
             </form>
 

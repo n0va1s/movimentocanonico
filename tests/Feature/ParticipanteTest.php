@@ -6,159 +6,73 @@ use App\Models\Pessoa;
 use App\Models\TipoMovimento;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Volt\Volt;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->user = User::factory()->create();
-    $this->movimento = TipoMovimento::factory()->create();
-});
-
-// ==========================================
-// TESTES DE LISTAGEM (INDEX)
-// ==========================================
-
-test('usuario pode listar participantes', function () {
-    $evento = Evento::factory()->create(['idt_movimento' => $this->movimento->idt_movimento]);
-
-    // Create 5 participants for the event. The factory handles creating unique people.
-    Participante::factory()->count(5)->create([
-        'idt_evento' => $evento->idt_evento,
+    createMovimentos();
+    $this->movimento = TipoMovimento::first();
+    $this->admin = User::factory()->create(['role' => 'admin']);
+    $this->user = User::factory()->create(['role' => 'user']);
+    
+    // Create an event
+    $this->evento = Evento::factory()->create([
+        'idt_movimento' => $this->movimento->idt_movimento,
     ]);
-
-    $response = $this->actingAs($this->user)
-        ->get(route('participantes.index'));
-
-    $response->assertStatus(200);
-    $response->assertViewIs('evento.participante');
-    $response->assertViewHas('participantes');
 });
 
-test('usuario pode filtrar participantes por evento', function () {
-    $evento1 = Evento::factory()->create(['idt_movimento' => $this->movimento->idt_movimento]);
-    $evento2 = Evento::factory()->create(['idt_movimento' => $this->movimento->idt_movimento]);
+// ==========================================
+// TESTES DO COMPONENTE PARTICIPANTES (VOLT)
+// ==========================================
+
+test('usuario pode renderizar componente de participantes', function () {
+    $this->actingAs($this->admin);
 
     Participante::factory()->count(3)->create([
-        'idt_evento' => $evento1->idt_evento,
+        'idt_evento' => $this->evento->idt_evento,
     ]);
 
-    Participante::factory()->count(2)->create([
-        'idt_evento' => $evento2->idt_evento,
-    ]);
-
-    $response = $this->actingAs($this->user)
-        ->get(route('participantes.index', ['evento' => $evento1->idt_evento]));
-
-    $response->assertStatus(200);
-    $response->assertViewHas('evento');
-    // Verify that we only see participants from event 1
-    // Note: pagination might affect count if > 10, but here we have 3.
-    // We can check the collection size in the view data if needed, but status 200 is a good start.
+    Volt::test('evento.partials.participantes', ['evento' => $this->evento])
+        ->assertSet('evento', $this->evento)
+        ->assertSee('Participantes Confirmados');
 });
 
-test('usuario pode buscar participantes por nome', function () {
-    $evento = Evento::factory()->create(['idt_movimento' => $this->movimento->idt_movimento]);
-    $pessoa = Pessoa::factory()->create(['nom_pessoa' => 'João Silva']);
+test('usuario pode buscar participantes por nome no componente', function () {
+    $this->actingAs($this->admin);
+
+    $pessoa1 = Pessoa::factory()->create(['nom_pessoa' => 'João da Silva']);
+    $pessoa2 = Pessoa::factory()->create(['nom_pessoa' => 'Maria Souza']);
 
     Participante::factory()->create([
-        'idt_evento' => $evento->idt_evento,
-        'idt_pessoa' => $pessoa->idt_pessoa,
-    ]);
-
-    $response = $this->actingAs($this->user)
-        ->get(route('participantes.index', ['search' => 'João']));
-
-    $response->assertStatus(200);
-    $response->assertSee('João Silva');
-});
-
-// ==========================================
-// TESTES DE ATUALIZAÇÃO DE TROCAS (CHANGE)
-// ==========================================
-
-test('usuario pode atualizar cor de troca de participantes', function () {
-    $evento = Evento::factory()->create(['idt_movimento' => $this->movimento->idt_movimento]);
-    $pessoa = Pessoa::factory()->create();
-
-    $participante = Participante::factory()->create([
-        'idt_evento' => $evento->idt_evento,
-        'idt_pessoa' => $pessoa->idt_pessoa,
-        'tip_cor_troca' => 'A',
-    ]);
-
-    $data = [
-        'trocas' => [
-            $participante->idt_participante => 'V',
-        ],
-    ];
-
-    $response = $this->actingAs($this->user)
-        ->post(route('participantes.change'), $data);
-
-    $response->assertRedirect();
-    $response->assertSessionHas('success');
-
-    $participante->refresh();
-    expect($participante->tip_cor_troca)->toBe('V');
-});
-
-test('usuario pode atualizar multiplas trocas de uma vez', function () {
-    $evento = Evento::factory()->create(['idt_movimento' => $this->movimento->idt_movimento]);
-    $pessoa1 = Pessoa::factory()->create();
-    $pessoa2 = Pessoa::factory()->create();
-
-    $participante1 = Participante::factory()->create([
-        'idt_evento' => $evento->idt_evento,
+        'idt_evento' => $this->evento->idt_evento,
         'idt_pessoa' => $pessoa1->idt_pessoa,
-        'tip_cor_troca' => 'A',
     ]);
 
-    $participante2 = Participante::factory()->create([
-        'idt_evento' => $evento->idt_evento,
+    Participante::factory()->create([
+        'idt_evento' => $this->evento->idt_evento,
         'idt_pessoa' => $pessoa2->idt_pessoa,
-        'tip_cor_troca' => 'A',
     ]);
 
-    $data = [
-        'trocas' => [
-            $participante1->idt_participante => 'V',
-            $participante2->idt_participante => 'L',
-        ],
-    ];
-
-    $response = $this->actingAs($this->user)
-        ->post(route('participantes.change'), $data);
-
-    $response->assertRedirect();
-    $response->assertSessionHas('success');
-
-    $participante1->refresh();
-    $participante2->refresh();
-
-    expect($participante1->tip_cor_troca)->toBe('V');
-    expect($participante2->tip_cor_troca)->toBe('L');
+    Volt::test('evento.partials.participantes', ['evento' => $this->evento])
+        ->set('search', 'João')
+        ->assertSee('João da Silva')
+        ->assertDontSee('Maria Souza');
 });
 
-test('change funciona mesmo sem trocas enviadas', function () {
-    $response = $this->actingAs($this->user)
-        ->post(route('participantes.change'), ['trocas' => []]);
+test('usuario pode atualizar cor de troca de participante', function () {
+    $this->actingAs($this->admin);
 
-    $response->assertRedirect();
-    $response->assertSessionHas('success');
-});
+    $pessoa = Pessoa::factory()->create(['nom_pessoa' => 'Luiz Silva', 'nom_apelido' => 'Lula']);
+    $participante = Participante::factory()->create([
+        'idt_evento' => $this->evento->idt_evento,
+        'idt_pessoa' => $pessoa->idt_pessoa,
+        'tip_cor_troca' => 'azul',
+    ]);
 
-// ==========================================
-// TESTES DE AUTORIZAÇÃO
-// ==========================================
+    Volt::test('evento.partials.participantes', ['evento' => $this->evento])
+        ->call('atualizarTroca', $participante->idt_participante, 'verde')
+        ->assertDispatched('notify');
 
-test('visitante nao pode acessar lista de participantes', function () {
-    $response = $this->get(route('participantes.index'));
-
-    $response->assertRedirect(route('login'));
-});
-
-test('visitante nao pode atualizar trocas', function () {
-    $response = $this->post(route('participantes.change'), ['trocas' => []]);
-
-    $response->assertRedirect(route('login'));
+    expect($participante->fresh()->tip_cor_troca)->toBe('verde');
 });

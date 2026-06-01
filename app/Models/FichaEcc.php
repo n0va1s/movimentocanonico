@@ -6,6 +6,8 @@ use App\Enums\EstadoCivil;
 use App\Enums\Genero;
 use App\Enums\HabilidadePrincipal;
 use App\Enums\TamanhoCamiseta;
+use App\Services\CpfService;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -16,6 +18,8 @@ class FichaEcc extends Model
     protected $table = 'ficha_ecc';
 
     protected $primaryKey = 'idt_ficha';
+
+    public $incrementing = false;
 
     public $timestamps = false;
 
@@ -62,5 +66,13 @@ class FichaEcc extends Model
     public function filhos()
     {
         return $this->hasMany(FichaEccFilho::class, 'idt_ficha');
+    }
+
+    protected function numCpfConjuge(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => CpfService::format($value),
+            set: fn (?string $value) => CpfService::clean($value),
+        );
     }
 }

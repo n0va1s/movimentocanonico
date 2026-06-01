@@ -169,8 +169,7 @@ class PessoaController extends Controller
         if ($request->input('ind_restricao') == 1) {
             foreach ($request->input('restricoes', []) as $idt_restricao => $value) {
                 if ($value) {
-                    $pessoa->restricoes()->create([
-                        'idt_restricao' => $idt_restricao,
+                    $pessoa->restricoes()->attach($idt_restricao, [
                         'txt_complemento' => $request->input("complementos.$idt_restricao"),
                     ]);
                     $countRestricoes++;

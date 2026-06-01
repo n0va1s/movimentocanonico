@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\TipoSituacao;
 use App\Models\Ficha;
 use App\Models\FichaEcc;
 use App\Models\FichaEccFilho;
@@ -31,24 +32,39 @@ class FichaService
         });
     }
 
-    public static function atualizarAprovacaoFicha(int $id): Ficha
+    public static function atualizarSituacaoFicha(int $id, TipoSituacao $novaSituacao): Ficha
     {
         // Carrega a ficha com todas as relações necessárias
         $ficha = Ficha::with(['fichaSaude', 'fichaEcc.filhos'])->findOrFail($id);
 
-        return DB::transaction(function () use ($ficha) {
-            // 1. Inverte o status
-            $ficha->ind_aprovado = ! $ficha->ind_aprovado;
+        return DB::transaction(function () use ($ficha, $novaSituacao) {
+            $situacaoAnterior = $ficha->tip_situacao;
+
+            if ($situacaoAnterior === $novaSituacao) {
+                return $ficha;
+            }
+
+            $ficha->tip_situacao = $novaSituacao;
             $ficha->save();
 
-            if ($ficha->ind_aprovado) {
+            if ($novaSituacao === TipoSituacao::APROVADA) {
                 self::aprovarFicha($ficha);
-            } else {
+            } elseif ($situacaoAnterior === TipoSituacao::APROVADA) {
                 self::desaprovarFicha($ficha);
             }
 
             return $ficha->fresh();
         });
+    }
+
+    public static function atualizarAprovacaoFicha(int $id): Ficha
+    {
+        $ficha = Ficha::findOrFail($id);
+        $novaSituacao = $ficha->tip_situacao === TipoSituacao::APROVADA 
+            ? TipoSituacao::NOVA 
+            : TipoSituacao::APROVADA;
+
+        return self::atualizarSituacaoFicha($id, $novaSituacao);
     }
 
     /**
@@ -167,7 +183,7 @@ class FichaService
             'nom_apelido' => $fichaEcc->nom_apelido_conjuge,
             'tel_pessoa' => $fichaEcc->tel_conjuge,
             'dat_nascimento' => $fichaEcc->dat_nascimento_conjuge,
-            'eml_pessoa' => $fichaEcc->eml_conjuge,
+            'eml_pessoa' => $fichaEcc->eml_conjuge ?? "sem-email-conjuge-{$fichaEcc->num_cpf_conjuge}@lago.org",
             'tam_camiseta' => $fichaEcc->tam_camiseta_conjuge,
             'tip_genero' => $fichaEcc->tip_genero_conjuge,
         ];
@@ -192,7 +208,7 @@ class FichaService
             'num_cpf_pessoa' => $filho->num_cpf_filho,
             'nom_pessoa' => $filho->nom_filho,
             'dat_nascimento' => $filho->dat_nascimento_filho,
-            'eml_pessoa' => $filho->eml_filho,
+            'eml_pessoa' => $filho->eml_filho ?? "sem-email-filho-{$filho->num_cpf_filho}@lago.org",
             'tel_pessoa' => $filho->tel_filho,
         ];
 
