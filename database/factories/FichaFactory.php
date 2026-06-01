@@ -36,7 +36,7 @@ class FichaFactory extends Factory
             'ind_catolico' => $this->faker->boolean(),
             'ind_toca_instrumento' => $this->faker->boolean(),
             'ind_consentimento' => true,
-            'tip_situacao' => TipoSituacao::CADASTRADO,
+            'tip_situacao' => TipoSituacao::NOVA,
             'ind_restricao' => $this->faker->boolean(),
             'txt_observacao' => $this->faker->sentence(),
             'nom_profissao' => $this->faker->jobTitle(),

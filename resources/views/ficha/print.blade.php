@@ -158,10 +158,10 @@
     <button class="btn btn-secondary" onclick="window.close()">
         ✕ Fechar
     </button>
-    @if($ficha->tip_situacao === \App\Enums\TipoSituacao::APROVADO)
-        <span class="badge badge-green">✓ {{ $ficha->tip_situacao->label() }}</span>
+    @if($ficha->ind_aprovado)
+        <span class="badge badge-green">✓ Aprovada</span>
     @else
-        <span class="badge badge-yellow">⏳ {{ $ficha->tip_situacao?->label() ?? 'Pendente' }}</span>
+        <span class="badge badge-yellow">⏳ Pendente</span>
     @endif
 </div>
 

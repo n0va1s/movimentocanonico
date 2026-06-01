@@ -13,12 +13,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('ficha', function (Blueprint $table) {
-            $table->string('tip_situacao', 1)->default('C')->after('ind_consentimento');
+            $table->string('tip_situacao', 1)->default('N')->after('ind_consentimento');
         });
 
         // Migrar os dados existentes de forma segura
-        DB::table('ficha')->where('ind_aprovado', true)->update(['tip_situacao' => 'D']);
-        DB::table('ficha')->where('ind_aprovado', false)->update(['tip_situacao' => 'C']);
+        DB::table('ficha')->where('ind_aprovado', true)->update(['tip_situacao' => 'A']);
+        DB::table('ficha')->where('ind_aprovado', false)->update(['tip_situacao' => 'N']);
 
         Schema::table('ficha', function (Blueprint $table) {
             $table->dropColumn('ind_aprovado');
@@ -35,8 +35,8 @@ return new class extends Migration
         });
 
         // Migrar de volta de forma reversível
-        DB::table('ficha')->where('tip_situacao', 'D')->update(['ind_aprovado' => true]);
-        DB::table('ficha')->where('tip_situacao', '!=', 'D')->update(['ind_aprovado' => false]);
+        DB::table('ficha')->where('tip_situacao', 'A')->update(['ind_aprovado' => true]);
+        DB::table('ficha')->where('tip_situacao', '!=', 'A')->update(['ind_aprovado' => false]);
 
         Schema::table('ficha', function (Blueprint $table) {
             $table->dropColumn('tip_situacao');

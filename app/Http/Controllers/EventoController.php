@@ -10,7 +10,6 @@ use App\Services\ArquivoService;
 use App\Services\EventoService;
 use App\Traits\LogContext;
 use Carbon\Carbon;
-use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -83,7 +82,7 @@ class EventoController extends Controller
 
             $dados = $request->validated();
             
-            // Remove os campos para não tentar salvar med_foto/med_logo na tabela evento
+            // Remove os campos para não tentar salvar med_foto e med_logo na tabela de evento diretamente
             unset($dados['med_foto']);
             unset($dados['med_logo']);
 

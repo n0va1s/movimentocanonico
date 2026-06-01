@@ -21,7 +21,7 @@ class EventoService
 
         $trabalhos = Trabalhador::where('idt_pessoa', $pessoa->idt_pessoa)
             ->whereHas('evento')
-            ->with(array_merge($relacoesBase, ['equipe:idt_equipe,des_equipe']))
+            ->with(array_merge($relacoesBase, ['equipe:idt_equipe,des_grupo']))
             ->get()
             ->map(fn ($t) => $this->formataTimeline($t, 'Trabalhador'));
 
@@ -58,7 +58,7 @@ class EventoService
                 'date' => null,
                 'event' => null,
                 'details' => [
-                    'equipe' => $model->equipe->des_equipe ?? null,
+                    'equipe' => $model->equipe->des_grupo ?? null,
                     'coordenador' => $model->ind_coordenador ?? false,
                 ],
             ];
@@ -69,7 +69,7 @@ class EventoService
             'date' => $model->evento->dat_inicio,
             'event' => $model->evento,
             'details' => [
-                'equipe' => $model->equipe->des_equipe ?? null,
+                'equipe' => $model->equipe->des_grupo ?? null,
                 'coordenador' => $model->ind_coordenador ?? false,
             ],
         ];

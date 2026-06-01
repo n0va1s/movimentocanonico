@@ -7,6 +7,8 @@ use App\Enums\Genero;
 use App\Enums\HabilidadePrincipal;
 use App\Enums\TamanhoCamiseta;
 use App\Enums\TipoSituacao;
+use App\Services\CpfService;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -120,5 +122,18 @@ class Ficha extends Model
         return $this->dat_nascimento
             ? $this->dat_nascimento->format('Y-m-d')
             : null;
+    }
+
+    public function getIndAprovadoAttribute(): bool
+    {
+        return $this->tip_situacao === TipoSituacao::APROVADA;
+    }
+
+    protected function numCpfCandidato(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => CpfService::format($value),
+            set: fn (?string $value) => CpfService::clean($value),
+        );
     }
 }

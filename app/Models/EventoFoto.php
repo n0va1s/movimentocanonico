@@ -13,6 +13,8 @@ class EventoFoto extends Model
 
     protected $primaryKey = 'idt_evento';
 
+    public $incrementing = false;
+
     public $timestamps = true;
 
     protected $fillable = [

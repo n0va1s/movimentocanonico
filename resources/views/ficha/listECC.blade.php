@@ -11,7 +11,7 @@
             <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Gerenciar Fichas do ECC</h1>
             @if ($evento?->exists)
                 <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-1">
-                    Evento: <strong>{{ $evento->des_evento }}</strong> 
+                    Evento: <strong>{{ $evento->des_evento }}</strong>
                 </p>
             @endif
         </div>
@@ -82,16 +82,11 @@
                                 </td>
                                 <td class="p-3 dark:text-gray-100">
                                     @php
-                                        $situacaoColors = [
-                                            'C' => 'bg-gray-100 text-gray-700',
-                                            'A' => 'bg-blue-100 text-blue-700',
-                                            'V' => 'bg-yellow-100 text-yellow-700',
-                                            'D' => 'bg-green-100 text-green-800',
-                                        ];
-                                        $cor = $situacaoColors[$ficha->tip_situacao?->value ?? 'C'] ?? 'bg-gray-100 text-gray-700';
+                                        $situacao = $ficha->tip_situacao ?? \App\Enums\TipoSituacao::NOVA;
+                                        $style = $situacao->badge();
                                     @endphp
-                                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium {{ $cor }}">
-                                        {{ $ficha->tip_situacao?->label() ?? '—' }}
+                                    <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {{ $style['light'] }} border">
+                                        {{ $situacao->label() }}
                                     </span>
                                 </td>
                                 <td class="p-3 flex justify-end items-center gap-2">

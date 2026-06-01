@@ -59,7 +59,7 @@ class EventoCompletoSeeder extends Seeder
                 'tip_genero' => $pessoa->tip_genero,
                 'des_endereco' => $pessoa->des_endereco,
                 'tam_camiseta' => $pessoa->tam_camiseta,
-                'tip_situacao' => \App\Enums\TipoSituacao::CADASTRADO,
+                'ind_aprovado' => false,
                 'usu_inclusao' => $user->id,
                 'usu_alteracao' => $user->id,
             ]);

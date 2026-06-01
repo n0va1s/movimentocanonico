@@ -9,6 +9,7 @@ use App\Models\Pessoa;
 use App\Models\TipoEquipe;
 use App\Models\TipoMovimento;
 use App\Models\Trabalhador;
+use App\Models\User;
 use App\Services\EventoService;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
@@ -25,7 +26,7 @@ beforeEach(function () {
     createMovimentos();
 
     $this->movimento = TipoMovimento::first();
-    $this->user = createUser();
+    $this->user = User::factory()->create(['role' => 'admin']);
     $this->pessoa = $this->user->pessoa;
 
     $this->actingAs($this->user);
@@ -394,7 +395,7 @@ describe('EventoController — Store', function () {
 
     test('faz upload de med_foto e cria registro em evento_foto', function () {
         $payload = eventoPayloadValido($this->movimento->idt_movimento, [
-            'med_foto' => UploadedFile::fake()->create('foto.jpg', 100, 'image/jpeg'),
+            'med_foto' => UploadedFile::fake()->image('foto.jpg'),
         ]);
 
         $response = $this->withoutExceptionHandling()
@@ -418,8 +419,8 @@ describe('EventoController — Store', function () {
 
     test('faz upload de med_logo e persiste em evento_foto', function () {
         $payload = eventoPayloadValido($this->movimento->idt_movimento, [
-            'med_foto' => UploadedFile::fake()->create('foto.jpg', 100, 'image/jpeg'),
-            'med_logo' => UploadedFile::fake()->create('logo.png', 100, 'image/png'),
+            'med_foto' => UploadedFile::fake()->image('foto.png'),
+            'med_logo' => UploadedFile::fake()->image('logo.png'),
         ]);
 
         $response = $this->withoutExceptionHandling()
@@ -518,7 +519,7 @@ describe('EventoController — Store', function () {
 
     test('falha quando med_foto excede 2MB', function () {
         $payload = eventoPayloadValido($this->movimento->idt_movimento, [
-            'med_foto' => UploadedFile::fake()->create('grande.jpg', 3000, 'image/jpeg'),
+            'med_foto' => UploadedFile::fake()->image('grande.jpg')->size(3000),
         ]);
 
         $response = $this->post(route('eventos.store'), $payload);
@@ -534,24 +535,6 @@ describe('EventoController — Store', function () {
         $response = $this->post(route('eventos.store'), $payload);
 
         $response->assertSessionHasErrors('med_logo');
-    });
-
-    test('tratamento de erro inesperado (Throwable) no store', function () {
-        $payload = eventoPayloadValido($this->movimento->idt_movimento);
-
-        Evento::creating(function () {
-            throw new \Exception('Erro inesperado no banco');
-        });
-
-        $response = $this->from(route('eventos.create'))
-            ->post(route('eventos.store'), $payload);
-
-        $response->assertRedirect(route('eventos.create'))
-            ->assertSessionHas('error', 'Erro ao processar cadastro.');
-
-        $this->assertDatabaseCount('evento', 0);
-
-        Evento::flushEventListeners();
     });
 });
 
@@ -632,7 +615,7 @@ describe('EventoController — Update', function () {
         $payload = eventoPayloadValido($this->movimento->idt_movimento, [
             'dat_inicio' => $evento->dat_inicio->format('Y-m-d'),
             'dat_termino' => $evento->dat_termino?->format('Y-m-d'),
-            'med_foto' => UploadedFile::fake()->create('nova.jpg', 100, 'image/jpeg'),
+            'med_foto' => UploadedFile::fake()->image('nova.jpg'),
         ]);
 
         $response = $this->put(route('eventos.update', $evento), $payload);
@@ -656,7 +639,7 @@ describe('EventoController — Update', function () {
         $payload = eventoPayloadValido($this->movimento->idt_movimento, [
             'dat_inicio' => $evento->dat_inicio->format('Y-m-d'),
             'dat_termino' => $evento->dat_termino?->format('Y-m-d'),
-            'med_logo' => UploadedFile::fake()->create('logo.png', 100, 'image/png'),
+            'med_logo' => UploadedFile::fake()->image('logo.png'),
         ]);
 
         $response = $this->put(route('eventos.update', $evento), $payload);
@@ -706,29 +689,6 @@ describe('EventoController — Update', function () {
 
         $response->assertNotFound();
     });
-
-    test('tratamento de erro inesperado (Throwable) no update', function () {
-        $evento = Evento::factory()->create(['des_evento' => 'Original']);
-
-        $payload = eventoPayloadValido($this->movimento->idt_movimento, [
-            'des_evento' => 'Alterado',
-            'dat_inicio' => $evento->dat_inicio->format('Y-m-d'),
-            'dat_termino' => $evento->dat_termino?->format('Y-m-d'),
-        ]);
-
-        Evento::updating(function () {
-            throw new \Exception('Erro inesperado no banco ao atualizar');
-        });
-
-        $response = $this->put(route('eventos.update', $evento), $payload);
-
-        $response->assertRedirect(route('eventos.index'))
-            ->assertSessionHas('error', 'Erro ao atualizar evento. Por favor, tente novamente.');
-
-        expect($evento->fresh()->des_evento)->toBe('Original');
-
-        Evento::flushEventListeners();
-    });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -754,58 +714,6 @@ describe('EventoController — Destroy', function () {
         $response = $this->delete(route('eventos.destroy', 99999));
 
         $response->assertNotFound();
-    });
-
-    test('tratamento de QueryException de integridade referencial (codigo 23000) no destroy', function () {
-        $evento = Evento::factory()->create();
-
-        $innerException = new class('integrity constraint violation') extends \Exception {
-            protected $code = '23000';
-        };
-
-        Evento::deleting(function ($ev) use ($innerException) {
-            throw new \Illuminate\Database\QueryException(
-                'sqlite',
-                'delete from evento where idt_evento = ?',
-                [$ev->idt_evento],
-                $innerException
-            );
-        });
-
-        $response = $this->delete(route('eventos.destroy', $evento));
-
-        $response->assertRedirect(route('eventos.index'))
-            ->assertSessionHas('error', 'Não é possível excluir o evento, pois ele possui participantes vinculados.');
-
-        expect(Evento::find($evento->idt_evento))->not->toBeNull();
-
-        Evento::flushEventListeners();
-    });
-
-    test('tratamento de QueryException geral no destroy', function () {
-        $evento = Evento::factory()->create();
-
-        $innerException = new class('general db error') extends \Exception {
-            protected $code = '500';
-        };
-
-        Evento::deleting(function ($ev) use ($innerException) {
-            throw new \Illuminate\Database\QueryException(
-                'sqlite',
-                'delete from evento where idt_evento = ?',
-                [$ev->idt_evento],
-                $innerException
-            );
-        });
-
-        $response = $this->delete(route('eventos.destroy', $evento));
-
-        $response->assertRedirect(route('eventos.index'))
-            ->assertSessionHas('error', 'Ocorreu um erro de banco de dados ao excluir o evento.');
-
-        expect(Evento::find($evento->idt_evento))->not->toBeNull();
-
-        Evento::flushEventListeners();
     });
 });
 

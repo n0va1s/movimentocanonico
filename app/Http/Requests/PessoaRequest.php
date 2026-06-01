@@ -6,6 +6,7 @@ use App\Enums\EstadoCivil;
 use App\Enums\Genero;
 use App\Enums\HabilidadePrincipal;
 use App\Enums\TamanhoCamiseta;
+use App\Rules\Cpf;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
@@ -17,11 +18,29 @@ class PessoaRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('num_cpf_pessoa')) {
+            $this->merge([
+                'num_cpf_pessoa' => $this->input('num_cpf_pessoa') ? preg_replace('/\D/', '', $this->input('num_cpf_pessoa')) : null,
+            ]);
+        }
+    }
+
     public function rules(): array
     {
+        $pessoaId = $this->route('pessoa') ?? $this->pessoa;
+        if ($pessoaId instanceof \App\Models\Pessoa) {
+            $pessoaId = $pessoaId->idt_pessoa;
+        }
+
         return [
-            'num_cpf_pessoa' => ['required', 'string', 'max:20',
-                Rule::unique('pessoa', 'num_cpf_pessoa')->ignore($this->pessoa, 'idt_pessoa'),
+            'num_cpf_pessoa' => [
+                'required',
+                'string',
+                'max:20',
+                new Cpf,
+                Rule::unique('pessoa', 'num_cpf_pessoa')->ignore($pessoaId, 'idt_pessoa'),
             ],
             'nom_pessoa' => ['required', 'string', 'max:255'],
             'nom_apelido' => ['nullable', 'string', 'max:255'],

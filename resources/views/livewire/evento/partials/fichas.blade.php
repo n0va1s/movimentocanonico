@@ -23,17 +23,20 @@ new class extends Component {
         $this->resetPage();
     }
 
-    public function alterarSituacao(int $fichaId, string $novaSituacaoValue): void
+    public function atualizarAprovacao(int $fichaId): void
     {
         try {
-            $novaSituacao = \App\Enums\TipoSituacao::from($novaSituacaoValue);
-            $ficha = \App\Services\FichaService::atualizarSituacaoFicha($fichaId, $novaSituacao);
-            
+            $ficha = \App\Services\FichaService::atualizarAprovacaoFicha($fichaId);
+
+            $status = $ficha->ind_aprovado ? 'aprovada' : 'pendente';
+            $visual = $ficha->ind_aprovado ? 'sucesso' : 'info';
+
             $this->dispatch('notify',
-                message: "A situação da ficha de {$ficha->nom_apelido} foi atualizada para {$novaSituacao->label()}.",
-                type: 'sucesso'
+                message: "A ficha de {$ficha->nom_apelido} foi {$status}.",
+                type: $visual
             );
         } catch (\RuntimeException $e) {
+            // CPF ausente ou outra regra de negócio impediu a aprovação
             $this->dispatch('notify',
                 message: $e->getMessage(),
                 type: 'erro'
@@ -219,7 +222,7 @@ new class extends Component {
         <flux:table.columns>
             <flux:table.column>Candidato</flux:table.column>
             <flux:table.column>Data Nasc</flux:table.column>
-            <flux:table.column>Situação</flux:table.column>
+            <flux:table.column>Aprovado</flux:table.column>
             <flux:table.column align="end">Ações</flux:table.column>
         </flux:table.columns>
 
@@ -247,16 +250,8 @@ new class extends Component {
                 </flux:table.cell>
 
                 <flux:table.cell>
-                    <flux:select
-                        wire:change="alterarSituacao({{ $ficha->idt_ficha }}, $event.target.value)"
-                        size="sm"
-                        class="w-36">
-                        @foreach (\App\Enums\TipoSituacao::cases() as $situacao)
-                            <option value="{{ $situacao->value }}" @selected($ficha->tip_situacao === $situacao)>
-                                {{ $situacao->label() }}
-                            </option>
-                        @endforeach
-                    </flux:select>
+                    <flux:switch wire:click="atualizarAprovacao({{ $ficha->idt_ficha }})"
+                        :checked="$ficha->ind_aprovado" color="green" />
                 </flux:table.cell>
 
                 <flux:table.cell align="end">

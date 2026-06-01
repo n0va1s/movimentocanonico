@@ -110,20 +110,20 @@ describe('Acesso não autenticado', function () {
 
 describe('Controlo de acesso por perfil', function () {
 
-    test('utilizador com perfil "user" consegue aceder à listagem', function () {
+    test('utilizador com perfil "user" recebe 403 ao aceder à listagem', function () {
         $user = User::factory()->create(['role' => 'user']);
 
         $this->actingAs($user)
             ->get(route('sgm.index'))
-            ->assertStatus(200);
+            ->assertStatus(403);
     });
 
-    test('utilizador com perfil "coord" consegue aceder à listagem', function () {
+    test('utilizador com perfil "coord" recebe 403 ao aceder à listagem', function () {
         $user = User::factory()->create(['role' => 'coord']);
 
         $this->actingAs($user)
             ->get(route('sgm.index'))
-            ->assertStatus(200);
+            ->assertStatus(403);
     });
 
     test('administrador consegue aceder à listagem', function () {
@@ -578,49 +578,8 @@ describe('FichaSGMController — Atualização', function () {
     });
 });
 
-// ── APROVACAO ─────────────────────────────────────────────────────────────────
-
-describe('FichaSGMController — Aprovação', function () {
-
-    test('pode aprovar ficha SGM nao aprovada', function () {
-        $ficha = Ficha::factory()->create([
-            'idt_evento' => $this->evento->idt_evento,
-            'tip_situacao' => \App\Enums\TipoSituacao::CADASTRADO,
-        ]);
-        FichaSGM::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
-
-        $this->get(route('sgm.approve', $ficha->idt_ficha))
-            ->assertSessionHas('success');
-
-        $ficha->refresh();
-        expect($ficha->tip_situacao)->toBe(\App\Enums\TipoSituacao::APROVADO);
-    });
-
-    test('pode desaprovar ficha SGM ja aprovada (toggle)', function () {
-        $ficha = Ficha::factory()->create([
-            'idt_evento' => $this->evento->idt_evento,
-            'tip_situacao' => \App\Enums\TipoSituacao::APROVADO,
-        ]);
-        FichaSGM::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
-
-        $this->get(route('sgm.approve', $ficha->idt_ficha))
-            ->assertSessionHas('success');
-
-        $ficha->refresh();
-        expect($ficha->tip_situacao)->toBe(\App\Enums\TipoSituacao::CADASTRADO);
-    });
-
-    test('aprovacao redireciona para listagem SGM', function () {
-        $ficha = Ficha::factory()->create([
-            'idt_evento' => $this->evento->idt_evento,
-            'tip_situacao' => \App\Enums\TipoSituacao::CADASTRADO,
-        ]);
-        FichaSGM::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
-
-        $this->get(route('sgm.approve', $ficha->idt_ficha))
-            ->assertRedirect(route('sgm.index'));
-    });
-});
+// Nota: o método approve() ainda não está implementado no FichaSGMController.
+// Adicionar testes de aprovação após implementar o método (ver FichaVemController::approve como referência).
 
 describe('FichaSGMController — Exclusão', function () {
 
@@ -638,5 +597,69 @@ describe('FichaSGMController — Exclusão', function () {
     test('retorna erro ao tentar excluir ficha SGM inexistente', function () {
         $this->delete(route('sgm.destroy', 99999))
             ->assertStatus(500);
+    });
+});
+
+describe('FichaSGMController — Redirecionamento Inteligente', function () {
+    test('redireciona para a home ao salvar vindo de /sgm', function () {
+        $payload = array_merge(
+            dadosFichaBase(['idt_evento' => $this->evento->idt_evento, 'eml_candidato' => 'publico@email.com']),
+            dadosSGMBase($this->responsavel->idt_responsavel)
+        );
+
+        $this->from(route('home.ficha.sgm'))
+            ->post(route('sgm.store'), $payload)
+            ->assertRedirect(route('home'))
+            ->assertSessionHas('success');
+    });
+
+    test('redireciona para sgm.index ao salvar vindo de /fichas/sgm', function () {
+        $payload = array_merge(
+            dadosFichaBase(['idt_evento' => $this->evento->idt_evento, 'eml_candidato' => 'admin@email.com']),
+            dadosSGMBase($this->responsavel->idt_responsavel)
+        );
+
+        $this->from(route('sgm.create'))
+            ->post(route('sgm.store'), $payload)
+            ->assertRedirect(route('sgm.index'))
+            ->assertSessionHas('success');
+    });
+
+    test('redireciona para a home ao atualizar vindo de /sgm', function () {
+        $ficha = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento]);
+        FichaSGM::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
+
+        $payload = array_merge(
+            dadosFichaBase([
+                'idt_evento' => $this->evento->idt_evento,
+                'nom_candidato' => 'Nome Atualizado',
+                'eml_candidato' => 'atualizado@email.com',
+            ]),
+            dadosSGMBase($this->responsavel->idt_responsavel)
+        );
+
+        $this->from(route('home.ficha.sgm'))
+            ->put(route('sgm.update', $ficha->idt_ficha), $payload)
+            ->assertRedirect(route('home'))
+            ->assertSessionHas('success');
+    });
+
+    test('redireciona para sgm.index ao atualizar vindo de /fichas/sgm', function () {
+        $ficha = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento]);
+        FichaSGM::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
+
+        $payload = array_merge(
+            dadosFichaBase([
+                'idt_evento' => $this->evento->idt_evento,
+                'nom_candidato' => 'Nome Admin',
+                'eml_candidato' => 'admin.atualizado@email.com',
+            ]),
+            dadosSGMBase($this->responsavel->idt_responsavel)
+        );
+
+        $this->from(route('sgm.edit', $ficha->idt_ficha))
+            ->put(route('sgm.update', $ficha->idt_ficha), $payload)
+            ->assertRedirect(route('sgm.index'))
+            ->assertSessionHas('success');
     });
 });

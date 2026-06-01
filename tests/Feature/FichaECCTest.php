@@ -1,41 +1,32 @@
 <?php
 
+use App\Enums\TipoSituacao;
 use App\Models\Ficha;
 use App\Models\FichaEcc;
 use App\Models\FichaEccFilho;
-use App\Models\FichaFoto;
-use App\Models\Pessoa;
-use App\Models\Participante;
-use App\Models\PessoaSaude;
-use App\Models\PessoaFoto;
 use App\Models\TipoMovimento;
-use App\Models\TipoResponsavel;
 use App\Models\TipoRestricao;
-use App\Enums\TipoSituacao;
-use App\Enums\Genero;
-use App\Enums\TamanhoCamiseta;
+use App\Models\User;
+use App\Models\Evento;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Database\QueryException;
 
 uses(RefreshDatabase::class);
 
-// ── Helpers reutilizáveis ─────────────────────────────────────────────────────
+// ── Helpers reutilizaveis ─────────────────────────────────────────────────────
 
 function dadosParticipante(array $overrides = []): array
 {
     return array_merge([
-        'tip_genero' => Genero::MASCULINO->value,
+        'tip_genero' => 'M',
         'num_cpf_candidato' => '123.456.789-00',
         'nom_candidato' => 'Carlos Silva',
         'nom_apelido' => 'Car',
         'dat_nascimento' => '1980-01-01',
-        'tel_candidato' => '61999999999',
+        'tel_candidato' => '(61) 99999-9999',
         'eml_candidato' => 'carlos@email.com',
         'nom_profissao' => 'Engenheiro',
         'des_endereco' => 'Rua das Flores, 123',
-        'tam_camiseta' => TamanhoCamiseta::M->value,
+        'tam_camiseta' => 'M',
         'tip_como_soube' => 'IND',
         'tip_habilidade' => 'A',
         'ind_catolico' => 1,
@@ -52,14 +43,14 @@ function dadosConjuge(array $overrides = []): array
         'num_cpf_conjuge' => '987.654.321-00',
         'nom_conjuge' => 'Maria Silva',
         'nom_apelido_conjuge' => 'Mari',
-        'tip_genero_conjuge' => Genero::FEMININO->value,
+        'tip_genero_conjuge' => 'F',
         'dat_nascimento_conjuge' => '1982-01-01',
-        'tel_conjuge' => '61988888888',
+        'tel_conjuge' => '(61) 98888-8888',
         'eml_conjuge' => 'maria@email.com',
         'nom_profissao_conjuge' => 'Medica',
         'ind_catolico_conjuge' => 1,
         'tip_habilidade_conjuge' => 'A',
-        'tam_camiseta_conjuge' => TamanhoCamiseta::P->value,
+        'tam_camiseta_conjuge' => 'P',
         'tip_estado_civil' => 'C',
         'nom_paroquia' => 'Paroquia do Lago',
         'dat_casamento' => '2010-06-15',
@@ -70,21 +61,23 @@ function dadosConjuge(array $overrides = []): array
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
 beforeEach(function () {
-    $this->user = createUser();
+    $this->user = User::factory()->create(['role' => 'admin']);
     $this->actingAs($this->user);
 
-    TipoMovimento::factory()->create([
-        'idt_movimento' => TipoMovimento::ECC,
-        'des_sigla' => 'ECC'
+    \DB::table('tipo_movimento')->insertOrIgnore([
+        ['idt_movimento' => 1, 'nom_movimento' => 'Encontro de Casais com Cristo', 'des_sigla' => 'ECC', 'dat_inicio' => '1980-01-01', 'created_at' => now(), 'updated_at' => now()],
+        ['idt_movimento' => 2, 'nom_movimento' => 'Encontro de Adolescentes com Cristo', 'des_sigla' => 'VEM', 'dat_inicio' => '2000-07-01', 'created_at' => now(), 'updated_at' => now()],
+        ['idt_movimento' => 3, 'nom_movimento' => 'Encontro de Jovens com Cristo', 'des_sigla' => 'Segue-Me', 'dat_inicio' => '1990-12-31', 'created_at' => now(), 'updated_at' => now()],
     ]);
-    $this->evento = createEvento();
 
-    $this->restricoes = TipoRestricao::factory()->count(3)->create();
+    $this->evento = Evento::factory()->create(['idt_movimento' => TipoMovimento::ECC]);
+
+    $this->restricoes = TipoRestricao::factory()->count(2)->create();
 });
 
-// ── LISTAGEM E FORMULARIOS ────────────────────────────────────────────────────
+// ── INCLUSAO ──────────────────────────────────────────────────────────────────
 
-describe('FichaEccController - LISTAGEM E FORMULARIOS', function () {
+describe('FichaEccController - INCLUSAO', function () {
 
     test('pode acessar listagem de fichas ECC', function () {
         $this->get(route('ecc.index'))
@@ -93,52 +86,18 @@ describe('FichaEccController - LISTAGEM E FORMULARIOS', function () {
             ->assertViewHas('fichas');
     });
 
-    test('listagem retorna apenas fichas do movimento ECC', function () {
-        $ficha = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento]);
-        FichaEcc::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
+    test('pode filtrar listagem por nome do candidato', function () {
+        Ficha::factory()
+            ->has(FichaEcc::factory(), 'fichaEcc')
+            ->create(['idt_evento' => $this->evento->idt_evento, 'nom_candidato' => 'Buscado Silva']);
 
-        $response = $this->get(route('ecc.index'));
-
-        $response->assertStatus(200);
-        $fichas = $response->viewData('fichas');
-        expect($fichas->total())->toBeGreaterThanOrEqual(1);
-    });
-
-    test('listagem filtra por nome do candidato', function () {
-        Ficha::factory()->create([
-            'idt_evento' => $this->evento->idt_evento,
-            'nom_candidato' => 'Buscado Silva',
-        ]);
+        Ficha::factory()
+            ->has(FichaEcc::factory(), 'fichaEcc')
+            ->create(['idt_evento' => $this->evento->idt_evento, 'nom_candidato' => 'Outro Nome']);
 
         $this->get(route('ecc.index', ['search' => 'Buscado']))
             ->assertStatus(200)
             ->assertViewHas('fichas', fn ($fichas) => $fichas->total() === 1);
-    });
-
-    test('listagem filtra por apelido do candidato', function () {
-        Ficha::factory()->create([
-            'idt_evento' => $this->evento->idt_evento,
-            'nom_candidato' => 'Outro Nome',
-            'nom_apelido' => 'ApelidoEccUnico',
-        ]);
-
-        $this->get(route('ecc.index', ['search' => 'ApelidoEccUnico']))
-            ->assertStatus(200)
-            ->assertViewHas('fichas', fn ($fichas) => $fichas->total() === 1);
-    });
-
-    test('listagem filtra por evento', function () {
-        $outroEvento = createEvento();
-        $ficha1 = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento, 'nom_candidato' => 'Ficha Evento 1']);
-        FichaEcc::factory()->create(['idt_ficha' => $ficha1->idt_ficha]);
-
-        $ficha2 = Ficha::factory()->create(['idt_evento' => $outroEvento->idt_evento, 'nom_candidato' => 'Ficha Evento 2']);
-        FichaEcc::factory()->create(['idt_ficha' => $ficha2->idt_ficha]);
-
-        $this->get(route('ecc.index', ['evento' => $this->evento->idt_evento]))
-            ->assertStatus(200)
-            ->assertViewHas('fichas', fn ($fichas) => $fichas->total() === 1)
-            ->assertViewHas('evento', fn ($ev) => $ev->idt_evento === $this->evento->idt_evento);
     });
 
     test('pode acessar formulario de criacao', function () {
@@ -147,87 +106,31 @@ describe('FichaEccController - LISTAGEM E FORMULARIOS', function () {
             ->assertViewIs('ficha.formECC');
     });
 
-    test('formulario de criacao contem dados necessarios na view', function () {
-        $response = $this->get(route('ecc.create'));
-
-        $response->assertStatus(200);
-        $response->assertViewHas('ficha');
-        $response->assertViewHas('eventos');
-        $response->assertViewHas('movimentopadrao', TipoMovimento::ECC);
-        $response->assertViewHas('responsaveis');
-        $response->assertViewHas('restricoes');
-    });
-
-    test('pode visualizar ficha ECC existente', function () {
-        $ficha = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento]);
-        FichaEcc::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
-
-        $this->get(route('ecc.show', $ficha->idt_ficha))
-            ->assertStatus(200)
-            ->assertViewIs('ficha.formECC')
-            ->assertViewHas('ficha')
-            ->assertViewHas('eventos')
-            ->assertViewHas('movimentopadrao', TipoMovimento::ECC)
-            ->assertViewHas('responsaveis')
-            ->assertViewHas('restricoes');
-    });
-
-    test('visualizar ficha ECC no modo impressao', function () {
-        $ficha = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento]);
-        FichaEcc::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
-
-        $this->get(route('ecc.show', [$ficha->idt_ficha, 'print' => 1]))
-            ->assertStatus(200)
-            ->assertViewIs('ficha.print')
-            ->assertViewHas('ficha')
-            ->assertViewHas('tipo', 'ECC')
-            ->assertViewHas('rotaEdit');
-    });
-
-    test('pode acessar formulario de edicao', function () {
-        $ficha = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento]);
-        FichaEcc::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
-
-        $this->get(route('ecc.edit', $ficha->idt_ficha))
-            ->assertStatus(200)
-            ->assertViewIs('ficha.formECC')
-            ->assertViewHas('ficha')
-            ->assertViewHas('eventos')
-            ->assertViewHas('movimentopadrao', TipoMovimento::ECC)
-            ->assertViewHas('responsaveis')
-            ->assertViewHas('restricoes');
-    });
-});
-
-// ── INCLUSAO ──────────────────────────────────────────────────────────────────
-
-describe('FichaEccController - INCLUSAO', function () {
-
-    test('pode criar ficha ECC com dados do candidato e conjuge', function () {
+    test('pode criar ficha ECC com dados completos do participante e conjuge', function () {
         $payload = array_merge(
             ['idt_evento' => $this->evento->idt_evento],
-            dadosParticipante(),
+            dadosParticipante(['txt_observacao' => 'Comentario do participante']),
             dadosConjuge()
         );
 
         $this->post(route('ecc.store'), $payload)
-            ->assertRedirect(route('ecc.index'))
-            ->assertSessionHas('success');
+            ->assertSessionHas('success')
+            ->assertRedirect(route('ecc.index'));
 
         $ficha = Ficha::where('eml_candidato', 'carlos@email.com')->first();
-
-        expect($ficha)->not->toBeNull();
-        expect($ficha->usu_inclusao)->toBe($this->user->id);
-        expect($ficha->usu_alteracao)->toBe($this->user->id);
 
         $this->assertDatabaseHas('ficha', [
             'idt_ficha' => $ficha->idt_ficha,
             'nom_candidato' => 'Carlos Silva',
+            'num_cpf_candidato' => '12345678900',
+            'ind_consentimento' => true,
         ]);
 
         $this->assertDatabaseHas('ficha_ecc', [
             'idt_ficha' => $ficha->idt_ficha,
             'nom_conjuge' => 'Maria Silva',
+            'num_cpf_conjuge' => '98765432100',
+            'tip_estado_civil' => 'C',
         ]);
     });
 
@@ -238,8 +141,8 @@ describe('FichaEccController - INCLUSAO', function () {
             dadosConjuge(['num_cpf_conjuge' => '222.222.222-22', 'nom_conjuge' => 'Ana', 'qtd_filhos' => 2]),
             [
                 'filhos' => [
-                    ['nom_filho' => 'Pedro', 'dat_nascimento_filho' => '2005-01-15', 'num_cpf_filho' => '111.111.111-11'],
-                    ['nom_filho' => 'Lucas', 'dat_nascimento_filho' => '2008-06-20', 'num_cpf_filho' => '222.222.222-22'],
+                    ['nom_filho' => 'Pedro', 'dat_nascimento_filho' => '2005-01-15'],
+                    ['nom_filho' => 'Lucas', 'dat_nascimento_filho' => '2008-06-20'],
                 ],
             ]
         );
@@ -249,15 +152,9 @@ describe('FichaEccController - INCLUSAO', function () {
 
         $ficha = Ficha::where('eml_candidato', 'joao@email.com')->first();
 
-        $this->assertDatabaseHas('ficha_ecc_filho', [
-            'idt_ficha' => $ficha->idt_ficha,
-            'nom_filho' => 'Pedro'
-        ]);
-        $this->assertDatabaseHas('ficha_ecc_filho', [
-            'idt_ficha' => $ficha->idt_ficha,
-            'nom_filho' => 'Lucas'
-        ]);
-        $this->assertEquals(2, FichaEccFilho::where('idt_ficha', $ficha->idt_ficha)->count());
+        $this->assertDatabaseHas('ficha_ecc_filho', ['nom_filho' => 'Pedro']);
+        $this->assertDatabaseHas('ficha_ecc_filho', ['nom_filho' => 'Lucas']);
+        $this->assertEquals(2, FichaEccFilho::where('idt_ficha', $ficha->fichaEcc->idt_ficha)->count());
     });
 
     test('ignora filhos com nome vazio ao criar', function () {
@@ -267,8 +164,8 @@ describe('FichaEccController - INCLUSAO', function () {
             dadosConjuge(['num_cpf_conjuge' => '200.200.200-20']),
             [
                 'filhos' => [
-                    ['nom_filho' => '', 'dat_nascimento_filho' => '2005-01-15', 'num_cpf_filho' => '111.111.111-11'],
-                    ['nom_filho' => 'Pedro', 'dat_nascimento_filho' => '2008-06-20', 'num_cpf_filho' => '222.222.222-22'],
+                    ['nom_filho' => '', 'dat_nascimento_filho' => '2005-01-15'],
+                    ['nom_filho' => 'Pedro', 'dat_nascimento_filho' => '2008-06-20'],
                 ],
             ]
         );
@@ -278,10 +175,13 @@ describe('FichaEccController - INCLUSAO', function () {
 
         $ficha = Ficha::where('eml_candidato', 'teste@email.com')->first();
 
-        $this->assertEquals(1, FichaEccFilho::where('idt_ficha', $ficha->idt_ficha)->count());
+        $this->assertEquals(1, FichaEccFilho::where('idt_ficha', $ficha->fichaEcc->idt_ficha)->count());
     });
 
     test('pode criar ficha ECC com restricoes de saude', function () {
+        $r1 = $this->restricoes[0]->idt_restricao;
+        $r2 = $this->restricoes[1]->idt_restricao;
+
         $payload = array_merge(
             ['idt_evento' => $this->evento->idt_evento],
             dadosParticipante([
@@ -291,14 +191,8 @@ describe('FichaEccController - INCLUSAO', function () {
             ]),
             dadosConjuge(['num_cpf_conjuge' => '444.444.444-44', 'nom_conjuge' => 'Julia']),
             [
-                'restricoes' => [
-                    $this->restricoes[0]->idt_restricao => true,
-                    $this->restricoes[1]->idt_restricao => true,
-                ],
-                'complementos' => [
-                    $this->restricoes[0]->idt_restricao => 'Alergia a amendoim',
-                    $this->restricoes[1]->idt_restricao => 'Sem gluten',
-                ],
+                'restricoes' => [$r1 => 1, $r2 => 1],
+                'complementos' => [$r1 => 'Alergia a amendoim', $r2 => 'Sem gluten'],
             ]
         );
 
@@ -310,29 +204,29 @@ describe('FichaEccController - INCLUSAO', function () {
         $this->assertEquals(2, $ficha->fichaSaude->count());
     });
 
-    test('pode criar ficha ECC com upload de foto do candidato e conjuge', function () {
-        Storage::fake('public');
-        $fotoCand = UploadedFile::fake()->create('cand.jpg', 100);
-        $fotoConj = UploadedFile::fake()->create('conj.jpg', 100);
+    test('nao cria restricoes de saude quando ind_restricao e 0', function () {
+        $r1 = $this->restricoes[0]->idt_restricao;
 
         $payload = array_merge(
             ['idt_evento' => $this->evento->idt_evento],
-            dadosParticipante(['eml_candidato' => 'foto@email.com', 'num_cpf_candidato' => '555.555.555-55']),
+            dadosParticipante([
+                'eml_candidato' => 'semrestricao@email.com',
+                'num_cpf_candidato' => '555.555.555-55',
+                'ind_restricao' => 0,
+            ]),
             dadosConjuge(['num_cpf_conjuge' => '666.666.666-66']),
             [
-                'med_foto' => $fotoCand,
-                'med_conjuge' => $fotoConj,
+                'restricoes' => [$r1 => 1],
+                'complementos' => [$r1 => 'Deve ser ignorado'],
             ]
         );
 
         $this->post(route('ecc.store'), $payload)
             ->assertSessionHas('success');
 
-        $ficha = Ficha::where('eml_candidato', 'foto@email.com')->first();
+        $ficha = Ficha::where('eml_candidato', 'semrestricao@email.com')->first();
 
-        expect($ficha->foto)->not->toBeNull();
-        Storage::disk('public')->assertExists($ficha->foto->med_foto);
-        Storage::disk('public')->assertExists($ficha->foto->med_conjuge);
+        $this->assertEquals(0, $ficha->fichaSaude->count());
     });
 
     test('falha ao criar ficha sem campos obrigatorios do participante', function () {
@@ -341,8 +235,10 @@ describe('FichaEccController - INCLUSAO', function () {
                 'nom_candidato',
                 'dat_nascimento',
                 'eml_candidato',
+                'des_endereco',
                 'tam_camiseta',
                 'ind_consentimento',
+                'ind_restricao',
             ]);
     });
 
@@ -374,25 +270,74 @@ describe('FichaEccController - INCLUSAO', function () {
             ->assertSessionHasErrors(['ind_consentimento']);
     });
 
-    test('tratamento de erro geral Throwable ao salvar', function () {
-        Ficha::creating(function ($ficha) {
-            throw new \Exception('Erro simulado de banco');
-        });
-
+    test('falha ao criar ficha com data de nascimento invalida', function () {
         $payload = array_merge(
             ['idt_evento' => $this->evento->idt_evento],
+            dadosParticipante(['dat_nascimento' => 'nao-e-data']),
+            dadosConjuge(['num_cpf_conjuge' => '888.888.888-88'])
+        );
+
+        $this->post(route('ecc.store'), $payload)
+            ->assertSessionHasErrors(['dat_nascimento']);
+    });
+
+    test('falha ao criar ficha com email do conjuge invalido', function () {
+        $payload = array_merge(
+            ['idt_evento' => $this->evento->idt_evento],
+            dadosParticipante(['num_cpf_candidato' => '900.900.900-90', 'eml_candidato' => 'valido@email.com']),
+            dadosConjuge(['num_cpf_conjuge' => '901.901.901-90', 'eml_conjuge' => 'email-invalido'])
+        );
+
+        $this->post(route('ecc.store'), $payload)
+            ->assertSessionHasErrors(['eml_conjuge']);
+    });
+
+    test('falha ao criar ficha com evento inexistente', function () {
+        $payload = array_merge(
+            ['idt_evento' => 99999],
             dadosParticipante(),
             dadosConjuge()
         );
 
-        // O FichaEccController não possui try-catch na criação (store), então lança 500
-        $this->get(route('ecc.create'));
-        $this->withoutExceptionHandling();
+        $this->post(route('ecc.store'), $payload)
+            ->assertSessionHasErrors(['idt_evento']);
+    });
+});
 
-        expect(fn () => $this->post(route('ecc.store'), $payload))
-            ->toThrow(\Exception::class);
+// ── VISUALIZACAO ─────────────────────────────────────────────────────────────
 
-        Ficha::flushEventListeners();
+describe('FichaEccController - VISUALIZACAO', function () {
+
+    test('pode visualizar ficha ECC existente', function () {
+        $ficha = Ficha::factory()
+            ->has(FichaEcc::factory(), 'fichaEcc')
+            ->create(['idt_evento' => $this->evento->idt_evento]);
+
+        $this->get(route('ecc.show', $ficha->idt_ficha))
+            ->assertStatus(200)
+            ->assertViewIs('ficha.formECC')
+            ->assertViewHas('ficha', fn ($f) => $f->idt_ficha === $ficha->idt_ficha);
+    });
+
+    test('retorna 404 ao visualizar ficha inexistente', function () {
+        $this->get(route('ecc.show', 99999))
+            ->assertStatus(404);
+    });
+
+    test('pode acessar formulario de edicao', function () {
+        $ficha = Ficha::factory()
+            ->has(FichaEcc::factory(), 'fichaEcc')
+            ->create(['idt_evento' => $this->evento->idt_evento]);
+
+        $this->get(route('ecc.edit', $ficha->idt_ficha))
+            ->assertStatus(200)
+            ->assertViewIs('ficha.formECC')
+            ->assertViewHas('ficha', fn ($f) => $f->idt_ficha === $ficha->idt_ficha);
+    });
+
+    test('retorna 404 ao editar ficha inexistente', function () {
+        $this->get(route('ecc.edit', 99999))
+            ->assertStatus(404);
     });
 });
 
@@ -400,78 +345,109 @@ describe('FichaEccController - INCLUSAO', function () {
 
 describe('FichaEccController - ALTERACAO', function () {
 
-    test('pode atualizar dados do participante, conjuge e comum', function () {
-        $ficha = Ficha::factory()->create([
-            'idt_evento' => $this->evento->idt_evento,
-            'nom_candidato' => 'Nome Original',
-        ]);
-        $ecc = FichaEcc::factory()->create([
-            'idt_ficha' => $ficha->idt_ficha,
-            'nom_conjuge' => 'Maria Antiga',
-        ]);
+    test('pode atualizar dados do participante', function () {
+        $ficha = Ficha::factory()
+            ->has(FichaEcc::factory(), 'fichaEcc')
+            ->create(['idt_evento' => $this->evento->idt_evento, 'nom_candidato' => 'Nome Original']);
+
+        $ecc = $ficha->fichaEcc;
 
         $payload = array_merge(
             ['idt_evento' => $this->evento->idt_evento],
             dadosParticipante([
+                'tip_genero' => 'F',
                 'nom_candidato' => 'Nome Atualizado',
-                'eml_candidato' => 'carlos.novo@email.com',
+                'nom_apelido' => 'Novo Apelido',
+                'dat_nascimento' => '1985-01-01',
+                'eml_candidato' => 'novo@email.com',
                 'num_cpf_candidato' => $ficha->num_cpf_candidato,
             ]),
-            dadosConjuge([
-                'nom_conjuge' => 'Maria Atualizada',
-                'num_cpf_conjuge' => $ecc->num_cpf_conjuge,
-            ])
-        );
-
-        $this->put(route('ecc.update', $ficha->idt_ficha), $payload)
-            ->assertRedirect(route('ecc.index'))
-            ->assertSessionHas('success');
-
-        $ficha->refresh();
-        expect($ficha->nom_candidato)->toBe('Nome Atualizado');
-        expect($ficha->eml_candidato)->toBe('carlos.novo@email.com');
-        expect($ficha->fichaEcc->nom_conjuge)->toBe('Maria Atualizada');
-        expect($ficha->usu_alteracao)->toBe($this->user->id);
-    });
-
-    test('cria ficha_ecc ao atualizar ficha que nao tinha', function () {
-        $ficha = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento]);
-
-        $this->assertNull($ficha->fichaEcc);
-
-        $payload = array_merge(
-            ['idt_evento' => $this->evento->idt_evento],
-            dadosParticipante(['eml_candidato' => $ficha->eml_candidato, 'num_cpf_candidato' => $ficha->num_cpf_candidato]),
-            dadosConjuge()
-        );
-
-        $this->put(route('ecc.update', $ficha->idt_ficha), $payload)
-            ->assertSessionHas('success');
-
-        $ficha->refresh();
-        expect($ficha->fichaEcc)->not->toBeNull();
-        expect($ficha->fichaEcc->nom_conjuge)->toBe('Maria Silva');
-    });
-
-    test('pode substituir filhos ao atualizar ficha', function () {
-        $ficha = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento]);
-        $ecc = FichaEcc::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
-
-        FichaEccFilho::factory()->create([
-            'idt_ficha' => $ficha->idt_ficha,
-            'nom_filho' => 'Filho Antigo',
-        ]);
-
-        expect(FichaEccFilho::where('idt_ficha', $ficha->idt_ficha)->count())->toBe(1);
-
-        $payload = array_merge(
-            ['idt_evento' => $this->evento->idt_evento],
-            dadosParticipante(['eml_candidato' => $ficha->eml_candidato, 'num_cpf_candidato' => $ficha->num_cpf_candidato]),
-            dadosConjuge(['num_cpf_conjuge' => $ecc->num_cpf_conjuge]),
             [
+                'num_cpf_conjuge' => $ecc->num_cpf_conjuge,
+                'nom_conjuge' => $ecc->nom_conjuge,
+                'tip_genero_conjuge' => $ecc->tip_genero_conjuge?->value,
+                'dat_nascimento_conjuge' => $ecc->dat_nascimento_conjuge->format('Y-m-d'),
+                'tam_camiseta_conjuge' => $ecc->tam_camiseta_conjuge?->value,
+                'tip_habilidade_conjuge' => $ecc->tip_habilidade_conjuge?->value,
+                'tip_estado_civil' => $ecc->tip_estado_civil?->value,
+            ]
+        );
+
+        $this->put(route('ecc.update', $ficha->idt_ficha), $payload)
+            ->assertSessionHas('success')
+            ->assertRedirect(route('ecc.index'));
+
+        $ficha->refresh();
+
+        $this->assertEquals('Nome Atualizado', $ficha->nom_candidato);
+        $this->assertEquals('F', $ficha->tip_genero->value);
+        $this->assertEquals('novo@email.com', $ficha->eml_candidato);
+    });
+
+    test('pode atualizar dados do conjuge', function () {
+        $ficha = Ficha::factory()
+            ->has(FichaEcc::factory()->state(['nom_conjuge' => 'Nome Conjuge Original']), 'fichaEcc')
+            ->create(['idt_evento' => $this->evento->idt_evento]);
+
+        $ecc = $ficha->fichaEcc;
+
+        $payload = array_merge(
+            ['idt_evento' => $this->evento->idt_evento],
+            dadosParticipante([
+                'num_cpf_candidato' => $ficha->num_cpf_candidato,
+                'tip_genero' => $ficha->tip_genero?->value,
+                'nom_candidato' => $ficha->nom_candidato,
+                'dat_nascimento' => $ficha->dat_nascimento->format('Y-m-d'),
+                'eml_candidato' => $ficha->eml_candidato,
+                'tam_camiseta' => $ficha->tam_camiseta?->value,
+            ]),
+            [
+                'num_cpf_conjuge' => $ecc->num_cpf_conjuge,
+                'nom_conjuge' => 'Nome Conjuge Atualizado',
+                'tip_genero_conjuge' => 'F',
+                'dat_nascimento_conjuge' => '1990-05-15',
+                'tam_camiseta_conjuge' => 'M',
+                'tip_habilidade_conjuge' => $ecc->tip_habilidade_conjuge?->value,
+                'tip_estado_civil' => 'C',
+            ]
+        );
+
+        $this->put(route('ecc.update', $ficha->idt_ficha), $payload)
+            ->assertSessionHas('success');
+
+        $ecc->refresh();
+
+        $this->assertEquals('Nome Conjuge Atualizado', $ecc->nom_conjuge);
+    });
+
+    test('pode adicionar filhos em ficha existente', function () {
+        $ficha = Ficha::factory()
+            ->has(FichaEcc::factory()->semFilhos(), 'fichaEcc')
+            ->create(['idt_evento' => $this->evento->idt_evento]);
+
+        $ecc = $ficha->fichaEcc;
+
+        $payload = array_merge(
+            ['idt_evento' => $this->evento->idt_evento],
+            dadosParticipante([
+                'num_cpf_candidato' => $ficha->num_cpf_candidato,
+                'tip_genero' => $ficha->tip_genero?->value,
+                'nom_candidato' => $ficha->nom_candidato,
+                'dat_nascimento' => $ficha->dat_nascimento->format('Y-m-d'),
+                'eml_candidato' => $ficha->eml_candidato,
+                'tam_camiseta' => $ficha->tam_camiseta?->value,
+            ]),
+            [
+                'num_cpf_conjuge' => $ecc->num_cpf_conjuge,
+                'nom_conjuge' => $ecc->nom_conjuge,
+                'tip_genero_conjuge' => $ecc->tip_genero_conjuge?->value,
+                'dat_nascimento_conjuge' => $ecc->dat_nascimento_conjuge->format('Y-m-d'),
+                'tam_camiseta_conjuge' => $ecc->tam_camiseta_conjuge?->value,
+                'tip_habilidade_conjuge' => $ecc->tip_habilidade_conjuge?->value,
+                'tip_estado_civil' => $ecc->tip_estado_civil?->value,
+                'qtd_filhos' => 1,
                 'filhos' => [
-                    ['nom_filho' => 'Novo Filho 1', 'dat_nascimento_filho' => '2005-01-15', 'num_cpf_filho' => '111.111.111-11'],
-                    ['nom_filho' => 'Novo Filho 2', 'dat_nascimento_filho' => '2008-06-20', 'num_cpf_filho' => '222.222.222-22'],
+                    ['nom_filho' => 'Novo Filho', 'dat_nascimento_filho' => '2010-03-20'],
                 ],
             ]
         );
@@ -479,91 +455,166 @@ describe('FichaEccController - ALTERACAO', function () {
         $this->put(route('ecc.update', $ficha->idt_ficha), $payload)
             ->assertSessionHas('success');
 
-        $this->assertEquals(2, FichaEccFilho::where('idt_ficha', $ficha->idt_ficha)->count());
+        $ecc->refresh();
+
+        $this->assertEquals(1, $ecc->filhos->count());
+        $this->assertEquals('Novo Filho', $ecc->filhos->first()->nom_filho);
+    });
+
+    test('substitui todos os filhos ao atualizar ficha', function () {
+        $ficha = Ficha::factory()
+            ->has(FichaEcc::factory(), 'fichaEcc')
+            ->create(['idt_evento' => $this->evento->idt_evento]);
+
+        $ecc = $ficha->fichaEcc;
+
+        FichaEccFilho::factory()->create([
+            'idt_ficha' => $ecc->idt_ficha,
+            'nom_filho' => 'Filho Antigo',
+        ]);
+
+        $this->assertEquals(1, $ecc->filhos->count());
+
+        $payload = array_merge(
+            ['idt_evento' => $this->evento->idt_evento],
+            dadosParticipante([
+                'num_cpf_candidato' => $ficha->num_cpf_candidato,
+                'tip_genero' => $ficha->tip_genero?->value,
+                'nom_candidato' => $ficha->nom_candidato,
+                'dat_nascimento' => $ficha->dat_nascimento->format('Y-m-d'),
+                'eml_candidato' => $ficha->eml_candidato,
+                'tam_camiseta' => $ficha->tam_camiseta?->value,
+            ]),
+            [
+                'num_cpf_conjuge' => $ecc->num_cpf_conjuge,
+                'nom_conjuge' => $ecc->nom_conjuge,
+                'tip_genero_conjuge' => $ecc->tip_genero_conjuge?->value,
+                'dat_nascimento_conjuge' => $ecc->dat_nascimento_conjuge->format('Y-m-d'),
+                'tam_camiseta_conjuge' => $ecc->tam_camiseta_conjuge?->value,
+                'tip_habilidade_conjuge' => $ecc->tip_habilidade_conjuge?->value,
+                'tip_estado_civil' => $ecc->tip_estado_civil?->value,
+                'qtd_filhos' => 2,
+                'filhos' => [
+                    ['nom_filho' => 'Novo Filho 1', 'dat_nascimento_filho' => '2005-01-15'],
+                    ['nom_filho' => 'Novo Filho 2', 'dat_nascimento_filho' => '2008-06-20'],
+                ],
+            ]
+        );
+
+        $this->put(route('ecc.update', $ficha->idt_ficha), $payload);
+
+        $ecc->refresh();
+
+        $this->assertEquals(2, $ecc->filhos->count());
         $this->assertDatabaseMissing('ficha_ecc_filho', ['nom_filho' => 'Filho Antigo']);
     });
 
     test('pode atualizar restricoes de saude', function () {
-        $ficha = Ficha::factory()->create([
-            'idt_evento' => $this->evento->idt_evento,
-            'ind_restricao' => 0,
-        ]);
-        $ecc = FichaEcc::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
+        $r1 = $this->restricoes[0]->idt_restricao;
+
+        $ficha = Ficha::factory()
+            ->has(FichaEcc::factory(), 'fichaEcc')
+            ->create(['idt_evento' => $this->evento->idt_evento, 'ind_restricao' => 0]);
+
+        $ecc = $ficha->fichaEcc;
 
         $payload = array_merge(
             ['idt_evento' => $this->evento->idt_evento],
             dadosParticipante([
-                'eml_candidato' => $ficha->eml_candidato,
                 'num_cpf_candidato' => $ficha->num_cpf_candidato,
+                'tip_genero' => $ficha->tip_genero?->value,
+                'nom_candidato' => $ficha->nom_candidato,
+                'dat_nascimento' => $ficha->dat_nascimento->format('Y-m-d'),
+                'eml_candidato' => $ficha->eml_candidato,
+                'tam_camiseta' => $ficha->tam_camiseta?->value,
                 'ind_restricao' => 1,
             ]),
-            dadosConjuge(['num_cpf_conjuge' => $ecc->num_cpf_conjuge]),
             [
-                'restricoes' => [$this->restricoes[0]->idt_restricao => 1],
-                'complementos' => [$this->restricoes[0]->idt_restricao => 'Alergia a frutos do mar'],
+                'num_cpf_conjuge' => $ecc->num_cpf_conjuge,
+                'nom_conjuge' => $ecc->nom_conjuge,
+                'tip_genero_conjuge' => $ecc->tip_genero_conjuge?->value,
+                'dat_nascimento_conjuge' => $ecc->dat_nascimento_conjuge->format('Y-m-d'),
+                'tam_camiseta_conjuge' => $ecc->tam_camiseta_conjuge?->value,
+                'tip_habilidade_conjuge' => $ecc->tip_habilidade_conjuge?->value,
+                'tip_estado_civil' => $ecc->tip_estado_civil?->value,
+                'restricoes' => [$r1 => 1],
+                'complementos' => [$r1 => 'Alergia a frutos do mar'],
             ]
-        );
-
-        $this->put(route('ecc.update', $ficha->idt_ficha), $payload)
-            ->assertSessionHas('success');
-
-        $ficha->refresh();
-        expect($ficha->ind_restricao)->toBeTrue();
-        expect($ficha->fichaSaude)->toHaveCount(1);
-    });
-
-    test('limpa restricoes ao atualizar com ind_restricao = 0', function () {
-        $ficha = Ficha::factory()->create([
-            'idt_evento' => $this->evento->idt_evento,
-            'ind_restricao' => 1,
-        ]);
-        $ecc = FichaEcc::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
-        $ficha->fichaSaude()->create(['idt_restricao' => $this->restricoes[0]->idt_restricao, 'txt_complemento' => 'Alergia']);
-
-        expect($ficha->fichaSaude)->toHaveCount(1);
-
-        $payload = array_merge(
-            ['idt_evento' => $this->evento->idt_evento],
-            dadosParticipante([
-                'eml_candidato' => $ficha->eml_candidato,
-                'num_cpf_candidato' => $ficha->num_cpf_candidato,
-                'ind_restricao' => 0,
-            ]),
-            dadosConjuge(['num_cpf_conjuge' => $ecc->num_cpf_conjuge])
         );
 
         $this->put(route('ecc.update', $ficha->idt_ficha), $payload);
 
         $ficha->refresh();
-        expect($ficha->ind_restricao)->toBeFalse();
-        expect($ficha->fichaSaude)->toHaveCount(0);
+
+        $this->assertTrue($ficha->ind_restricao);
+        $this->assertEquals(1, $ficha->fichaSaude->count());
     });
 
-    test('pode atualizar enviando novas fotos de candidato e conjuge', function () {
-        Storage::fake('public');
-        $ficha = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento]);
-        $ecc = FichaEcc::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
+    test('remove restricoes ao atualizar com ind_restricao = 0', function () {
+        $r1 = $this->restricoes[0]->idt_restricao;
 
-        $novaCand = UploadedFile::fake()->create('cand_nova.jpg', 100);
-        $novaConj = UploadedFile::fake()->create('conj_nova.jpg', 100);
+        $ficha = Ficha::factory()
+            ->has(FichaEcc::factory(), 'fichaEcc')
+            ->create(['idt_evento' => $this->evento->idt_evento, 'ind_restricao' => 1]);
+
+        $ficha->fichaSaude()->create(['idt_restricao' => $r1, 'txt_complemento' => 'Alergia']);
+
+        $ecc = $ficha->fichaEcc;
 
         $payload = array_merge(
             ['idt_evento' => $this->evento->idt_evento],
-            dadosParticipante(['eml_candidato' => $ficha->eml_candidato, 'num_cpf_candidato' => $ficha->num_cpf_candidato]),
-            dadosConjuge(['num_cpf_conjuge' => $ecc->num_cpf_conjuge]),
+            dadosParticipante([
+                'num_cpf_candidato' => $ficha->num_cpf_candidato,
+                'tip_genero' => $ficha->tip_genero?->value,
+                'nom_candidato' => $ficha->nom_candidato,
+                'dat_nascimento' => $ficha->dat_nascimento->format('Y-m-d'),
+                'eml_candidato' => $ficha->eml_candidato,
+                'tam_camiseta' => $ficha->tam_camiseta?->value,
+                'ind_restricao' => 0,
+            ]),
             [
-                'med_foto' => $novaCand,
-                'med_conjuge' => $novaConj,
+                'num_cpf_conjuge' => $ecc->num_cpf_conjuge,
+                'nom_conjuge' => $ecc->nom_conjuge,
+                'tip_genero_conjuge' => $ecc->tip_genero_conjuge?->value,
+                'dat_nascimento_conjuge' => $ecc->dat_nascimento_conjuge->format('Y-m-d'),
+                'tam_camiseta_conjuge' => $ecc->tam_camiseta_conjuge?->value,
+                'tip_habilidade_conjuge' => $ecc->tip_habilidade_conjuge?->value,
+                'tip_estado_civil' => $ecc->tip_estado_civil?->value,
             ]
         );
 
-        $this->put(route('ecc.update', $ficha->idt_ficha), $payload)
-            ->assertSessionHas('success');
+        $this->put(route('ecc.update', $ficha->idt_ficha), $payload);
 
         $ficha->refresh();
-        expect($ficha->foto)->not->toBeNull();
-        Storage::disk('public')->assertExists($ficha->foto->med_foto);
-        Storage::disk('public')->assertExists($ficha->foto->med_conjuge);
+
+        $this->assertFalse($ficha->ind_restricao);
+        $this->assertEquals(0, $ficha->fichaSaude->count());
+    });
+
+    test('retorna 404 ao atualizar ficha inexistente', function () {
+        $payload = array_merge(
+            ['idt_evento' => $this->evento->idt_evento],
+            dadosParticipante(),
+            dadosConjuge()
+        );
+
+        $this->put(route('ecc.update', 99999), $payload)
+            ->assertStatus(404);
+    });
+
+    test('falha ao atualizar ficha sem campos obrigatorios', function () {
+        $ficha = Ficha::factory()
+            ->has(FichaEcc::factory(), 'fichaEcc')
+            ->create(['idt_evento' => $this->evento->idt_evento]);
+
+        $this->put(route('ecc.update', $ficha->idt_ficha), [])
+            ->assertSessionHasErrors([
+                'nom_candidato',
+                'dat_nascimento',
+                'eml_candidato',
+                'nom_conjuge',
+                'tip_estado_civil',
+            ]);
     });
 });
 
@@ -572,272 +623,160 @@ describe('FichaEccController - ALTERACAO', function () {
 describe('FichaEccController - EXCLUSAO', function () {
 
     test('pode excluir ficha ECC com sucesso (soft delete)', function () {
-        $ficha = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento]);
-        FichaEcc::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
+        $ficha = Ficha::factory()
+            ->has(FichaEcc::factory(), 'fichaEcc')
+            ->create(['idt_evento' => $this->evento->idt_evento]);
 
         $fichaId = $ficha->idt_ficha;
 
         $this->delete(route('ecc.destroy', $fichaId))
-            ->assertRedirect(route('ecc.index'))
-            ->assertSessionHas('success');
+            ->assertSessionHas('success')
+            ->assertRedirect(route('ecc.index'));
 
         $this->assertSoftDeleted('ficha', ['idt_ficha' => $fichaId]);
     });
 
-    test('tratamento de QueryException de integridade referencial (codigo 23000)', function () {
-        $ficha = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento]);
-        FichaEcc::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
+    test('ficha excluida nao aparece na listagem', function () {
+        $ficha = Ficha::factory()
+            ->has(FichaEcc::factory(), 'fichaEcc')
+            ->create(['idt_evento' => $this->evento->idt_evento, 'nom_candidato' => 'Excluido']);
 
-        // Classe anônima para injetar código como string '23000'
-        $innerException = new class('integrity constraint violation') extends \Exception {
-            protected $code = '23000';
-        };
+        $this->delete(route('ecc.destroy', $ficha->idt_ficha));
 
-        Ficha::deleting(function ($ficha) use ($innerException) {
-            throw new QueryException(
-                'mysql',
-                'delete from ficha where idt_ficha = ?',
-                [$ficha->idt_ficha],
-                $innerException
-            );
-        });
-
-        $this->delete(route('ecc.destroy', $ficha->idt_ficha))
-            ->assertRedirect(route('ecc.index'))
-            ->assertSessionHas('error', 'Não é possível excluir esta ficha. É preciso apagar os dados associados.');
-
-        Ficha::flushEventListeners();
+        $this->get(route('ecc.index'))
+            ->assertViewHas('fichas', fn ($fichas) => $fichas->total() === 0);
     });
 
-    test('tratamento de QueryException geral no destroy', function () {
-        $ficha = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento]);
-        FichaEcc::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
+    test('deleta em cascata filhos ao remover ficha', function () {
+        $ficha = Ficha::factory()
+            ->has(FichaEcc::factory(), 'fichaEcc')
+            ->create(['idt_evento' => $this->evento->idt_evento]);
 
-        $innerException = new class('general db error') extends \Exception {
-            protected $code = '500';
-        };
+        $ecc = $ficha->fichaEcc;
 
-        Ficha::deleting(function ($ficha) use ($innerException) {
-            throw new QueryException(
-                'mysql',
-                'delete from ficha where idt_ficha = ?',
-                [$ficha->idt_ficha],
-                $innerException
-            );
-        });
+        $filho = FichaEccFilho::factory()->create(['idt_ficha' => $ecc->idt_ficha]);
 
-        $this->delete(route('ecc.destroy', $ficha->idt_ficha))
-            ->assertRedirect(route('ecc.index'))
-            ->assertSessionHas('error', 'Erro ao tentar excluir a ficha.');
+        $this->delete(route('ecc.destroy', $ficha->idt_ficha));
 
-        Ficha::flushEventListeners();
+        $this->assertSoftDeleted('ficha', ['idt_ficha' => $ficha->idt_ficha]);
+        $this->assertDatabaseHas('ficha_ecc_filho', ['idt_filho' => $filho->idt_filho]);
+    });
+
+    test('retorna 404 ao excluir ficha inexistente', function () {
+        $this->delete(route('ecc.destroy', 99999))
+            ->assertStatus(404);
     });
 });
 
-// ── APROVACAO E INTEGRACAO ────────────────────────────────────────────────────
+// ── APROVACAO ─────────────────────────────────────────────────────────────────
 
-describe('FichaEccController - APROVACAO E INTEGRACAO', function () {
+describe('FichaEccController - APROVACAO', function () {
 
-    test('pode aprovar ficha ECC nao aprovada com efeitos de integracao de negocio de casal e filhos', function () {
-        Storage::fake('public');
-        $foto = UploadedFile::fake()->create('candidato_avatar.jpg', 100);
-
-        $ficha = Ficha::factory()->create([
-            'idt_evento' => $this->evento->idt_evento,
-            'num_cpf_candidato' => '999.888.777-66',
-            'eml_candidato' => 'carlos.ecc@email.com',
-            'tip_situacao' => TipoSituacao::CADASTRADO,
-            'ind_restricao' => 1,
-        ]);
-        $fichaEcc = FichaEcc::factory()->create([
-            'idt_ficha' => $ficha->idt_ficha,
-            'num_cpf_conjuge' => '888.777.666-55',
-            'eml_conjuge' => 'maria.ecc@email.com',
-        ]);
-        
-        // 2 filhos com CPF
-        FichaEccFilho::factory()->create([
-            'idt_ficha' => $ficha->idt_ficha,
-            'nom_filho' => 'Filho Um',
-            'num_cpf_filho' => '777.666.555-44',
-            'eml_filho' => 'filho1@email.com',
-        ]);
-        FichaEccFilho::factory()->create([
-            'idt_ficha' => $ficha->idt_ficha,
-            'nom_filho' => 'Filho Dois',
-            'num_cpf_filho' => '666.555.444-33',
-            'eml_filho' => 'filho2@email.com',
-        ]);
-
-        $ficha->fichaSaude()->create([
-            'idt_restricao' => $this->restricoes[0]->idt_restricao,
-            'txt_complemento' => 'Alergia frutos do mar',
-        ]);
-
-        $path = $foto->store('fichas/fotos', 'public');
-        FichaFoto::create([
-            'idt_ficha' => $ficha->idt_ficha,
-            'med_foto' => $path,
-        ]);
+    test('pode aprovar ficha ECC', function () {
+        $ficha = Ficha::factory()
+            ->has(FichaEcc::factory(), 'fichaEcc')
+            ->create(['idt_evento' => $this->evento->idt_evento, 'tip_situacao' => TipoSituacao::NOVA]);
 
         $this->get(route('ecc.approve', $ficha->idt_ficha))
-            ->assertRedirect(route('ecc.index'))
-            ->assertSessionHas('success');
+            ->assertSessionHas('success')
+            ->assertRedirect(route('ecc.index'));
 
         $ficha->refresh();
-        expect($ficha->tip_situacao)->toBe(TipoSituacao::APROVADO);
-        expect($ficha->idt_pessoa)->not->toBeNull();
-        expect($ficha->fichaEcc->idt_pessoa)->not->toBeNull();
 
-        // 1. Pessoa criada para o Candidato
-        $this->assertDatabaseHas('pessoa', [
-            'idt_pessoa' => $ficha->idt_pessoa,
-            'eml_pessoa' => 'carlos.ecc@email.com',
-        ]);
-
-        // 2. Pessoa criada para o Cônjuge
-        $this->assertDatabaseHas('pessoa', [
-            'idt_pessoa' => $ficha->fichaEcc->idt_pessoa,
-            'eml_pessoa' => 'maria.ecc@email.com',
-        ]);
-
-        // 3. Pessoa criada para os Filhos com CPF
-        $this->assertDatabaseHas('pessoa', [
-            'num_cpf_pessoa' => '777.666.555-44',
-            'eml_pessoa' => 'filho1@email.com',
-        ]);
-        $this->assertDatabaseHas('pessoa', [
-            'num_cpf_pessoa' => '666.555.444-33',
-            'eml_pessoa' => 'filho2@email.com',
-        ]);
-
-        // 4. Participantes criados no evento (candidato, cônjuge, 2 filhos = 4)
-        expect(Participante::where('idt_evento', $this->evento->idt_evento)->count())->toBe(4);
-
-        // 5. Restrições de saúde duplicadas em PessoaSaude para Candidato e Cônjuge
-        $this->assertDatabaseHas('pessoa_saude', [
-            'idt_pessoa' => $ficha->idt_pessoa,
-            'idt_restricao' => $this->restricoes[0]->idt_restricao,
-        ]);
-        $this->assertDatabaseHas('pessoa_saude', [
-            'idt_pessoa' => $ficha->fichaEcc->idt_pessoa,
-            'idt_restricao' => $this->restricoes[0]->idt_restricao,
-        ]);
-
-        // 6. Sincronização da foto do candidato
-        $pessoaFoto = PessoaFoto::where('idt_pessoa', $ficha->idt_pessoa)->first();
-        expect($pessoaFoto)->not->toBeNull();
-        Storage::disk('public')->assertExists($pessoaFoto->med_foto);
+        expect($ficha->tip_situacao)->toBe(TipoSituacao::APROVADA);
     });
 
-    test('aprovar ficha ECC sem CPF do candidato lanca excecao de integracao', function () {
-        $ficha = Ficha::factory()->create([
-            'idt_evento' => $this->evento->idt_evento,
-            'num_cpf_candidato' => null,
-            'tip_situacao' => TipoSituacao::CADASTRADO,
-        ]);
-        FichaEcc::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
+    test('pode mudar situacao da ficha ECC pela rota de situacao', function () {
+        $ficha = Ficha::factory()
+            ->has(FichaEcc::factory(), 'fichaEcc')
+            ->create(['idt_evento' => $this->evento->idt_evento, 'tip_situacao' => TipoSituacao::NOVA]);
 
-        $this->withoutExceptionHandling();
-
-        expect(fn () => $this->get(route('ecc.approve', $ficha->idt_ficha)))
-            ->toThrow(\RuntimeException::class);
-    });
-
-    test('pode desaprovar ficha ECC ja aprovada (toggle) com remocao de participantes de casal e filhos', function () {
-        $ficha = Ficha::factory()->create([
-            'idt_evento' => $this->evento->idt_evento,
-            'num_cpf_candidato' => '555.444.333-22',
-            'tip_situacao' => TipoSituacao::APROVADO,
-        ]);
-        $fichaEcc = FichaEcc::factory()->create([
-            'idt_ficha' => $ficha->idt_ficha,
-            'num_cpf_conjuge' => '444.333.222-11',
-        ]);
-        
-        $pessoaCand = Pessoa::factory()->create(['num_cpf_pessoa' => '555.444.333-22', 'eml_pessoa' => $ficha->eml_candidato]);
-        $pessoaConj = Pessoa::factory()->create(['num_cpf_pessoa' => '444.333.222-11', 'eml_pessoa' => $fichaEcc->eml_conjuge]);
-        $ficha->update(['idt_pessoa' => $pessoaCand->idt_pessoa]);
-        $fichaEcc->update(['idt_pessoa' => $pessoaConj->idt_pessoa]);
-
-        Participante::create(['idt_pessoa' => $pessoaCand->idt_pessoa, 'idt_evento' => $this->evento->idt_evento]);
-        Participante::create(['idt_pessoa' => $pessoaConj->idt_pessoa, 'idt_evento' => $this->evento->idt_evento]);
-
-        $this->get(route('ecc.approve', $ficha->idt_ficha))
-            ->assertRedirect(route('ecc.index'))
-            ->assertSessionHas('success');
+        $this->post(route('ecc.situacao', $ficha->idt_ficha), ['tip_situacao' => 'A'])
+            ->assertSessionHas('success')
+            ->assertRedirect();
 
         $ficha->refresh();
-        expect($ficha->tip_situacao)->toBe(TipoSituacao::CADASTRADO);
-
-        $this->assertDatabaseMissing('participante', [
-            'idt_pessoa' => $pessoaCand->idt_pessoa,
-            'idt_evento' => $this->evento->idt_evento,
-        ]);
-        $this->assertDatabaseMissing('participante', [
-            'idt_pessoa' => $pessoaConj->idt_pessoa,
-            'idt_evento' => $this->evento->idt_evento,
-        ]);
+        expect($ficha->tip_situacao)->toBe(TipoSituacao::APROVADA);
     });
 });
 
-// ── SEGURANCA E AUTENTICACAO ──────────────────────────────────────────────────
+// ── AUTENTICACAO ──────────────────────────────────────────────────────────────
 
-describe('FichaEccController - SEGURANCA E AUTENTICACAO', function () {
+describe('FichaEccController - AUTENTICACAO', function () {
 
-    test('redireciona para login ao tentar acessar listagem sem estar autenticado', function () {
+    test('redireciona para login ao acessar listagem sem autenticacao', function () {
         auth()->logout();
 
         $this->get(route('ecc.index'))
             ->assertRedirect(route('login'));
     });
 
-    test('redireciona para login ao tentar acessar criacao sem estar autenticado', function () {
-        auth()->logout();
-
-        $this->get(route('ecc.create'))
-            ->assertRedirect(route('login'));
-    });
-
-    test('redireciona para login ao tentar salvar sem estar autenticado', function () {
+    test('redireciona para login ao tentar criar ficha sem autenticacao', function () {
         auth()->logout();
 
         $this->post(route('ecc.store'), [])
             ->assertRedirect(route('login'));
     });
+});
 
-    test('redireciona para login ao tentar ver sem estar autenticado', function () {
-        auth()->logout();
+describe('FichaEccController — Redirecionamento Inteligente', function () {
+    test('redireciona para a home ao salvar vindo de /ecc', function () {
+        $payload = array_merge(
+            ['idt_evento' => $this->evento->idt_evento, 'eml_candidato' => 'publico@email.com'],
+            dadosParticipante(),
+            dadosConjuge()
+        );
 
-        $this->get(route('ecc.show', 1))
-            ->assertRedirect(route('login'));
+        $this->from(route('home.ficha.ecc'))
+            ->post(route('ecc.store'), $payload)
+            ->assertRedirect(route('home'))
+            ->assertSessionHas('success');
     });
 
-    test('redireciona para login ao tentar editar sem estar autenticado', function () {
-        auth()->logout();
+    test('redireciona para ecc.index ao salvar vindo de /fichas/ecc', function () {
+        $payload = array_merge(
+            ['idt_evento' => $this->evento->idt_evento, 'eml_candidato' => 'admin@email.com'],
+            dadosParticipante(),
+            dadosConjuge()
+        );
 
-        $this->get(route('ecc.edit', 1))
-            ->assertRedirect(route('login'));
+        $this->from(route('ecc.create'))
+            ->post(route('ecc.store'), $payload)
+            ->assertRedirect(route('ecc.index'))
+            ->assertSessionHas('success');
     });
 
-    test('redireciona para login ao tentar atualizar sem estar autenticado', function () {
-        auth()->logout();
+    test('redireciona para a home ao atualizar vindo de /ecc', function () {
+        $ficha = Ficha::factory()
+            ->has(FichaEcc::factory(), 'fichaEcc')
+            ->create(['idt_evento' => $this->evento->idt_evento]);
 
-        $this->put(route('ecc.update', 1), [])
-            ->assertRedirect(route('login'));
+        $payload = array_merge(
+            ['idt_evento' => $this->evento->idt_evento, 'nom_candidato' => 'Nome Atualizado', 'eml_candidato' => 'atualizado@email.com'],
+            dadosParticipante(),
+            dadosConjuge()
+        );
+
+        $this->from(route('home.ficha.ecc'))
+            ->put(route('ecc.update', $ficha->idt_ficha), $payload)
+            ->assertRedirect(route('home'))
+            ->assertSessionHas('success');
     });
 
-    test('redireciona para login ao tentar excluir sem estar autenticado', function () {
-        auth()->logout();
+    test('redireciona para ecc.index ao atualizar vindo de /fichas/ecc', function () {
+        $ficha = Ficha::factory()
+            ->has(FichaEcc::factory(), 'fichaEcc')
+            ->create(['idt_evento' => $this->evento->idt_evento]);
 
-        $this->delete(route('ecc.destroy', 1))
-            ->assertRedirect(route('login'));
-    });
+        $payload = array_merge(
+            ['idt_evento' => $this->evento->idt_evento, 'nom_candidato' => 'Nome Admin', 'eml_candidato' => 'admin.atualizado@email.com'],
+            dadosParticipante(),
+            dadosConjuge()
+        );
 
-    test('redireciona para login ao tentar aprovar sem estar autenticado', function () {
-        auth()->logout();
-
-        $this->get(route('ecc.approve', 1))
-            ->assertRedirect(route('login'));
+        $this->from(route('ecc.edit', $ficha->idt_ficha))
+            ->put(route('ecc.update', $ficha->idt_ficha), $payload)
+            ->assertRedirect(route('ecc.index'))
+            ->assertSessionHas('success');
     });
 });

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\Cpf;
 use Illuminate\Validation\Rule;
 
 class FichaEccRequest extends FichaRequest
@@ -11,8 +12,37 @@ class FichaEccRequest extends FichaRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        parent::prepareForValidation();
+
+        $mergeData = [];
+
+        if ($this->has('num_cpf_conjuge')) {
+            $mergeData['num_cpf_conjuge'] = $this->input('num_cpf_conjuge') ? preg_replace('/\D/', '', $this->input('num_cpf_conjuge')) : null;
+        }
+
+        if ($this->has('filhos') && is_array($this->input('filhos'))) {
+            $filhos = $this->input('filhos');
+            foreach ($filhos as $index => $filho) {
+                if (isset($filho['num_cpf_filho'])) {
+                    $filhos[$index]['num_cpf_filho'] = $filho['num_cpf_filho'] ? preg_replace('/\D/', '', $filho['num_cpf_filho']) : null;
+                }
+            }
+            $mergeData['filhos'] = $filhos;
+        }
+
+        if (!empty($mergeData)) {
+            $this->merge($mergeData);
+        }
+    }
+
     public function rules(): array
     {
+        $fichaId = $this->route('ficha') ?? $this->route('ecc') ?? $this->route('sgm') ?? $this->route('vem') ?? $this->ficha;
+        if ($fichaId instanceof \App\Models\Ficha) {
+            $fichaId = $fichaId->idt_ficha;
+        }
 
         return array_merge(parent::rules(), [
 
@@ -20,8 +50,13 @@ class FichaEccRequest extends FichaRequest
             'med_conjuge' => 'nullable|image|max:4096',
 
             // ── Cônjuge (tabela ficha_ecc) ────────────────────────────────────
-            'num_cpf_conjuge' => 'required|string|max:20',
-            Rule::unique('ficha_ecc', 'num_cpf_conjuge')->ignore($this->ficha, 'idt_ficha'),
+            'num_cpf_conjuge' => [
+                'required',
+                'string',
+                'max:20',
+                new Cpf,
+                Rule::unique('ficha_ecc', 'num_cpf_conjuge')->ignore($fichaId, 'idt_ficha'),
+            ],
             'nom_conjuge' => 'required|string|max:255',
             'nom_apelido_conjuge' => 'nullable|string|max:100',
             'tip_genero_conjuge' => 'required|string|max:3',
@@ -41,7 +76,12 @@ class FichaEccRequest extends FichaRequest
 
             // ── Filhos (array dinâmico → tabela ficha_ecc_filho) ─────────────
             'filhos' => 'nullable|array|max:20',
-            'filhos.*.num_cpf_filho' => 'nullable|string|max:14',
+            'filhos.*.num_cpf_filho' => [
+                'nullable',
+                'string',
+                'max:20',
+                new Cpf,
+            ],
             'filhos.*.nom_filho' => 'nullable|string|max:255',
             'filhos.*.dat_nascimento_filho' => 'nullable|date',
             'filhos.*.eml_filho' => 'nullable|email|max:255',
