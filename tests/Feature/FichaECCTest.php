@@ -122,14 +122,14 @@ describe('FichaEccController - INCLUSAO', function () {
         $this->assertDatabaseHas('ficha', [
             'idt_ficha' => $ficha->idt_ficha,
             'nom_candidato' => 'Carlos Silva',
-            'num_cpf_candidato' => '123.456.789-00',
+            'num_cpf_candidato' => '12345678900',
             'ind_consentimento' => true,
         ]);
 
         $this->assertDatabaseHas('ficha_ecc', [
             'idt_ficha' => $ficha->idt_ficha,
             'nom_conjuge' => 'Maria Silva',
-            'num_cpf_conjuge' => '987.654.321-00',
+            'num_cpf_conjuge' => '98765432100',
             'tip_estado_civil' => 'C',
         ]);
     });

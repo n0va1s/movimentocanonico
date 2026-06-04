@@ -92,7 +92,7 @@ test('admin pode importar participantes de planilha CSV e cadastrar novas pessoa
     $maria = Pessoa::where('eml_pessoa', 'maria.importada@gmail.com')->first();
     expect($maria)->not->toBeNull()
         ->and($maria->nom_pessoa)->toBe('Maria Importada')
-        ->and($maria->num_cpf_pessoa)->toBe('12345678901')
+        ->and($maria->num_cpf_pessoa)->toBe('123.456.789-01')
         ->and($maria->dat_nascimento->format('Y-m-d'))->toBe('1995-05-15')
         ->and($maria->tip_genero->value)->toBe('F')
         ->and($maria->tam_camiseta->value)->toBe('M');
@@ -106,7 +106,7 @@ test('admin pode importar participantes de planilha CSV e cadastrar novas pessoa
     $pedro = Pessoa::where('eml_pessoa', 'pedro.importado@gmail.com')->first();
     expect($pedro)->not->toBeNull()
         ->and($pedro->nom_pessoa)->toBe('Pedro Importado')
-        ->and($pedro->num_cpf_pessoa)->toBe('98765432109')
+        ->and($pedro->num_cpf_pessoa)->toBe('987.654.321-09')
         ->and($pedro->dat_nascimento->format('Y-m-d'))->toBe('1990-12-01')
         ->and($pedro->tip_genero->value)->toBe('M');
 
@@ -202,7 +202,7 @@ test('admin pode importar trabalhadores de planilha CSV, associando-os a equipes
     $jose = Pessoa::where('eml_pessoa', 'jose.trabalhador@gmail.com')->first();
     expect($jose)->not->toBeNull()
         ->and($jose->nom_pessoa)->toBe('José Trabalhador')
-        ->and($jose->num_cpf_pessoa)->toBe('11111111111');
+        ->and($jose->num_cpf_pessoa)->toBe('111.111.111-11');
 
     // Verifica se Trabalhador foi vinculado à equipe Bandinha
     $trabJose = Trabalhador::where('idt_pessoa', $jose->idt_pessoa)->where('idt_evento', $this->evento->idt_evento)->first();

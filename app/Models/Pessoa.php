@@ -7,6 +7,8 @@ use App\Enums\Genero;
 use App\Enums\HabilidadePrincipal;
 use App\Enums\TamanhoCamiseta;
 use App\Mail\BoasVindasMail;
+use App\Services\CpfService;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -169,5 +171,13 @@ class Pessoa extends Model
             $q->where('nom_pessoa', 'like', "%{$search}%")
                 ->orWhere('nom_apelido', 'like', "%{$search}%");
         });
+    }
+
+    protected function numCpfPessoa(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => CpfService::format($value),
+            set: fn (?string $value) => CpfService::clean($value),
+        );
     }
 }

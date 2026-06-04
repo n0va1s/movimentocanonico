@@ -197,17 +197,17 @@
 
                         {{-- CPF --}}
                         <div>
-                            <label for="num_cpf_conjuge"
+                            <label for="num_cpf_candidato"
                                 class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
                                 CPF <span class="text-red-600" aria-hidden="true">*</span><span class="sr-only">(obrigatório)</span>
                             </label>
-                            <input type="text" name="num_cpf_conjuge" id="num_cpf_conjuge"
+                            <input type="text" name="num_cpf_candidato" id="num_cpf_candidato"
                                 x-bind:disabled="bloqueado" required maxlength="14" autocomplete="off"
-                                value="{{ old('num_cpf_conjuge', $ficha->num_cpf_conjuge) }}"
+                                value="{{ old('num_cpf_candidato', $ficha->num_cpf_candidato) }}"
                                 @blur="buscarPorCpf()"
                                 placeholder="000.000.000-00" aria-required="true"
-                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('num_cpf_conjuge') border-red-500 @enderror" />
-                            @error('num_cpf_conjuge')
+                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('num_cpf_candidato') border-red-500 @enderror" />
+                            @error('num_cpf_candidato')
                                 <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
                             @enderror
                         </div>
