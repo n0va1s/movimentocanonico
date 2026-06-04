@@ -109,6 +109,7 @@ class PessoaRequest extends FormRequest
             'med_foto.image' => 'O arquivo deve ser uma imagem.',
             'med_foto.mimes' => 'A imagem deve estar nos formatos: jpeg, png, jpg, webp.',
             'med_foto.max' => 'A imagem não pode ser maior que 5MB.',
+            'med_foto.uploaded' => 'A foto não pôde ser enviada. Verifique se o tamanho não excede o limite do servidor (normalmente 2MB) ou tente uma imagem menor.',
 
             // Arrays (Restrições e Complementos)
             'restricoes.array' => 'O formato das restrições é inválido.',
