@@ -117,8 +117,10 @@ class Evento extends Model
         if ($search) {
             $lowerSearch = strtolower($search);
 
-            return $query->whereRaw('LOWER(des_evento) LIKE ?', ["%{$lowerSearch}%"])
-                ->orWhereRaw('LOWER(num_evento) LIKE ?', ["%{$lowerSearch}%"]);
+            return $query->where(function (Builder $q) use ($lowerSearch) {
+                $q->whereRaw('LOWER(des_evento) LIKE ?', ["%{$lowerSearch}%"])
+                    ->orWhereRaw('LOWER(num_evento) LIKE ?', ["%{$lowerSearch}%"]);
+            });
         }
 
         return $query;
