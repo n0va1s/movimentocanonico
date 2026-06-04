@@ -6,6 +6,9 @@ use App\Enums\ComoSoube;
 use App\Enums\Genero;
 use App\Enums\HabilidadePrincipal;
 use App\Enums\TamanhoCamiseta;
+use App\Enums\TipoSituacao;
+use App\Services\CpfService;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -38,7 +41,7 @@ class Ficha extends Model
         'ind_catolico',
         'ind_toca_instrumento',
         'ind_consentimento',
-        'ind_aprovado',
+        'tip_situacao',
         'ind_restricao',
         'usu_inclusao',
         'usu_alteracao',
@@ -50,7 +53,7 @@ class Ficha extends Model
         'ind_catolico' => 'boolean',
         'ind_toca_instrumento' => 'boolean',
         'ind_consentimento' => 'boolean',
-        'ind_aprovado' => 'boolean',
+        'tip_situacao' => TipoSituacao::class,
         'ind_restricao' => 'boolean',
         'tip_como_soube' => ComoSoube::class,
         'tip_habilidade' => HabilidadePrincipal::class,
@@ -119,5 +122,18 @@ class Ficha extends Model
         return $this->dat_nascimento
             ? $this->dat_nascimento->format('Y-m-d')
             : null;
+    }
+
+    public function getIndAprovadoAttribute(): bool
+    {
+        return $this->tip_situacao === TipoSituacao::APROVADA;
+    }
+
+    protected function numCpfCandidato(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => CpfService::format($value),
+            set: fn (?string $value) => CpfService::clean($value),
+        );
     }
 }

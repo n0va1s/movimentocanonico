@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\Cpf;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -12,13 +13,32 @@ class FichaRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('num_cpf_candidato')) {
+            $this->merge([
+                'num_cpf_candidato' => $this->input('num_cpf_candidato') ? preg_replace('/\D/', '', $this->input('num_cpf_candidato')) : null,
+            ]);
+        }
+    }
+
     public function rules(): array
     {
+        $fichaId = $this->route('ficha') ?? $this->route('ecc') ?? $this->route('sgm') ?? $this->route('vem') ?? $this->ficha;
+        if ($fichaId instanceof \App\Models\Ficha) {
+            $fichaId = $fichaId->idt_ficha;
+        }
+
         return [
             'idt_evento' => 'required|exists:evento,idt_evento',
             'tip_genero' => 'required|string|max:3',
-            'num_cpf_candidato' => 'nullable|string|max:20',
-            Rule::unique('ficha', 'num_cpf_candidato')->ignore($this->ficha, 'idt_ficha'),
+            'num_cpf_candidato' => [
+                'nullable',
+                'string',
+                'max:20',
+                new Cpf,
+                Rule::unique('ficha', 'num_cpf_candidato')->ignore($fichaId, 'idt_ficha'),
+            ],
             'nom_candidato' => 'required|string|max:255',
             'nom_apelido' => 'nullable|string|max:255',
             'dat_nascimento' => 'required|date',

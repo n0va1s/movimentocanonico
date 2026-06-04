@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Services\CpfService;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -37,5 +39,13 @@ class FichaEccFilho extends Model
         return $this->dat_nascimento_filho
             ? $this->dat_nascimento_filho->format('Y-m-d')
             : null;
+    }
+
+    protected function numCpfFilho(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => CpfService::format($value),
+            set: fn (?string $value) => CpfService::clean($value),
+        );
     }
 }

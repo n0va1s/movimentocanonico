@@ -18,7 +18,7 @@ return new class extends Migration
                 ->onDelete('cascade');
             $table->foreignId('idt_pessoa')->nullable()
                 ->constrained('pessoa', 'idt_pessoa')->nullOnDelete(); // pessoa criada apos aprovacao
-            $table->string('num_cpf_filho', 20)->unique();
+            $table->string('num_cpf_filho', 20)->nullable()->unique();
             $table->string('nom_filho', 255);
             $table->date('dat_nascimento_filho');
             $table->string('eml_filho', 255)->nullable();

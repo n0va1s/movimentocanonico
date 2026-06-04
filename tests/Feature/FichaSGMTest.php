@@ -599,3 +599,67 @@ describe('FichaSGMController — Exclusão', function () {
             ->assertStatus(500);
     });
 });
+
+describe('FichaSGMController — Redirecionamento Inteligente', function () {
+    test('redireciona para a home ao salvar vindo de /sgm', function () {
+        $payload = array_merge(
+            dadosFichaBase(['idt_evento' => $this->evento->idt_evento, 'eml_candidato' => 'publico@email.com']),
+            dadosSGMBase($this->responsavel->idt_responsavel)
+        );
+
+        $this->from(route('home.ficha.sgm'))
+            ->post(route('sgm.store'), $payload)
+            ->assertRedirect(route('home'))
+            ->assertSessionHas('success');
+    });
+
+    test('redireciona para sgm.index ao salvar vindo de /fichas/sgm', function () {
+        $payload = array_merge(
+            dadosFichaBase(['idt_evento' => $this->evento->idt_evento, 'eml_candidato' => 'admin@email.com']),
+            dadosSGMBase($this->responsavel->idt_responsavel)
+        );
+
+        $this->from(route('sgm.create'))
+            ->post(route('sgm.store'), $payload)
+            ->assertRedirect(route('sgm.index'))
+            ->assertSessionHas('success');
+    });
+
+    test('redireciona para a home ao atualizar vindo de /sgm', function () {
+        $ficha = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento]);
+        FichaSGM::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
+
+        $payload = array_merge(
+            dadosFichaBase([
+                'idt_evento' => $this->evento->idt_evento,
+                'nom_candidato' => 'Nome Atualizado',
+                'eml_candidato' => 'atualizado@email.com',
+            ]),
+            dadosSGMBase($this->responsavel->idt_responsavel)
+        );
+
+        $this->from(route('home.ficha.sgm'))
+            ->put(route('sgm.update', $ficha->idt_ficha), $payload)
+            ->assertRedirect(route('home'))
+            ->assertSessionHas('success');
+    });
+
+    test('redireciona para sgm.index ao atualizar vindo de /fichas/sgm', function () {
+        $ficha = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento]);
+        FichaSGM::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
+
+        $payload = array_merge(
+            dadosFichaBase([
+                'idt_evento' => $this->evento->idt_evento,
+                'nom_candidato' => 'Nome Admin',
+                'eml_candidato' => 'admin.atualizado@email.com',
+            ]),
+            dadosSGMBase($this->responsavel->idt_responsavel)
+        );
+
+        $this->from(route('sgm.edit', $ficha->idt_ficha))
+            ->put(route('sgm.update', $ficha->idt_ficha), $payload)
+            ->assertRedirect(route('sgm.index'))
+            ->assertSessionHas('success');
+    });
+});

@@ -190,8 +190,52 @@
             <form method="POST" enctype="multipart/form-data" @submit="enviando = true"
                 action="{{ $ficha->exists ? route('sgm.update', $ficha) : route('sgm.store') }}" class="space-y-8">
                 @csrf
-                @if ($ficha->exists)
-                    @method('PUT')
+                @if (Auth::user()?->hasRole('admin', 'espec', 'coord') && $ficha->exists)
+                    <div class="bg-white dark:bg-zinc-800 rounded-xl shadow border border-gray-200 dark:border-zinc-700 p-4 sm:p-6 mb-6">
+                        <p class="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-3">Mudar Situação para:</p>
+                        <div class="flex flex-wrap gap-2">
+                            @php
+                                $situacoes = \App\Enums\TipoSituacao::cases();
+                            @endphp
+                            @foreach($situacoes as $situacao)
+                                @php
+                                    $isCurrent = $ficha->tip_situacao === $situacao;
+                                    $style = $situacao->badge();
+                                @endphp
+                                
+                                @if($isCurrent)
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold text-white {{ $style['bg'] }} shadow-sm">
+                                        <x-heroicon-s-check class="w-4 h-4" />
+                                        {{ $situacao->label() }}
+                                    </span>
+                                @else
+                                    <form method="POST" action="{{ route('sgm.situacao', $ficha->idt_ficha) }}" class="inline">
+                                        @csrf
+                                        <input type="hidden" name="tip_situacao" value="{{ $situacao->value }}">
+                                        <button type="submit" 
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border transition-all duration-200 cursor-pointer hover:text-white {{ $style['light'] }} {{ $style['hover'] }}">
+                                            @if($situacao->value === 'N')
+                                                <x-heroicon-o-document-text class="w-4 h-4" />
+                                            @elseif($situacao->value === 'S')
+                                                <x-heroicon-o-check-circle class="w-4 h-4" />
+                                            @elseif($situacao->value === 'E')
+                                                <x-heroicon-o-envelope class="w-4 h-4" />
+                                            @elseif($situacao->value === 'R')
+                                                <x-heroicon-o-document-check class="w-4 h-4" />
+                                            @elseif($situacao->value === 'P')
+                                                <x-heroicon-o-credit-card class="w-4 h-4" />
+                                            @elseif($situacao->value === 'C')
+                                                <x-heroicon-o-x-circle class="w-4 h-4" />
+                                            @elseif($situacao->value === 'A')
+                                                <x-heroicon-o-sparkles class="w-4 h-4" />
+                                            @endif
+                                            {{ $situacao->label() }}
+                                        </button>
+                                    </form>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
                 @endif
 
                 {{-- ===== DADOS BÁSICOS ===== --}}
@@ -954,20 +998,6 @@
                         <x-heroicon-o-check class="w-5 h-5 mr-2" aria-hidden="true" />
                         <span x-text="enviando ? 'Salvando...' : 'Salvar'"></span>
                     </button>
-
-                    @if ($ficha->exists)
-                        <a href="{{ route('sgm.approve', $ficha->idt_ficha) }}"
-                            class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 text-white font-medium rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus-visible:ring-offset-2
-                            {{ $ficha->ind_aprovado ? 'bg-red-500 hover:bg-red-600 focus:ring-red-500' : 'bg-green-500 hover:bg-green-600 focus:ring-green-500' }}"
-                            aria-label="{{ $ficha->ind_aprovado ? 'Desfazer aprovação desta ficha' : 'Aprovar esta ficha' }}">
-                            @if ($ficha->ind_aprovado)
-                                <x-heroicon-o-x-mark class="w-5 h-5 mr-2" aria-hidden="true" />
-                            @else
-                                <x-heroicon-o-check class="w-5 h-5 mr-2" aria-hidden="true" />
-                            @endif
-                            {{ $ficha->ind_aprovado ? 'Desfazer aprovação' : 'Aprovar' }}
-                        </a>
-                    @endif
                 </div>
 
             </form>

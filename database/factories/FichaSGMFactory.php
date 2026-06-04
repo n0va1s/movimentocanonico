@@ -24,7 +24,7 @@ class FichaSGMFactory extends Factory
             'idt_ficha' => null,
 
             // Responsável
-            'idt_falar_com' => TipoResponsavel::inRandomOrder()->first()?->idt_responsavel,
+            'idt_falar_com' => TipoResponsavel::inRandomOrder()->first()?->idt_responsavel ?? TipoResponsavel::factory(),
 
             // ── Filiação ──────────────────────────────────────────────
             'nom_mae' => fake()->name('female'),

@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\Contato;
+use App\Models\Pessoa;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use function Pest\Laravel\actingAs;
@@ -8,7 +10,8 @@ use function Pest\Laravel\actingAs;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->user = createUser();
+    $this->user = User::factory()->create(['role' => 'admin']);
+    Pessoa::factory()->for($this->user, 'usuario')->create();
     createMovimentos();
 });
 

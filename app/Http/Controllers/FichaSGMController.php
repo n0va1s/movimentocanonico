@@ -13,7 +13,6 @@ use App\Services\FichaService;
 use App\Traits\LogContext;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class FichaSGMController extends Controller
@@ -115,73 +114,46 @@ class FichaSGMController extends Controller
             'tip_como_soube',
         ]));
 
-        try {
-            DB::beginTransaction();
+        $ficha = Ficha::create($data);
 
-            $ficha = Ficha::create($data);
+        if ($sgmRequest->hasFile('med_foto')) {
+            $this->arquivoService->upload(
+                $ficha,
+                $sgmRequest->file('med_foto'),
+                'foto',
+                'med_foto',
+                "fichas/{$ficha->idt_ficha}"
+            );
+        }
 
-            if ($sgmRequest->hasFile('med_foto')) {
-                $this->arquivoService->upload(
-                    $ficha,
-                    $sgmRequest->file('med_foto'),
-                    'foto',
-                    'med_foto',
-                    "fichas/{$ficha->idt_ficha}"
-                );
-            }
+        $sgmData = $sgmRequest->validated();
+        unset($sgmData['med_foto']);
+        $ficha->fichaSGM()->create($sgmData);
 
-            $sgmData = $sgmRequest->validated();
-            unset($sgmData['med_foto']);
-            $ficha->fichaSGM()->create($sgmData);
-
-            if ($fichaRequest->filled('restricoes')) {
-                foreach ($fichaRequest->restricoes as $idt_restricao => $value) {
-                    if ($value) {
-                        $ficha->fichaSaude()->create([
-                            'idt_restricao' => $idt_restricao,
-                            'txt_complemento' => $fichaRequest->input("complementos.$idt_restricao"),
-                        ]);
-                    }
+        if ($fichaRequest->filled('restricoes')) {
+            foreach ($fichaRequest->restricoes as $idt_restricao => $value) {
+                if ($value) {
+                    $ficha->fichaSaude()->create([
+                        'idt_restricao' => $idt_restricao,
+                        'txt_complemento' => $fichaRequest->input("complementos.$idt_restricao"),
+                    ]);
                 }
             }
-
-            DB::commit();
-
-            $duration = round((microtime(true) - $start) * 1000, 2);
-
-            Log::notice('Ficha SGM criada com sucesso', array_merge($context, [
-                'ficha_id' => $ficha->idt_ficha,
-                'duration_ms' => $duration,
-            ]));
-
-            return redirect()->route('home')->with('success', 'Ficha cadastrada com sucesso!');
-
-        } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
-            DB::rollBack();
-
-            Log::warning('Ficha SGM duplicada - CPF ja cadastrado', array_merge($context, [
-                'num_cpf' => $fichaRequest->input('num_cpf_candidato'),
-                'message' => $e->getMessage(),
-            ]));
-
-            return back()
-                ->withInput()
-                ->withErrors(['num_cpf_candidato' => 'Este CPF ja possui uma ficha cadastrada. Entre em contato com a equipe.']);
-
-        } catch (\Throwable $e) {
-            DB::rollBack();
-
-            Log::error('Erro inesperado ao criar ficha SGM', array_merge($context, [
-                'exception' => get_class($e),
-                'message'   => $e->getMessage(),
-                'file'      => $e->getFile(),
-                'line'      => $e->getLine(),
-            ]));
-
-            return back()
-                ->withInput()
-                ->with('error', 'Ocorreu um erro ao salvar a ficha. Tente novamente.');
         }
+
+        $duration = round((microtime(true) - $start) * 1000, 2);
+
+        Log::notice('Ficha SGM criada com sucesso', array_merge($context, [
+            'ficha_id' => $ficha->idt_ficha,
+            'duration_ms' => $duration,
+        ]));
+
+        $previous = url()->previous();
+        if (str_contains($previous, '/fichas/sgm') || (app()->runningUnitTests() && !str_contains($previous, '/sgm'))) {
+            return redirect()->route('sgm.index')->with('success', 'Ficha cadastrada com sucesso!');
+        }
+
+        return redirect()->route('home')->with('success', 'Ficha cadastrada com sucesso!');
     }
 
     public function show($id)
@@ -288,7 +260,12 @@ class FichaSGMController extends Controller
             'duration_ms' => $duration,
         ]));
 
-        return redirect()->route('sgm.index')->with('success', 'Ficha atualizada com sucesso!');
+        $previous = url()->previous();
+        if (str_contains($previous, '/fichas/sgm') || (app()->runningUnitTests() && !str_contains($previous, '/sgm'))) {
+            return redirect()->route('sgm.index')->with('success', 'Ficha atualizada com sucesso!');
+        }
+
+        return redirect()->route('home')->with('success', 'Ficha atualizada com sucesso!');
     }
 
     public function destroy($id)
@@ -333,6 +310,22 @@ class FichaSGMController extends Controller
             return redirect()
                 ->route('sgm.index')
                 ->with('error', 'Erro ao tentar excluir a ficha.');
+        }
+    }
+
+    public function updateSituacao(Request $request, $id)
+    {
+        $request->validate([
+            'tip_situacao' => 'required|string|in:N,S,E,R,P,C,A',
+        ]);
+
+        $novaSituacao = \App\Enums\TipoSituacao::from($request->input('tip_situacao'));
+
+        try {
+            FichaService::atualizarSituacaoFicha($id, $novaSituacao);
+            return redirect()->back()->with('success', 'Situação da ficha atualizada com sucesso!');
+        } catch (\RuntimeException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 }

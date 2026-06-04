@@ -21,12 +21,13 @@
                     wire:navigate>
                     {{ __('Painel') }}
                 </flux:navlist.item>
-                @if (Auth::user() && Auth::user()->isAdmin())
+                @if (Auth::user() && Auth::user()->hasRole('admin', 'espec'))
                     <flux:navlist.item icon="cog" :href="route('configuracoes.index')"
                         :current="request()->routeIs('configuracoes.index')" wire:navigate>
                         {{ __('Configurações') }}
                     </flux:navlist.item>
-
+                @endif
+                @if (Auth::user() && Auth::user()->isAdmin())
                     <flux:navlist.item icon="phone" :href="route('contatos.index')"
                         :current="request()->routeIs('contatos.index')" wire:navigate>
                         {{ __('Contatos') }}
@@ -51,6 +52,7 @@
                         {{ __('Minha Equipe') }}
                     </flux:navlist.item>
                 @endif
+
                 @if (Auth::user() && Auth::user()->isAdmin())
                     <flux:navlist.item icon="user" :href="route('pessoas.index')"
                         :current="request()->routeIs('pessoas.index')" wire:navigate>

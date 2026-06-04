@@ -64,7 +64,7 @@
                             <th class="p-3 font-semibold">Apelido</th>
                             <th class="p-3 font-semibold">Nascimento</th>
                             <th class="p-3 font-semibold">Evento</th>
-                            <th class="p-3 font-semibold">Aprovado</th>
+                            <th class="p-3 font-semibold">Situação</th>
                             <th class="p-3 font-semibold text-center w-24">Ações</th>
                         </tr>
                     </thead>
@@ -80,13 +80,13 @@
                                     {{ $ficha->evento->des_evento ?? '—' }}
                                 </td>
                                 <td class="p-3 dark:text-gray-100">
-                                    @if ($ficha->ind_aprovado)
-                                        <span
-                                            class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Sim</span>
-                                    @else
-                                        <span
-                                            class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">Não</span>
-                                    @endif
+                                    @php
+                                        $situacao = $ficha->tip_situacao ?? \App\Enums\TipoSituacao::NOVA;
+                                        $style = $situacao->badge();
+                                    @endphp
+                                    <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {{ $style['light'] }} border">
+                                        {{ $situacao->label() }}
+                                    </span>
                                 </td>
                                 <td class="p-3 flex justify-end items-center gap-2">
                                     <a href="{{ route('sgm.edit', $ficha) }}"
