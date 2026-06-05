@@ -305,6 +305,11 @@ class EventoController extends Controller
      */
     public function confirm(Evento $evento, Pessoa $pessoa): RedirectResponse
     {
+        $user = Auth::user();
+        if (!$user->isAdmin() && (!$user->pessoa || $user->pessoa->idt_pessoa !== $pessoa->idt_pessoa)) {
+            abort(403);
+        }
+
         $this->eventoService->confirmarParticipacao($evento, $pessoa);
 
         Log::notice('Participação confirmada', [

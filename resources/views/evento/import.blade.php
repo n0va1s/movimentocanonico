@@ -68,12 +68,14 @@
 
                         {{-- Arquivo --}}
                         <div class="p-4 border-2 border-dashed border-gray-200 dark:border-zinc-700 rounded-lg bg-gray-50 dark:bg-zinc-800/40 text-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
-                            <flux:label class="cursor-pointer block">
+                            <label for="arquivo_participantes" class="cursor-pointer block">
                                 <x-heroicon-o-document-text class="w-8 h-8 mx-auto text-gray-400 mb-2" />
                                 <span class="text-xs font-bold text-gray-700 dark:text-zinc-300 block mb-1">Escolher planilha CSV</span>
-                                <span class="text-[10px] text-gray-500 dark:text-zinc-400 block">Arquivos do tipo .csv separados por ; ou ,</span>
-                                <input type="file" name="arquivo_participantes" accept=".csv,text/csv" class="hidden">
-                            </flux:label>
+                                <span class="text-[10px] text-gray-500 dark:text-zinc-400 block mb-1">Arquivos do tipo .csv separados por ; ou ,</span>
+                                <span id="nome_arquivo_participantes" class="text-xs text-indigo-600 dark:text-indigo-400 mt-2 block font-medium hidden"></span>
+                            </label>
+                            <input type="file" id="arquivo_participantes" name="arquivo_participantes" accept=".csv,text/csv" class="sr-only"
+                                onchange="const el = document.getElementById('nome_arquivo_participantes'); if (this.files[0]) { el.textContent = this.files[0].name; el.classList.remove('hidden'); } else { el.classList.add('hidden'); }">
                             @error('arquivo_participantes')
                                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                             @enderror
@@ -125,12 +127,14 @@
 
                         {{-- Arquivo --}}
                         <div class="p-4 border-2 border-dashed border-gray-200 dark:border-zinc-700 rounded-lg bg-gray-50 dark:bg-zinc-800/40 text-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
-                            <flux:label class="cursor-pointer block">
+                            <label for="arquivo_trabalhadores" class="cursor-pointer block">
                                 <x-heroicon-o-document-text class="w-8 h-8 mx-auto text-gray-400 mb-2" />
                                 <span class="text-xs font-bold text-gray-700 dark:text-zinc-300 block mb-1">Escolher planilha CSV</span>
-                                <span class="text-[10px] text-gray-500 dark:text-zinc-400 block">Arquivos do tipo .csv separados por ; ou ,</span>
-                                <input type="file" name="arquivo_trabalhadores" accept=".csv,text/csv" class="hidden">
-                            </flux:label>
+                                <span class="text-[10px] text-gray-500 dark:text-zinc-400 block mb-1">Arquivos do tipo .csv separados por ; ou ,</span>
+                                <span id="nome_arquivo_trabalhadores" class="text-xs text-emerald-600 dark:text-emerald-400 mt-2 block font-medium hidden"></span>
+                            </label>
+                            <input type="file" id="arquivo_trabalhadores" name="arquivo_trabalhadores" accept=".csv,text/csv" class="sr-only"
+                                onchange="const el = document.getElementById('nome_arquivo_trabalhadores'); if (this.files[0]) { el.textContent = this.files[0].name; el.classList.remove('hidden'); } else { el.classList.add('hidden'); }">
                             @error('arquivo_trabalhadores')
                                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                             @enderror

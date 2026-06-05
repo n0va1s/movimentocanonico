@@ -103,6 +103,8 @@ Route::middleware(['auth'])->group(function () {
     // Listagens — todos autenticados (apenas eventos; pessoas e fichas são admin)
     Route::get('/eventos', [EventoController::class, 'index'])->name('eventos.index');
 
+    Route::post('/participantes/{evento}/{pessoa}', [EventoController::class, 'confirm'])->name('participantes.confirm');
+
     Route::get('/pessoas/{pessoa}/edit', [PessoaController::class, 'edit'])->name('pessoas.edit');
     Route::put('/pessoas/{pessoa}', [PessoaController::class, 'update'])->name('pessoas.update');
     Route::patch('/pessoas/{pessoa}', [PessoaController::class, 'update']);
@@ -118,8 +120,6 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware(['role:admin,coord'])->group(function () {
         Route::get('/trabalhadores', [TrabalhadorController::class, 'index'])->name('trabalhadores.index');
-        
-        Route::post('/participantes/{evento}/{pessoa}', [EventoController::class, 'confirm'])->name('participantes.confirm');
     });
 
     // -----------------------------------------------------------------------

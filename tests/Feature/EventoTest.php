@@ -748,6 +748,61 @@ describe('EventoController — Confirm', function () {
 
         $this->assertDatabaseCount('participante', 1);
     });
+
+    test('usuario comum pode confirmar sua propria participacao', function () {
+        $evento = Evento::factory()->create();
+        $comumUser = User::factory()->create(['role' => 'user']);
+        $comumPessoa = $comumUser->pessoa;
+
+        $response = $this->actingAs($comumUser)->post(route('participantes.confirm', [
+            'evento' => $evento,
+            'pessoa' => $comumPessoa,
+        ]));
+
+        $response->assertRedirect(route('eventos.index'))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('participante', [
+            'idt_evento' => $evento->idt_evento,
+            'idt_pessoa' => $comumPessoa->idt_pessoa,
+        ]);
+    });
+
+    test('usuario comum nao pode confirmar participacao para outra pessoa', function () {
+        $evento = Evento::factory()->create();
+        $comumUser = User::factory()->create(['role' => 'user']);
+        $outraPessoa = Pessoa::factory()->create();
+
+        $response = $this->actingAs($comumUser)->post(route('participantes.confirm', [
+            'evento' => $evento,
+            'pessoa' => $outraPessoa,
+        ]));
+
+        $response->assertStatus(403);
+
+        $this->assertDatabaseMissing('participante', [
+            'idt_evento' => $evento->idt_evento,
+            'idt_pessoa' => $outraPessoa->idt_pessoa,
+        ]);
+    });
+
+    test('admin pode confirmar participacao para qualquer pessoa', function () {
+        $evento = Evento::factory()->create();
+        $outraPessoa = Pessoa::factory()->create();
+
+        $response = $this->actingAs($this->user)->post(route('participantes.confirm', [
+            'evento' => $evento,
+            'pessoa' => $outraPessoa,
+        ]));
+
+        $response->assertRedirect(route('eventos.index'))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('participante', [
+            'idt_evento' => $evento->idt_evento,
+            'idt_pessoa' => $outraPessoa->idt_pessoa,
+        ]);
+    });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
