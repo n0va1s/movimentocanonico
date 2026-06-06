@@ -19,7 +19,7 @@ call php artisan route:cache
 call php artisan view:cache
 
 echo [5/6] Criando arquivo ZIP para a Hostinger...
-call php build-zip.php
+powershell -ExecutionPolicy Bypass -File build-zip.ps1
 
 echo.
 echo Executado com sucesso! O arquivo projeto-producao.zip esta pronto.

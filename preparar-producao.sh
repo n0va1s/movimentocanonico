@@ -19,7 +19,8 @@ php artisan route:cache
 php artisan view:cache
 
 echo "[5/5] Criando arquivo ZIP para a Hostinger..."
-php build-zip.php
+rm -f projeto-producao.zip
+zip -r projeto-producao.zip . -x "*.git*" "*.github*" "*.agent*" "*.kiro*" "node_modules/*" "tests/*" "projeto-producao.zip" "preparar-producao.bat" "preparar-producao.sh" "build-zip.php" "build-zip.ps1" ".env*" ".gitattributes" ".gitignore" "compose.yaml" "phpunit.xml" "README.md" ".clinerules" ".editorconfig"
 
 echo "Executado com sucesso! O arquivo projeto-producao.zip está pronto."
 echo "Dica: Caso queira restaurar as dependências locais de desenvolvimento, execute:"
