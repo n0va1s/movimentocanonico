@@ -18,12 +18,9 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-echo "[5/5] Removendo pastas locais de desenvolvimento..."
-rm -rf node_modules
-rm -rf tests
-
-echo "[6/5] Criando arquivo ZIP para a Hostinger..."
-rm -f projeto-producao.zip
-zip -r projeto-producao.zip . -x "*.git*" "node_modules/*" "tests/*" "projeto-producao.zip" ".env"
+echo "[5/5] Criando arquivo ZIP para a Hostinger..."
+php build-zip.php
 
 echo "Executado com sucesso! O arquivo projeto-producao.zip está pronto."
+echo "Dica: Caso queira restaurar as dependências locais de desenvolvimento, execute:"
+echo "composer install"
