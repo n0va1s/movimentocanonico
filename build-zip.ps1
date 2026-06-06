@@ -36,38 +36,37 @@ $archive = New-Object System.IO.Compression.ZipArchive($zipStream, [System.IO.Co
 
 $count = 0
 
-# Obtem recursivamente todos os arquivos
-$files = Get-ChildItem -Path $rootPath -Recurse -File
-
-foreach ($file in $files) {
-    $filePath = $file.FullName
-    $relativePath = $filePath.Substring($rootPath.Length + 1)
-    
-    # Normaliza o separador de caminhos do Windows (\) para barras Unix (/)
-    $relativePathNormalized = $relativePath.Replace('\', '/')
-    
-    # Verifica se algum diretorio pai ou o proprio arquivo esta na lista de exclusao
-    $parts = $relativePathNormalized.Split('/')
-    $exclude = $false
-    foreach ($part in $parts) {
-        if ($excludeDirs -contains $part) {
-            $exclude = $true
-            break;
+# Funcao recursiva customizada para evitar ler diretorios indesejados ou sem permissao
+# O uso de -Force garante que pastas ocultas ou com atributos do sistema (como vendor) nao sejam puladas.
+function Add-FilesToZip($dir) {
+    $items = Get-ChildItem -Path $dir -Force
+    foreach ($item in $items) {
+        if ($item.PSIsContainer) {
+            # Se o diretorio estiver na lista de exclusao, ignora completamente
+            if ($excludeDirs -contains $item.Name) {
+                continue
+            }
+            Add-FilesToZip $item.FullName
+        } else {
+            $filePath = $item.FullName
+            $relativePath = $filePath.Substring($rootPath.Length + 1)
+            
+            # Normaliza o separador de caminhos do Windows (\) para barras Unix (/)
+            $relativePathNormalized = $relativePath.Replace('\', '/')
+            
+            # Se o arquivo estiver na lista de exclusao, ignora
+            if ($excludeFiles -contains $relativePathNormalized) {
+                continue
+            }
+            
+            # Adiciona o arquivo ao ZIP mantendo a estrutura normalizada com barras normais
+            [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $filePath, $relativePathNormalized)
+            $script:count++
         }
     }
-    
-    if ($excludeFiles -contains $relativePathNormalized) {
-        $exclude = $true
-    }
-    
-    if ($exclude) {
-        continue
-    }
-    
-    # Adiciona o arquivo ao ZIP mantendo a estrutura normalizada com barras normais
-    [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $filePath, $relativePathNormalized)
-    $count++
 }
+
+Add-FilesToZip $rootPath
 
 $archive.Dispose()
 $zipStream.Close()

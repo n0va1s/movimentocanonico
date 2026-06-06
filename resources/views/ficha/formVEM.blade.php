@@ -138,7 +138,7 @@
         @if ($eventos->count() > 0)
             <form method="POST" 
                 enctype="multipart/form-data"
-                @submit="enviando = true"
+                @submit="setTimeout(() => enviando = true, 50)"
                 action="{{ $ficha->exists ? route('vem.update', $ficha) : route('vem.store') }}"
                 class="space-y-6" novalidate>
                 @csrf
@@ -694,8 +694,8 @@
                                 id="sacramentos-label">
                                 Sacramentos recebidos
                             </p>
-                            <div class="space-y-2" role="group" aria-labelledby="sacramentos-label">
-                                <label class="flex items-center gap-2 cursor-pointer">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-6" role="group" aria-labelledby="sacramentos-label">
+                                <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_catolico" value="0">
                                     <input type="checkbox" name="ind_catolico" value="1"
                                         x-bind:disabled="bloqueado"
@@ -703,7 +703,7 @@
                                         class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">É católico</span>
                                 </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
+                                <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_batizado" value="0">
                                     <input type="checkbox" name="ind_batizado" value="1"
                                         x-bind:disabled="bloqueado"
@@ -711,7 +711,7 @@
                                         class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">Batizado</span>
                                 </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
+                                <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_primeira_comunhao" value="0">
                                     <input type="checkbox" name="ind_primeira_comunhao" value="1"
                                         x-bind:disabled="bloqueado"
@@ -719,7 +719,7 @@
                                         class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">Primeira Comunhão</span>
                                 </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
+                                <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_crismado" value="0">
                                     <input type="checkbox" name="ind_crismado" value="1"
                                         x-bind:disabled="bloqueado"
@@ -751,7 +751,7 @@
                                     id="instrumento-label">
                                     Toca algum instrumento?
                                 </p>
-                                <label class="flex items-center gap-2 cursor-pointer">
+                                <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_toca_instrumento" value="0">
                                     <input type="checkbox" name="ind_toca_instrumento" value="1"
                                         x-bind:disabled="bloqueado"
@@ -897,7 +897,7 @@
                 </fieldset>
 
                 {{-- ===== AÇÕES ===== --}}
-                <div class="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+                <div class="mt-8 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
                     <button type="submit" x-bind:disabled="bloqueado || enviando"
                         class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                         <x-heroicon-o-check class="w-5 h-5 mr-2" aria-hidden="true" />

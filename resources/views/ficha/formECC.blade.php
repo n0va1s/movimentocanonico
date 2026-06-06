@@ -99,7 +99,7 @@
 
         @if ($eventos->count() > 0)
             <form method="POST" enctype="multipart/form-data"
-                @submit="enviando = true"
+                @submit="setTimeout(() => enviando = true, 50)"
                 action="{{ $ficha->exists ? route('ecc.update', $ficha) : route('ecc.store') }}" 
                 class="space-y-6" novalidate>
                 @csrf
@@ -1015,7 +1015,7 @@
                 </fieldset>
 
                 {{-- ===== AÇÕES ===== --}}
-                <div class="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+                <div class="mt-8 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
                     <button type="submit" x-bind:disabled="bloqueado || enviando"
                         class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                         <x-heroicon-o-check class="w-5 h-5 mr-2" aria-hidden="true" />

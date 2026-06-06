@@ -187,7 +187,7 @@
 
         {{-- ===== FORMULÁRIO ===== --}}
         @if ($eventos->count() > 0)
-            <form method="POST" enctype="multipart/form-data" @submit="enviando = true"
+            <form method="POST" enctype="multipart/form-data" @submit="setTimeout(() => enviando = true, 50)"
                 action="{{ $ficha->exists ? route('sgm.update', $ficha) : route('sgm.store') }}" class="space-y-8">
                 @csrf
                 @if (Auth::user()?->hasRole('admin', 'espec', 'coord') && $ficha->exists)
@@ -239,9 +239,9 @@
                 @endif
 
                 {{-- ===== DADOS BÁSICOS ===== --}}
-                <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-6">
+                <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-4 sm:p-6">
                     <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Dados Básicos</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                         {{-- Foto --}}
                         <div class="flex flex-col items-center gap-3" x-data="{ photoPreview: '{{ $ficha->foto?->med_foto ? Storage::url($ficha->foto->med_foto) : '' }}' }">
                             <div
@@ -626,9 +626,9 @@
 
 
                 {{-- ===== ESCOLARIDADE ===== --}}
-                <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-6">
+                <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-4 sm:p-6">
                     <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Escolaridade</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
 
                         {{-- Escolaridade --}}
                         <div>
@@ -708,9 +708,9 @@
                 </div>
 
                 {{-- ===== RELIGIÃO ===== --}}
-                <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-6">
+                <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-4 sm:p-6">
                     <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Fé e Sacramentos</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
 
                         {{-- Religião --}}
                         <div>
@@ -748,11 +748,11 @@
 
                         {{-- Sacramentos --}}
                         <div>
-                            <p class="font-medium text-gray-700 dark:text-gray-300 mb-1" id="sacramentos-label">
+                            <p class="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm sm:text-base" id="sacramentos-label">
                                 Sacramentos:
                             </p>
-                            <div class="flex gap-4" role="group" aria-labelledby="sacramentos-label">
-                                <label class="flex items-center gap-2 cursor-pointer">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:gap-6" role="group" aria-labelledby="sacramentos-label">
+                                <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_batismo" value="0">
                                     <input type="checkbox" name="ind_batismo" value="1"
                                         x-bind:disabled="bloqueado"
@@ -760,7 +760,7 @@
                                         class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">Batismo</span>
                                 </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
+                                <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_eucaristia" value="0">
                                     <input type="checkbox" name="ind_eucaristia" value="1"
                                         x-bind:disabled="bloqueado"
@@ -768,7 +768,7 @@
                                         class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">Eucaristia</span>
                                 </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
+                                <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_crisma" value="0">
                                     <input type="checkbox" name="ind_crisma" value="1"
                                         x-bind:disabled="bloqueado"
@@ -799,10 +799,10 @@
                 </div>
 
                 {{-- ===== QUEM CONVIDOU ===== --}}
-                <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-6">
+                <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-4 sm:p-6">
                     <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Quem convidou você para
                         participar do encontro?</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
 
                         {{-- Como soube do evento --}}
                         <div>
@@ -954,22 +954,25 @@
                 </div>
 
                 {{-- ===== CONSENTIMENTO ===== --}}
-                <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-6">
+                <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-4 sm:p-6">
                     <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Consentimento</h2>
                     <div class="space-y-3">
-                        <label class="flex items-center space-x-2">
-                            <input type="hidden" name="ind_consentimento" value="0">
-                            <input type="checkbox" name="ind_consentimento" value="1" required
-                                x-bind:disabled="bloqueado"
-                                {{ old('ind_consentimento', $ficha->ind_consentimento) ? 'checked' : '' }}
-                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_consentimento') border-red-500 @enderror">
-                            <span class="text-gray-800 dark:text-gray-100">
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <div class="flex items-center pt-0.5 shrink-0">
+                                <input type="hidden" name="ind_consentimento" value="0">
+                                <input type="checkbox" name="ind_consentimento" value="1" required
+                                    x-bind:disabled="bloqueado"
+                                    {{ old('ind_consentimento', $ficha->ind_consentimento) ? 'checked' : '' }}
+                                    aria-required="true"
+                                    class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_consentimento') border-red-500 @enderror">
+                            </div>
+                            <span class="text-sm sm:text-base text-gray-800 dark:text-gray-100">
                                 Concorda com os
                                 <a href="{{ route('termo.sgm') }}" target="_blank"
                                     class="text-blue-600 dark:text-blue-400 underline hover:no-underline font-medium">
                                     Termos e Políticas de Privacidade
                                 </a>?
-                                <span class="text-red-600">*</span>
+                                <span class="text-red-600" aria-hidden="true">*</span><span class="sr-only">(obrigatório)</span>
                             </span>
                         </label>
                         @error('ind_consentimento')
@@ -992,7 +995,7 @@
                 </div>
 
                 {{-- ===== AÇÕES ===== --}}
-                <div class="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+                <div class="mt-8 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
                     <button type="submit" x-bind:disabled="bloqueado || enviando"
                         class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                         <x-heroicon-o-check class="w-5 h-5 mr-2" aria-hidden="true" />
