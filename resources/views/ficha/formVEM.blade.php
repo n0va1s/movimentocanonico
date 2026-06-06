@@ -279,7 +279,6 @@
                             <label for="idt_evento" class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">Evento</label>
                             <select name="idt_evento" id="idt_evento"
                                 x-model="selectedEventoId"
-                                @change="getEventoById()"
                                 x-bind:disabled="bloqueado"
                                 required
                                 class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500">
