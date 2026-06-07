@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TipoSituacao;
 use App\Http\Requests\FichaRequest;
 use App\Http\Requests\FichaSGMRequest;
 use App\Models\Evento;
@@ -36,16 +37,28 @@ class FichaSGMController extends Controller
 
         $search = $request->get('search');
         $eventoId = $request->get('evento');
+        $situacao = $request->get('situacao');
         $evento = null;
 
         Log::info('Requisição de listagem de fichas SGM iniciada', array_merge($context, [
             'search_term' => $search,
             'evento_filtro' => $eventoId,
+            'situacao_filtro' => $situacao,
         ]));
 
         if ($eventoId) {
             $evento = Evento::find($eventoId);
         }
+
+        $hoje = now()->startOfDay();
+        $eventos = Evento::where('idt_movimento', TipoMovimento::SegueMe)
+            ->where(function ($q) use ($hoje) {
+                $q->where('dat_inicio', '>=', $hoje)
+                  ->orWhere('dat_termino', '>=', $hoje)
+                  ->orWhereNull('dat_termino');
+            })
+            ->orderBy('dat_inicio', 'asc')
+            ->get();
 
         $fichas = Ficha::with(['fichaSGM', 'fichaSaude'])
             ->when($search, function ($query, $search) {
@@ -56,6 +69,9 @@ class FichaSGMController extends Controller
             })
             ->when($eventoId, function ($query, $eventoId) {
                 return $query->where('idt_evento', $eventoId);
+            })
+            ->when($situacao, function ($query, $situacao) {
+                return $query->where('tip_situacao', $situacao);
             })
             ->whereHas('evento', function ($query) {
                 $query->where('idt_movimento', TipoMovimento::SegueMe);
@@ -71,7 +87,7 @@ class FichaSGMController extends Controller
             'duration_ms' => $duration,
         ]));
 
-        return view('ficha.listSGM', compact('fichas', 'search', 'evento'));
+        return view('ficha.listSGM', compact('fichas', 'search', 'evento', 'eventos', 'situacao'));
     }
 
     public function create()

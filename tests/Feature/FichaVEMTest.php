@@ -106,6 +106,38 @@ describe('FichaVemController - LISTAGEM E FORMULARIOS', function () {
             ->assertViewHas('fichas');
     });
 
+    test('listagem filtra por evento', function () {
+        $evento2 = Evento::factory()->create(['idt_movimento' => TipoMovimento::VEM]);
+        
+        $ficha1 = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento]);
+        $ficha2 = Ficha::factory()->create(['idt_evento' => $evento2->idt_evento]);
+
+        $response = $this->get(route('vem.index', ['evento' => $this->evento->idt_evento]));
+        $response->assertStatus(200);
+        $fichas = $response->viewData('fichas');
+        
+        expect($fichas->pluck('idt_ficha'))->toContain($ficha1->idt_ficha);
+        expect($fichas->pluck('idt_ficha'))->not->toContain($ficha2->idt_ficha);
+    });
+
+    test('listagem filtra por situacao', function () {
+        $fichaNova = Ficha::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'tip_situacao' => TipoSituacao::NOVA,
+        ]);
+        $fichaAprovada = Ficha::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'tip_situacao' => TipoSituacao::APROVADA,
+        ]);
+
+        $response = $this->get(route('vem.index', ['situacao' => 'A']));
+        $response->assertStatus(200);
+        $fichas = $response->viewData('fichas');
+
+        expect($fichas->pluck('idt_ficha'))->toContain($fichaAprovada->idt_ficha);
+        expect($fichas->pluck('idt_ficha'))->not->toContain($fichaNova->idt_ficha);
+    });
+
     test('pode acessar formulario de criacao', function () {
         $this->get(route('vem.create'))
             ->assertStatus(200)

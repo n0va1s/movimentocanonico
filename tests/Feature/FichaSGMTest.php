@@ -166,12 +166,41 @@ describe('FichaSGMController — Listagem', function () {
     });
 
     test('listagem filtra por evento', function () {
-        $ficha = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento]);
-        FichaSGM::factory()->create(['idt_ficha' => $ficha->idt_ficha]);
+        $evento2 = Evento::factory()->create(['idt_movimento' => TipoMovimento::SegueMe]);
+        
+        $ficha1 = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento]);
+        FichaSGM::factory()->create(['idt_ficha' => $ficha1->idt_ficha]);
+        
+        $ficha2 = Ficha::factory()->create(['idt_evento' => $evento2->idt_evento]);
+        FichaSGM::factory()->create(['idt_ficha' => $ficha2->idt_ficha]);
 
-        $this->get(route('sgm.index', ['evento' => $this->evento->idt_evento]))
-            ->assertStatus(200)
-            ->assertViewHas('fichas');
+        $response = $this->get(route('sgm.index', ['evento' => $this->evento->idt_evento]));
+        $response->assertStatus(200);
+        $fichas = $response->viewData('fichas');
+        
+        expect($fichas->pluck('idt_ficha'))->toContain($ficha1->idt_ficha);
+        expect($fichas->pluck('idt_ficha'))->not->toContain($ficha2->idt_ficha);
+    });
+
+    test('listagem filtra por situacao', function () {
+        $fichaNova = Ficha::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'tip_situacao' => \App\Enums\TipoSituacao::NOVA,
+        ]);
+        FichaSGM::factory()->create(['idt_ficha' => $fichaNova->idt_ficha]);
+
+        $fichaAprovada = Ficha::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'tip_situacao' => \App\Enums\TipoSituacao::APROVADA,
+        ]);
+        FichaSGM::factory()->create(['idt_ficha' => $fichaAprovada->idt_ficha]);
+
+        $response = $this->get(route('sgm.index', ['situacao' => 'A']));
+        $response->assertStatus(200);
+        $fichas = $response->viewData('fichas');
+
+        expect($fichas->pluck('idt_ficha'))->toContain($fichaAprovada->idt_ficha);
+        expect($fichas->pluck('idt_ficha'))->not->toContain($fichaNova->idt_ficha);
     });
 });
 

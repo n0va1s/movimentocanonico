@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TipoSituacao;
 use App\Http\Requests\FichaEccRequest;
 use App\Models\Evento;
 use App\Models\Ficha;
@@ -32,12 +33,24 @@ class FichaEccController extends Controller
 
         $search = $request->get('search');
         $eventoId = $request->get('evento');
+        $situacao = $request->get('situacao');
         $evento = $eventoId ? Evento::find($eventoId) : null;
 
         Log::info('Requisição de listagem de fichas ECC iniciada', array_merge($context, [
             'search_term' => $search,
             'evento_filtro' => $eventoId,
+            'situacao_filtro' => $situacao,
         ]));
+
+        $hoje = now()->startOfDay();
+        $eventos = Evento::where('idt_movimento', TipoMovimento::ECC)
+            ->where(function ($q) use ($hoje) {
+                $q->where('dat_inicio', '>=', $hoje)
+                  ->orWhere('dat_termino', '>=', $hoje)
+                  ->orWhereNull('dat_termino');
+            })
+            ->orderBy('dat_inicio', 'asc')
+            ->get();
 
         $fichas = Ficha::with(['fichaEcc', 'fichaSaude'])
             ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
@@ -45,6 +58,7 @@ class FichaEccController extends Controller
                     ->orWhere('nom_apelido', 'like', "%{$search}%");
             }))
             ->when($eventoId, fn ($q) => $q->where('idt_evento', $eventoId))
+            ->when($situacao, fn ($q) => $q->where('tip_situacao', $situacao))
             ->whereHas('evento', fn ($q) => $q->where('idt_movimento', TipoMovimento::ECC))
             ->orderBy('created_at', 'desc')
             ->paginate(10)
@@ -55,7 +69,7 @@ class FichaEccController extends Controller
             'duration_ms' => round((microtime(true) - $start) * 1000, 2),
         ]));
 
-        return view('ficha.listECC', compact('fichas', 'search', 'evento'));
+        return view('ficha.listECC', compact('fichas', 'search', 'evento', 'eventos', 'situacao'));
     }
 
     /**

@@ -5,41 +5,19 @@
         <div>
             <x-session-alert />
         </div>
-        {{-- Título e subtítulo --}}
-        <div class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Gerenciar Fichas do VEM</h1>
-            @if ($evento?->exists)
-                <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-1">
-                    Evento: <strong>{{ $evento->des_evento }}</strong>
-                </p>
-            @endif
-        </div>
-
-        {{-- Filtro e ações --}}
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-            {{-- Busca --}}
-            <form method="GET" action="{{ route('vem.index') }}" class="flex items-center gap-2 w-full max-w-md">
-                <input type="text" name="search" id="search" value="{{ $search }}"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Buscar por nome ou apelido" />
-
-                <button type="submit"
-                    class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                    <x-heroicon-c-arrow-long-right class="w-5 h-5 mr-2" />
-                    Buscar
-                </button>
-
-                @if ($search)
-                    <a href="{{ route('vem.index') }}"
-                        class="inline-flex items-center px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-md">
-                        <x-heroicon-o-x-circle class="w-5 h-5 mr-2" />
-                        Limpar
-                    </a>
+        {{-- Título e ações principais --}}
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Gerenciar Fichas do VEM</h1>
+                @if ($evento?->exists)
+                    <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-1">
+                        Evento: <strong>{{ $evento->des_evento }}</strong>
+                    </p>
                 @endif
-            </form>
+            </div>
 
             {{-- Botões --}}
-            <div class="flex items-center gap-2 self-end sm:self-auto">
+            <div class="flex items-center gap-2">
                 <a href="{{ route('vem.create') }}"
                     class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
                     <x-heroicon-s-plus class="w-5 h-5 mr-2" />
@@ -52,6 +30,51 @@
                     Eventos
                 </a>
             </div>
+        </div>
+
+        {{-- Filtros de Busca --}}
+        <div class="mb-6">
+            <form method="GET" action="{{ route('vem.index') }}" class="flex flex-wrap items-center gap-2 w-full">
+                <input type="text" name="search" id="search" value="{{ $search }}"
+                    class="px-3 py-2 border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm w-full sm:w-64"
+                    placeholder="Buscar por nome ou apelido" />
+
+                {{-- Filtro por Evento --}}
+                <select name="evento" onchange="this.form.submit()"
+                    class="px-3 py-2 border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm w-full sm:w-auto">
+                    <option value="">Todos os Eventos</option>
+                    @foreach ($eventos as $e)
+                        <option value="{{ $e->idt_evento }}" {{ request('evento') == $e->idt_evento ? 'selected' : '' }}>
+                            {{ $e->des_evento }}
+                        </option>
+                    @endforeach
+                </select>
+
+                {{-- Filtro por Situação --}}
+                <select name="situacao" onchange="this.form.submit()"
+                    class="px-3 py-2 border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm w-full sm:w-auto">
+                    <option value="">Todas as Situações</option>
+                    @foreach (\App\Enums\TipoSituacao::cases() as $s)
+                        <option value="{{ $s->value }}" {{ request('situacao') == $s->value ? 'selected' : '' }}>
+                            {{ $s->label() }}
+                        </option>
+                    @endforeach
+                </select>
+
+                <button type="submit"
+                    class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm w-full sm:w-auto justify-center">
+                    <x-heroicon-c-arrow-long-right class="w-4 h-4 mr-2" />
+                    Buscar
+                </button>
+
+                @if ($search || request('evento') || request('situacao'))
+                    <a href="{{ route('vem.index') }}"
+                        class="inline-flex items-center px-4 py-2 bg-gray-300 hover:bg-gray-400 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-gray-700 dark:text-gray-200 rounded-md text-sm w-full sm:w-auto justify-center">
+                        <x-heroicon-o-x-circle class="w-4 h-4 mr-2" />
+                        Limpar
+                    </a>
+                @endif
+            </form>
         </div>
 
         {{-- Lista ou vazio --}}
