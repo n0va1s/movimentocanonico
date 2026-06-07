@@ -72,7 +72,7 @@ class FichaRequest extends FormRequest
             // CPF
             'num_cpf_candidato.string' => 'O CPF do candidato deve ser um texto.',
             'num_cpf_candidato.max' => 'O CPF do candidato deve ter no máximo 20 caracteres.',
-            'num_cpf_candidato.unique' => 'Este CPF já está cadastrado em nossa base de dados.',
+            'num_cpf_candidato.unique' => 'Já existe ficha cadastrada pra este CPF.',
 
             // Nome e Apelido
             'nom_candidato.required' => 'O nome do candidato é obrigatório.',

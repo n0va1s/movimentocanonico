@@ -60,7 +60,7 @@ class FichaVemRequest extends FichaRequest
 
     public function messages(): array
     {
-        return [
+        return array_merge(parent::messages(), [
             'idt_falar_com.required' => 'Informe com quem devemos falar em caso de necessidade.',
             'idt_falar_com.exists' => 'O responsável selecionado é inválido.',
 
@@ -104,6 +104,6 @@ class FichaVemRequest extends FichaRequest
 
             'nom_paroquia.string' => 'O nome da paróquia deve ser um texto.',
             'nom_paroquia.max' => 'O nome da paróquia deve ter no máximo 150 caracteres.',
-        ];
+        ]);
     }
 }

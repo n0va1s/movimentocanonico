@@ -135,6 +135,54 @@
             </div>
         @endif
 
+        @if (Auth::user()?->hasRole('admin', 'espec', 'coord') && $ficha->exists)
+            <div class="bg-white dark:bg-zinc-800 rounded-xl shadow border border-gray-200 dark:border-zinc-700 p-4 sm:p-6 mb-6">
+                <p class="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-3">Mudar Situação para:</p>
+                <div class="flex flex-wrap gap-2">
+                    @php
+                        $situacoes = \App\Enums\TipoSituacao::cases();
+                    @endphp
+                    @foreach($situacoes as $situacao)
+                        @php
+                            $isCurrent = $ficha->tip_situacao === $situacao;
+                            $style = $situacao->badge();
+                        @endphp
+                        
+                        @if($isCurrent)
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold text-white {{ $style['bg'] }} shadow-sm">
+                                <x-heroicon-s-check class="w-4 h-4" />
+                                {{ $situacao->label() }}
+                            </span>
+                        @else
+                            <form method="POST" action="{{ route('vem.situacao', $ficha->idt_ficha) }}" class="inline">
+                                @csrf
+                                <input type="hidden" name="tip_situacao" value="{{ $situacao->value }}">
+                                <button type="submit" 
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border transition-all duration-200 cursor-pointer hover:text-white {{ $style['light'] }} {{ $style['hover'] }}">
+                                    @if($situacao->value === 'N')
+                                        <x-heroicon-o-document-text class="w-4 h-4" />
+                                    @elseif($situacao->value === 'S')
+                                        <x-heroicon-o-check-circle class="w-4 h-4" />
+                                    @elseif($situacao->value === 'E')
+                                        <x-heroicon-o-envelope class="w-4 h-4" />
+                                    @elseif($situacao->value === 'R')
+                                        <x-heroicon-o-document-check class="w-4 h-4" />
+                                    @elseif($situacao->value === 'P')
+                                        <x-heroicon-o-credit-card class="w-4 h-4" />
+                                    @elseif($situacao->value === 'C')
+                                        <x-heroicon-o-x-circle class="w-4 h-4" />
+                                    @elseif($situacao->value === 'A')
+                                        <x-heroicon-o-sparkles class="w-4 h-4" />
+                                    @endif
+                                    {{ $situacao->label() }}
+                                </button>
+                            </form>
+                        @endif
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         @if ($eventos->count() > 0)
             <form method="POST" 
                 enctype="multipart/form-data"
@@ -143,54 +191,6 @@
                 class="space-y-6" novalidate>
                 @csrf
                 @if ($ficha->exists) @method('PUT') @endif
-
-                @if (Auth::user()?->hasRole('admin', 'espec', 'coord') && $ficha->exists)
-                    <div class="bg-white dark:bg-zinc-800 rounded-xl shadow border border-gray-200 dark:border-zinc-700 p-4 sm:p-6 mb-6">
-                        <p class="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-3">Mudar Situação para:</p>
-                        <div class="flex flex-wrap gap-2">
-                            @php
-                                $situacoes = \App\Enums\TipoSituacao::cases();
-                            @endphp
-                            @foreach($situacoes as $situacao)
-                                @php
-                                    $isCurrent = $ficha->tip_situacao === $situacao;
-                                    $style = $situacao->badge();
-                                @endphp
-                                
-                                @if($isCurrent)
-                                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold text-white {{ $style['bg'] }} shadow-sm">
-                                        <x-heroicon-s-check class="w-4 h-4" />
-                                        {{ $situacao->label() }}
-                                    </span>
-                                @else
-                                    <form method="POST" action="{{ route('vem.situacao', $ficha->idt_ficha) }}" class="inline">
-                                        @csrf
-                                        <input type="hidden" name="tip_situacao" value="{{ $situacao->value }}">
-                                        <button type="submit" 
-                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border transition-all duration-200 cursor-pointer hover:text-white {{ $style['light'] }} {{ $style['hover'] }}">
-                                            @if($situacao->value === 'N')
-                                                <x-heroicon-o-document-text class="w-4 h-4" />
-                                            @elseif($situacao->value === 'S')
-                                                <x-heroicon-o-check-circle class="w-4 h-4" />
-                                            @elseif($situacao->value === 'E')
-                                                <x-heroicon-o-envelope class="w-4 h-4" />
-                                            @elseif($situacao->value === 'R')
-                                                <x-heroicon-o-document-check class="w-4 h-4" />
-                                            @elseif($situacao->value === 'P')
-                                                <x-heroicon-o-credit-card class="w-4 h-4" />
-                                            @elseif($situacao->value === 'C')
-                                                <x-heroicon-o-x-circle class="w-4 h-4" />
-                                            @elseif($situacao->value === 'A')
-                                                <x-heroicon-o-sparkles class="w-4 h-4" />
-                                            @endif
-                                            {{ $situacao->label() }}
-                                        </button>
-                                    </form>
-                                @endif
-                            @endforeach
-                        </div>
-                    </div>
-                @endif
 
                 {{-- ===== DADOS DO PARTICIPANTE ===== --}}
                 <fieldset class="bg-white dark:bg-zinc-800 rounded-md shadow p-4 sm:p-6">
@@ -691,9 +691,9 @@
                         <div>
                             <p class="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm sm:text-base"
                                 id="sacramentos-label">
-                                Sacramentos recebidos
+                                Sacramentos
                             </p>
-                            <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-6" role="group" aria-labelledby="sacramentos-label">
+                            <div class="flex flex-col gap-2" role="group" aria-labelledby="sacramentos-label">
                                 <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_catolico" value="0">
                                     <input type="checkbox" name="ind_catolico" value="1"
@@ -708,7 +708,7 @@
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_batizado', optional($ficha->fichaVem)->ind_batizado) ? 'checked' : '' }}
                                         class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                    <span class="text-sm text-gray-800 dark:text-gray-100">Batizado</span>
+                                    <span class="text-sm text-gray-800 dark:text-gray-100">Foi batizado</span>
                                 </label>
                                 <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_primeira_comunhao" value="0">
@@ -716,7 +716,7 @@
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_primeira_comunhao', optional($ficha->fichaVem)->ind_primeira_comunhao) ? 'checked' : '' }}
                                         class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                    <span class="text-sm text-gray-800 dark:text-gray-100">Primeira Comunhão</span>
+                                    <span class="text-sm text-gray-800 dark:text-gray-100">Fez primeira comunhão</span>
                                 </label>
                                 <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_crismado" value="0">
@@ -724,7 +724,7 @@
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_crismado', optional($ficha->fichaVem)->ind_crismado) ? 'checked' : '' }}
                                         class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                    <span class="text-sm text-gray-800 dark:text-gray-100">Crismado</span>
+                                    <span class="text-sm text-gray-800 dark:text-gray-100">Foi crismado</span>
                                 </label>
                             </div>
                         </div>

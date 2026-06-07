@@ -26,6 +26,7 @@ use Livewire\Volt\Volt;
 // Utilitários (sem auth)
 // ---------------------------------------------------------------------------
 
+
 Route::get('/limpar-tudo', function () {
     Artisan::call('config:clear');
     Artisan::call('cache:clear');
