@@ -160,7 +160,7 @@ class Pessoa extends Model
     public function scopeSearchByName($query, $search)
     {
         // Verifica se estamos usando MySQL/MariaDB (produção) e não estamos em testes
-        if (!app()->runningUnitTests() && (config('database.default') === 'mysql' || config('database.default') === 'mariadb')) {
+        if (! app()->runningUnitTests() && (config('database.default') === 'mysql' || config('database.default') === 'mariadb')) {
             // Usa o Full-Text Search OTIMIZADO (Exige que você adicione o FTS manualmente no MySQL)
             return $query->whereFullText(['nom_pessoa', 'nom_apelido'], $search);
         }

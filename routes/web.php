@@ -10,7 +10,6 @@ use App\Http\Controllers\FichaSGMController;
 use App\Http\Controllers\FichaVemController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImportController;
-use App\Http\Controllers\ParticipanteController;
 use App\Http\Controllers\PessoaController;
 use App\Http\Controllers\TipoEquipeController;
 use App\Http\Controllers\TipoMovimentoController;
@@ -26,7 +25,6 @@ use Livewire\Volt\Volt;
 // Utilitários (sem auth)
 // ---------------------------------------------------------------------------
 
-
 Route::get('/limpar-tudo', function () {
     Artisan::call('config:clear');
     Artisan::call('cache:clear');
@@ -37,10 +35,11 @@ Route::get('/limpar-tudo', function () {
 });
 
 Route::get('/test-role', function () {
-    if (!auth()->check()) {
+    if (! auth()->check()) {
         return 'Not authenticated';
     }
     $user = auth()->user();
+
     return [
         'user' => $user->only(['id', 'name', 'email', 'role']),
         'isAdmin' => $user->isAdmin(),
@@ -91,7 +90,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/timeline', [EventoController::class, 'timeline'])->name('timeline.index');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
+
     Route::get('pessoas/{cpf}/busca', [PessoaController::class, 'buscaPorCpf'])->name('pessoas.busca');
 
     Route::get('/termo-sgm', fn () => view('termos.termoSGM'))->name('termo.sgm');

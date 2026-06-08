@@ -81,7 +81,7 @@ class EventoController extends Controller
             DB::beginTransaction();
 
             $dados = $request->validated();
-            
+
             // Remove os campos para não tentar salvar med_foto e med_logo na tabela de evento diretamente
             unset($dados['med_foto']);
             unset($dados['med_logo']);
@@ -306,7 +306,7 @@ class EventoController extends Controller
     public function confirm(Evento $evento, Pessoa $pessoa): RedirectResponse
     {
         $user = Auth::user();
-        if (!$user->isAdmin() && (!$user->pessoa || $user->pessoa->idt_pessoa !== $pessoa->idt_pessoa)) {
+        if (! $user->isAdmin() && (! $user->pessoa || $user->pessoa->idt_pessoa !== $pessoa->idt_pessoa)) {
             abort(403);
         }
 

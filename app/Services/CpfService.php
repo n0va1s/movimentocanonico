@@ -9,7 +9,7 @@ class CpfService
      */
     public static function format(?string $cpf): ?string
     {
-        if (!$cpf) {
+        if (! $cpf) {
             return null;
         }
 
@@ -27,7 +27,7 @@ class CpfService
      */
     public static function clean(?string $cpf): ?string
     {
-        if (!$cpf) {
+        if (! $cpf) {
             return null;
         }
 
@@ -41,7 +41,7 @@ class CpfService
      */
     public static function validate(?string $cpf, bool $forceStrict = false): bool
     {
-        if (!$cpf) {
+        if (! $cpf) {
             return false;
         }
 
@@ -55,7 +55,7 @@ class CpfService
 
         // Se estiver rodando em ambiente de testes e não forçada a validação estrita,
         // apenas garantimos o tamanho de 11 dígitos para não quebrar a suíte de testes legada.
-        if (app()->runningUnitTests() && !$forceStrict) {
+        if (app()->runningUnitTests() && ! $forceStrict) {
             return true;
         }
 

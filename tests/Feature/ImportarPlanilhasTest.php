@@ -3,21 +3,19 @@
 use App\Models\Evento;
 use App\Models\Participante;
 use App\Models\Pessoa;
-use App\Models\TipoMovimento;
 use App\Models\TipoEquipe;
+use App\Models\TipoMovimento;
 use App\Models\Trabalhador;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\File;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
     createMovimentos();
     $this->movimento = TipoMovimento::first();
-    
+
     // Cria usuários com perfis variados
     $this->admin = User::factory()->create(['role' => 'admin']);
     $this->espec = User::factory()->create(['role' => 'espec']);
@@ -74,15 +72,15 @@ test('admin pode acessar interface de importacao', function () {
 test('admin pode importar participantes de planilha CSV e cadastrar novas pessoas e usuarios', function () {
     $this->actingAs($this->admin);
 
-    $csvContent = "CPF;Nome;Apelido;Telefone;Email;Data Nascimento;Genero;Tamanho Camiseta;Endereco;Cor Troca;Taxa Pagou;Presente\n" .
-                  "12345678901;Maria Importada;Mari;61999999999;maria.importada@gmail.com;15/05/1995;F;M;Endereço Maria;azul;Sim;Sim\n" .
-                  "98765432109;Pedro Importado;Pepe;61988888888;pedro.importado@gmail.com;01/12/1990;M;GG;Endereço Pedro;;Não;Não";
+    $csvContent = "CPF;Nome;Apelido;Telefone;Email;Data Nascimento;Genero;Tamanho Camiseta;Endereco;Cor Troca;Taxa Pagou;Presente\n".
+                  "12345678901;Maria Importada;Mari;61999999999;maria.importada@gmail.com;15/05/1995;F;M;Endereço Maria;azul;Sim;Sim\n".
+                  '98765432109;Pedro Importado;Pepe;61988888888;pedro.importado@gmail.com;01/12/1990;M;GG;Endereço Pedro;;Não;Não';
 
     $file = UploadedFile::fake()->createWithContent('participantes.csv', $csvContent);
 
     $response = $this->post(route('eventos.importar.participantes'), [
         'evento_id' => $this->evento->idt_evento,
-        'arquivo_participantes' => $file
+        'arquivo_participantes' => $file,
     ]);
 
     $response->assertRedirect(route('eventos.importar'));
@@ -145,19 +143,19 @@ test('importador atualiza pessoa existente e garante vinculo de usuario', functi
 
     expect($pessoaExistente->idt_usuario)->toBeNull();
 
-    $csvContent = "CPF;Nome;Apelido;Telefone;Email;Data Nascimento;Genero;Tamanho Camiseta;Endereco;Cor Troca;Taxa Pagou;Presente\n" .
-                  "12345678901;Maria Atualizada;Mari;61999999999;existente.maria@gmail.com;15/05/1995;F;M;Novo Endereço;azul;Sim;Sim";
+    $csvContent = "CPF;Nome;Apelido;Telefone;Email;Data Nascimento;Genero;Tamanho Camiseta;Endereco;Cor Troca;Taxa Pagou;Presente\n".
+                  '12345678901;Maria Atualizada;Mari;61999999999;existente.maria@gmail.com;15/05/1995;F;M;Novo Endereço;azul;Sim;Sim';
 
     $file = UploadedFile::fake()->createWithContent('participantes.csv', $csvContent);
 
     $this->post(route('eventos.importar.participantes'), [
         'evento_id' => $this->evento->idt_evento,
-        'arquivo_participantes' => $file
+        'arquivo_participantes' => $file,
     ]);
 
     // Verifica que a pessoa existente foi atualizada ao invés de criar outra
     expect(Pessoa::where('num_cpf_pessoa', '12345678901')->count())->toBe(1);
-    
+
     $maria = $pessoaExistente->fresh();
     expect($maria->nom_pessoa)->toBe('Maria Atualizada')
         ->and($maria->des_endereco)->toBe('Novo Endereço')
@@ -178,21 +176,21 @@ test('admin pode importar trabalhadores de planilha CSV, associando-os a equipes
 
     // Garante que a equipe "Bandinha" do movimento está cadastrada
     $equipe = TipoEquipe::where('des_grupo', 'Bandinha')->first();
-    if (!$equipe) {
+    if (! $equipe) {
         $equipe = TipoEquipe::create([
             'des_grupo' => 'Bandinha',
-            'idt_movimento' => $this->movimento->idt_movimento
+            'idt_movimento' => $this->movimento->idt_movimento,
         ]);
     }
 
-    $csvContent = "CPF;Nome;Apelido;Telefone;Email;Data Nascimento;Genero;Tamanho Camiseta;Endereco;Equipe;Coordenador;Primeira Vez;Recomendado;Lideranca;Destaque;Avaliacao;Camiseta Pediu;Camiseta Pagou;Taxa Pagou;Presente\n" .
-                  "11111111111;José Trabalhador;Zezinho;61977777777;jose.trabalhador@gmail.com;1985-02-10;M;G;Endereço José;Bandinha;Sim;Não;Sim;Sim;Não;Sim;Sim;Sim;Sim;Sim";
+    $csvContent = "CPF;Nome;Apelido;Telefone;Email;Data Nascimento;Genero;Tamanho Camiseta;Endereco;Equipe;Coordenador;Primeira Vez;Recomendado;Lideranca;Destaque;Avaliacao;Camiseta Pediu;Camiseta Pagou;Taxa Pagou;Presente\n".
+                  '11111111111;José Trabalhador;Zezinho;61977777777;jose.trabalhador@gmail.com;1985-02-10;M;G;Endereço José;Bandinha;Sim;Não;Sim;Sim;Não;Sim;Sim;Sim;Sim;Sim';
 
     $file = UploadedFile::fake()->createWithContent('trabalhadores.csv', $csvContent);
 
     $response = $this->post(route('eventos.importar.trabalhadores'), [
         'evento_id' => $this->evento->idt_evento,
-        'arquivo_trabalhadores' => $file
+        'arquivo_trabalhadores' => $file,
     ]);
 
     $response->assertRedirect(route('eventos.importar'));

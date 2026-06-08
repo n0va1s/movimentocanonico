@@ -26,24 +26,28 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
+
         return strtolower($roleValue) === self::ROLE_ADMIN;
     }
 
     public function isCoordenador(): bool
     {
         $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
+
         return strtolower($roleValue) === self::ROLE_COORDENADOR;
     }
 
     public function isEspec(): bool
     {
         $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
+
         return strtolower($roleValue) === self::ROLE_ESPEC;
     }
 
     public function hasRole(string ...$roles): bool
     {
         $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
+
         return in_array(strtolower($roleValue), array_map('strtolower', $roles));
     }
 

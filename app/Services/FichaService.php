@@ -60,8 +60,8 @@ class FichaService
     public static function atualizarAprovacaoFicha(int $id): Ficha
     {
         $ficha = Ficha::findOrFail($id);
-        $novaSituacao = $ficha->tip_situacao === TipoSituacao::APROVADA 
-            ? TipoSituacao::NOVA 
+        $novaSituacao = $ficha->tip_situacao === TipoSituacao::APROVADA
+            ? TipoSituacao::NOVA
             : TipoSituacao::APROVADA;
 
         return self::atualizarSituacaoFicha($id, $novaSituacao);
@@ -84,8 +84,8 @@ class FichaService
             // CPF ausente: aprovação marcada, mas participante NÃO pode ser criado.
             // Lança exceção para que a transação seja revertida e o chamador informe o usuário.
             throw new \RuntimeException(
-                "A ficha de {$ficha->nom_candidato} não possui CPF cadastrado. " .
-                "Preencha o CPF antes de aprovar."
+                "A ficha de {$ficha->nom_candidato} não possui CPF cadastrado. ".
+                'Preencha o CPF antes de aprovar.'
             );
         }
 

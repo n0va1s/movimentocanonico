@@ -6,6 +6,7 @@ use App\Enums\EstadoCivil;
 use App\Enums\Genero;
 use App\Enums\HabilidadePrincipal;
 use App\Enums\TamanhoCamiseta;
+use App\Models\Pessoa;
 use App\Rules\Cpf;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -30,7 +31,7 @@ class PessoaRequest extends FormRequest
     public function rules(): array
     {
         $pessoaId = $this->route('pessoa') ?? $this->pessoa;
-        if ($pessoaId instanceof \App\Models\Pessoa) {
+        if ($pessoaId instanceof Pessoa) {
             $pessoaId = $pessoaId->idt_pessoa;
         }
 

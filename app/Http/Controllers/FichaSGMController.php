@@ -54,8 +54,8 @@ class FichaSGMController extends Controller
         $eventos = Evento::where('idt_movimento', TipoMovimento::SegueMe)
             ->where(function ($q) use ($hoje) {
                 $q->where('dat_inicio', '>=', $hoje)
-                  ->orWhere('dat_termino', '>=', $hoje)
-                  ->orWhereNull('dat_termino');
+                    ->orWhere('dat_termino', '>=', $hoje)
+                    ->orWhereNull('dat_termino');
             })
             ->orderBy('dat_inicio', 'asc')
             ->get();
@@ -165,7 +165,7 @@ class FichaSGMController extends Controller
         ]));
 
         $previous = url()->previous();
-        if (str_contains($previous, '/fichas/sgm') || (app()->runningUnitTests() && !str_contains($previous, '/sgm'))) {
+        if (str_contains($previous, '/fichas/sgm') || (app()->runningUnitTests() && ! str_contains($previous, '/sgm'))) {
             return redirect()->route('sgm.index')->with('success', 'Ficha cadastrada com sucesso!');
         }
 
@@ -182,8 +182,8 @@ class FichaSGMController extends Controller
         // Modo impressão: view dedicada sem formulário de edição
         if (request()->boolean('print') || request()->has('print')) {
             return view('ficha.print', [
-                'ficha'    => $ficha,
-                'tipo'     => 'SGM',
+                'ficha' => $ficha,
+                'tipo' => 'SGM',
                 'rotaEdit' => route('sgm.edit', $ficha),
             ]);
         }
@@ -277,7 +277,7 @@ class FichaSGMController extends Controller
         ]));
 
         $previous = url()->previous();
-        if (str_contains($previous, '/fichas/sgm') || (app()->runningUnitTests() && !str_contains($previous, '/sgm'))) {
+        if (str_contains($previous, '/fichas/sgm') || (app()->runningUnitTests() && ! str_contains($previous, '/sgm'))) {
             return redirect()->route('sgm.index')->with('success', 'Ficha atualizada com sucesso!');
         }
 
@@ -335,10 +335,11 @@ class FichaSGMController extends Controller
             'tip_situacao' => 'required|string|in:N,S,E,R,P,C,A',
         ]);
 
-        $novaSituacao = \App\Enums\TipoSituacao::from($request->input('tip_situacao'));
+        $novaSituacao = TipoSituacao::from($request->input('tip_situacao'));
 
         try {
             FichaService::atualizarSituacaoFicha($id, $novaSituacao);
+
             return redirect()->back()->with('success', 'Situação da ficha atualizada com sucesso!');
         } catch (\RuntimeException $e) {
             return redirect()->back()->with('error', $e->getMessage());

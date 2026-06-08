@@ -52,8 +52,8 @@ class FichaVemController extends Controller
         $eventos = Evento::where('idt_movimento', TipoMovimento::VEM)
             ->where(function ($q) use ($hoje) {
                 $q->where('dat_inicio', '>=', $hoje)
-                  ->orWhere('dat_termino', '>=', $hoje)
-                  ->orWhereNull('dat_termino');
+                    ->orWhere('dat_termino', '>=', $hoje)
+                    ->orWhereNull('dat_termino');
             })
             ->orderBy('dat_inicio', 'asc')
             ->get();
@@ -194,7 +194,7 @@ class FichaVemController extends Controller
         ]));
 
         $previous = url()->previous();
-        if (str_contains($previous, '/fichas/vem') || (app()->runningUnitTests() && !str_contains($previous, '/vem'))) {
+        if (str_contains($previous, '/fichas/vem') || (app()->runningUnitTests() && ! str_contains($previous, '/vem'))) {
             return redirect()->route('vem.index')->with('success', 'Ficha cadastrada com sucesso!');
         }
 
@@ -214,8 +214,8 @@ class FichaVemController extends Controller
         // Modo impressão: view dedicada sem formulário de edição
         if (request()->boolean('print') || request()->has('print')) {
             return view('ficha.print', [
-                'ficha'    => $ficha,
-                'tipo'     => 'VEM',
+                'ficha' => $ficha,
+                'tipo' => 'VEM',
                 'rotaEdit' => route('vem.edit', $ficha),
             ]);
         }
@@ -339,7 +339,7 @@ class FichaVemController extends Controller
         ]));
 
         $previous = url()->previous();
-        if (str_contains($previous, '/fichas/vem') || (app()->runningUnitTests() && !str_contains($previous, '/vem'))) {
+        if (str_contains($previous, '/fichas/vem') || (app()->runningUnitTests() && ! str_contains($previous, '/vem'))) {
             return redirect()->route('vem.index')->with('success', 'Ficha atualizada com sucesso!');
         }
 
@@ -409,10 +409,11 @@ class FichaVemController extends Controller
             'tip_situacao' => 'required|string|in:N,S,E,R,P,C,A',
         ]);
 
-        $novaSituacao = \App\Enums\TipoSituacao::from($request->input('tip_situacao'));
+        $novaSituacao = TipoSituacao::from($request->input('tip_situacao'));
 
         try {
             FichaService::atualizarSituacaoFicha($id, $novaSituacao);
+
             return redirect()->back()->with('success', 'Situação da ficha atualizada com sucesso!');
         } catch (\RuntimeException $e) {
             return redirect()->back()->with('error', $e->getMessage());

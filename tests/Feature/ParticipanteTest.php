@@ -15,7 +15,7 @@ beforeEach(function () {
     $this->movimento = TipoMovimento::first();
     $this->admin = User::factory()->create(['role' => 'admin']);
     $this->user = User::factory()->create(['role' => 'user']);
-    
+
     // Create an event
     $this->evento = Evento::factory()->create([
         'idt_movimento' => $this->movimento->idt_movimento,

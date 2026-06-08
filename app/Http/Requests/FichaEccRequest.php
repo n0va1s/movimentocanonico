@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Ficha;
 use App\Rules\Cpf;
 use Illuminate\Validation\Rule;
 
@@ -32,7 +33,7 @@ class FichaEccRequest extends FichaRequest
             $mergeData['filhos'] = $filhos;
         }
 
-        if (!empty($mergeData)) {
+        if (! empty($mergeData)) {
             $this->merge($mergeData);
         }
     }
@@ -40,7 +41,7 @@ class FichaEccRequest extends FichaRequest
     public function rules(): array
     {
         $fichaId = $this->route('ficha') ?? $this->route('ecc') ?? $this->route('sgm') ?? $this->route('vem') ?? $this->ficha;
-        if ($fichaId instanceof \App\Models\Ficha) {
+        if ($fichaId instanceof Ficha) {
             $fichaId = $fichaId->idt_ficha;
         }
 

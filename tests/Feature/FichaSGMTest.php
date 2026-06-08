@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\TipoSituacao;
 use App\Models\Evento;
 use App\Models\Ficha;
 use App\Models\FichaSGM;
@@ -76,7 +77,7 @@ beforeEach(function () {
 
     // Cria os movimentos com IDs fixos (ECC=1, VEM=2, Segue-Me=3)
     // para corresponder às constantes TipoMovimento::ECC/VEM/SegueMe
-    \DB::table('tipo_movimento')->insertOrIgnore([
+    DB::table('tipo_movimento')->insertOrIgnore([
         ['idt_movimento' => 1, 'nom_movimento' => 'Encontro de Casais com Cristo', 'des_sigla' => 'ECC', 'dat_inicio' => '1980-01-01', 'created_at' => now(), 'updated_at' => now()],
         ['idt_movimento' => 2, 'nom_movimento' => 'Encontro de Adolescentes com Cristo', 'des_sigla' => 'VEM', 'dat_inicio' => '2000-07-01', 'created_at' => now(), 'updated_at' => now()],
         ['idt_movimento' => 3, 'nom_movimento' => 'Encontro de Jovens com Cristo', 'des_sigla' => 'Segue-Me', 'dat_inicio' => '1990-12-31', 'created_at' => now(), 'updated_at' => now()],
@@ -167,17 +168,17 @@ describe('FichaSGMController — Listagem', function () {
 
     test('listagem filtra por evento', function () {
         $evento2 = Evento::factory()->create(['idt_movimento' => TipoMovimento::SegueMe]);
-        
+
         $ficha1 = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento]);
         FichaSGM::factory()->create(['idt_ficha' => $ficha1->idt_ficha]);
-        
+
         $ficha2 = Ficha::factory()->create(['idt_evento' => $evento2->idt_evento]);
         FichaSGM::factory()->create(['idt_ficha' => $ficha2->idt_ficha]);
 
         $response = $this->get(route('sgm.index', ['evento' => $this->evento->idt_evento]));
         $response->assertStatus(200);
         $fichas = $response->viewData('fichas');
-        
+
         expect($fichas->pluck('idt_ficha'))->toContain($ficha1->idt_ficha);
         expect($fichas->pluck('idt_ficha'))->not->toContain($ficha2->idt_ficha);
     });
@@ -185,13 +186,13 @@ describe('FichaSGMController — Listagem', function () {
     test('listagem filtra por situacao', function () {
         $fichaNova = Ficha::factory()->create([
             'idt_evento' => $this->evento->idt_evento,
-            'tip_situacao' => \App\Enums\TipoSituacao::NOVA,
+            'tip_situacao' => TipoSituacao::NOVA,
         ]);
         FichaSGM::factory()->create(['idt_ficha' => $fichaNova->idt_ficha]);
 
         $fichaAprovada = Ficha::factory()->create([
             'idt_evento' => $this->evento->idt_evento,
-            'tip_situacao' => \App\Enums\TipoSituacao::APROVADA,
+            'tip_situacao' => TipoSituacao::APROVADA,
         ]);
         FichaSGM::factory()->create(['idt_ficha' => $fichaAprovada->idt_ficha]);
 

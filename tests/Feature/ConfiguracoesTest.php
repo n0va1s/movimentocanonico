@@ -46,4 +46,3 @@ test('comum user cannot access configuracoes index', function () {
         ->get(route('configuracoes.index'))
         ->assertStatus(403);
 });
-

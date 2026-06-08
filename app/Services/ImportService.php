@@ -29,8 +29,9 @@ class ImportService
         $this->writeLog($logPath, "=== INÍCIO DA IMPORTAÇÃO DE PARTICIPANTES - EVENTO: {$evento->des_evento} (ID: {$evento->idt_evento}) em {$startTime} ===");
 
         $file = fopen($filePath, 'r');
-        if (!$file) {
-            $this->writeLog($logPath, "Erro: Não foi possível abrir o arquivo.");
+        if (! $file) {
+            $this->writeLog($logPath, 'Erro: Não foi possível abrir o arquivo.');
+
             return ['success' => false, 'message' => 'Não foi possível abrir o arquivo.'];
         }
 
@@ -40,20 +41,22 @@ class ImportService
         rewind($file);
 
         $headers = fgetcsv($file, 0, $delimiter);
-        if (!$headers) {
-            $this->writeLog($logPath, "Erro: Planilha vazia ou cabeçalhos não encontrados.");
+        if (! $headers) {
+            $this->writeLog($logPath, 'Erro: Planilha vazia ou cabeçalhos não encontrados.');
             fclose($file);
+
             return ['success' => false, 'message' => 'Planilha vazia ou cabeçalhos não encontrados.'];
         }
 
         $headerMap = $this->mapHeaders($headers);
-        $this->writeLog($logPath, "Cabeçalhos mapeados: " . json_encode($headerMap));
+        $this->writeLog($logPath, 'Cabeçalhos mapeados: '.json_encode($headerMap));
 
         // Valida se os campos obrigatórios estão presentes
-        if (!isset($headerMap['nome']) || !isset($headerMap['email']) || !isset($headerMap['data_nascimento'])) {
+        if (! isset($headerMap['nome']) || ! isset($headerMap['email']) || ! isset($headerMap['data_nascimento'])) {
             $msg = "Erro: Cabeçalhos obrigatórios ausentes. Certifique-se de que a planilha possui 'Nome', 'Email' e 'Data Nascimento'.";
             $this->writeLog($logPath, $msg);
             fclose($file);
+
             return ['success' => false, 'message' => $msg];
         }
 
@@ -79,7 +82,7 @@ class ImportService
             $stats['total_rows']++;
             $batch[] = [
                 'line' => $lineNumber,
-                'data' => $row
+                'data' => $row,
             ];
 
             // Quando atinge o lote de 50
@@ -99,21 +102,21 @@ class ImportService
         fclose($file);
 
         $endTime = now()->toDateTimeString();
-        $summary = "=== FIM DA IMPORTAÇÃO DE PARTICIPANTES ===\n" .
-            "Total de linhas lidas: {$stats['total_rows']}\n" .
-            "Criados (Pessoa): {$stats['created']}\n" .
-            "Atualizados (Pessoa): {$stats['updated']}\n" .
-            "Vinculados ao Evento: {$stats['linked']}\n" .
-            "Erros: {$stats['errors']}\n" .
-            "Lotes processados: {$stats['batches']}\n" .
-            "Finalizado em: {$endTime}\n" .
-            "==========================================";
+        $summary = "=== FIM DA IMPORTAÇÃO DE PARTICIPANTES ===\n".
+            "Total de linhas lidas: {$stats['total_rows']}\n".
+            "Criados (Pessoa): {$stats['created']}\n".
+            "Atualizados (Pessoa): {$stats['updated']}\n".
+            "Vinculados ao Evento: {$stats['linked']}\n".
+            "Erros: {$stats['errors']}\n".
+            "Lotes processados: {$stats['batches']}\n".
+            "Finalizado em: {$endTime}\n".
+            '==========================================';
         $this->writeLog($logPath, $summary);
 
         return [
             'success' => true,
             'stats' => $stats,
-            'log_path' => $logPath
+            'log_path' => $logPath,
         ];
     }
 
@@ -128,8 +131,9 @@ class ImportService
         $this->writeLog($logPath, "=== INÍCIO DA IMPORTAÇÃO DE TRABALHADORES - EVENTO: {$evento->des_evento} (ID: {$evento->idt_evento}) em {$startTime} ===");
 
         $file = fopen($filePath, 'r');
-        if (!$file) {
-            $this->writeLog($logPath, "Erro: Não foi possível abrir o arquivo.");
+        if (! $file) {
+            $this->writeLog($logPath, 'Erro: Não foi possível abrir o arquivo.');
+
             return ['success' => false, 'message' => 'Não foi possível abrir o arquivo.'];
         }
 
@@ -139,20 +143,22 @@ class ImportService
         rewind($file);
 
         $headers = fgetcsv($file, 0, $delimiter);
-        if (!$headers) {
-            $this->writeLog($logPath, "Erro: Planilha vazia ou cabeçalhos não encontrados.");
+        if (! $headers) {
+            $this->writeLog($logPath, 'Erro: Planilha vazia ou cabeçalhos não encontrados.');
             fclose($file);
+
             return ['success' => false, 'message' => 'Planilha vazia ou cabeçalhos não encontrados.'];
         }
 
         $headerMap = $this->mapHeaders($headers);
-        $this->writeLog($logPath, "Cabeçalhos mapeados: " . json_encode($headerMap));
+        $this->writeLog($logPath, 'Cabeçalhos mapeados: '.json_encode($headerMap));
 
         // Valida se os campos obrigatórios estão presentes
-        if (!isset($headerMap['nome']) || !isset($headerMap['email']) || !isset($headerMap['data_nascimento']) || !isset($headerMap['equipe'])) {
+        if (! isset($headerMap['nome']) || ! isset($headerMap['email']) || ! isset($headerMap['data_nascimento']) || ! isset($headerMap['equipe'])) {
             $msg = "Erro: Cabeçalhos obrigatórios ausentes. Certifique-se de que a planilha possui 'Nome', 'Email', 'Data Nascimento' e 'Equipe'.";
             $this->writeLog($logPath, $msg);
             fclose($file);
+
             return ['success' => false, 'message' => $msg];
         }
 
@@ -178,7 +184,7 @@ class ImportService
             $stats['total_rows']++;
             $batch[] = [
                 'line' => $lineNumber,
-                'data' => $row
+                'data' => $row,
             ];
 
             // Quando atinge o lote de 50
@@ -198,21 +204,21 @@ class ImportService
         fclose($file);
 
         $endTime = now()->toDateTimeString();
-        $summary = "=== FIM DA IMPORTAÇÃO DE TRABALHADORES ===\n" .
-            "Total de linhas lidas: {$stats['total_rows']}\n" .
-            "Criados (Pessoa): {$stats['created']}\n" .
-            "Atualizados (Pessoa): {$stats['updated']}\n" .
-            "Vinculados ao Evento: {$stats['linked']}\n" .
-            "Erros: {$stats['errors']}\n" .
-            "Lotes processados: {$stats['batches']}\n" .
-            "Finalizado em: {$endTime}\n" .
-            "==========================================";
+        $summary = "=== FIM DA IMPORTAÇÃO DE TRABALHADORES ===\n".
+            "Total de linhas lidas: {$stats['total_rows']}\n".
+            "Criados (Pessoa): {$stats['created']}\n".
+            "Atualizados (Pessoa): {$stats['updated']}\n".
+            "Vinculados ao Evento: {$stats['linked']}\n".
+            "Erros: {$stats['errors']}\n".
+            "Lotes processados: {$stats['batches']}\n".
+            "Finalizado em: {$endTime}\n".
+            '==========================================';
         $this->writeLog($logPath, $summary);
 
         return [
             'success' => true,
             'stats' => $stats,
-            'log_path' => $logPath
+            'log_path' => $logPath,
         ];
     }
 
@@ -221,7 +227,7 @@ class ImportService
      */
     private function processarLoteParticipantes(Evento $evento, array $batch, array $headerMap, array &$stats, string $logPath): void
     {
-        $this->writeLog($logPath, "Processando lote de participantes - Tamanho: " . count($batch));
+        $this->writeLog($logPath, 'Processando lote de participantes - Tamanho: '.count($batch));
 
         DB::transaction(function () use ($evento, $batch, $headerMap, &$stats, $logPath) {
             foreach ($batch as $item) {
@@ -235,6 +241,7 @@ class ImportService
                     if (empty($rowValues['nome']) || empty($rowValues['email']) || empty($rowValues['data_nascimento'])) {
                         $this->writeLog($logPath, "Linha {$line}: Ignorada devido a campos obrigatórios em branco (Nome/Email/Data Nascimento).");
                         $stats['errors']++;
+
                         continue;
                     }
 
@@ -242,9 +249,10 @@ class ImportService
                     $emailClean = trim(strtolower($rowValues['email']));
                     $dataNascimento = $this->parseBirthDate($rowValues['data_nascimento']);
 
-                    if (!$dataNascimento) {
+                    if (! $dataNascimento) {
                         $this->writeLog($logPath, "Linha {$line}: Data de nascimento inválida ('{$rowValues['data_nascimento']}').");
                         $stats['errors']++;
+
                         continue;
                     }
 
@@ -253,7 +261,7 @@ class ImportService
                     if ($cpfClean) {
                         $pessoa = Pessoa::where('num_cpf_pessoa', $cpfClean)->first();
                     }
-                    if (!$pessoa) {
+                    if (! $pessoa) {
                         $pessoa = Pessoa::where('eml_pessoa', $emailClean)->first();
                     }
 
@@ -274,7 +282,7 @@ class ImportService
 
                     if ($pessoa) {
                         // Atualiza a pessoa
-                        $pessoa->update(array_filter($dadosPessoa, fn($v) => !is_null($v)));
+                        $pessoa->update(array_filter($dadosPessoa, fn ($v) => ! is_null($v)));
                         $stats['updated']++;
                         $this->writeLog($logPath, "Linha {$line}: Pessoa existente atualizada (ID: {$pessoa->idt_pessoa}, Nome: {$pessoa->nom_pessoa}).");
                     } else {
@@ -309,7 +317,7 @@ class ImportService
 
                 } catch (\Throwable $e) {
                     $stats['errors']++;
-                    $this->writeLog($logPath, "Linha {$line}: Erro no processamento - " . $e->getMessage() . "\n" . $e->getTraceAsString());
+                    $this->writeLog($logPath, "Linha {$line}: Erro no processamento - ".$e->getMessage()."\n".$e->getTraceAsString());
                 }
             }
         });
@@ -320,7 +328,7 @@ class ImportService
      */
     private function processarLoteTrabalhadores(Evento $evento, array $batch, array $headerMap, array &$stats, string $logPath): void
     {
-        $this->writeLog($logPath, "Processando lote de trabalhadores - Tamanho: " . count($batch));
+        $this->writeLog($logPath, 'Processando lote de trabalhadores - Tamanho: '.count($batch));
 
         DB::transaction(function () use ($evento, $batch, $headerMap, &$stats, $logPath) {
             foreach ($batch as $item) {
@@ -334,6 +342,7 @@ class ImportService
                     if (empty($rowValues['nome']) || empty($rowValues['email']) || empty($rowValues['data_nascimento']) || empty($rowValues['equipe'])) {
                         $this->writeLog($logPath, "Linha {$line}: Ignorada devido a campos obrigatórios em branco (Nome/Email/Data Nascimento/Equipe).");
                         $stats['errors']++;
+
                         continue;
                     }
 
@@ -341,9 +350,10 @@ class ImportService
                     $emailClean = trim(strtolower($rowValues['email']));
                     $dataNascimento = $this->parseBirthDate($rowValues['data_nascimento']);
 
-                    if (!$dataNascimento) {
+                    if (! $dataNascimento) {
                         $this->writeLog($logPath, "Linha {$line}: Data de nascimento inválida ('{$rowValues['data_nascimento']}').");
                         $stats['errors']++;
+
                         continue;
                     }
 
@@ -351,7 +361,7 @@ class ImportService
                     $nomeEquipe = trim($rowValues['equipe']);
                     $equipe = null;
                     if (is_numeric($nomeEquipe)) {
-                        $equipe = TipoEquipe::where('idt_equipe', (int)$nomeEquipe)
+                        $equipe = TipoEquipe::where('idt_equipe', (int) $nomeEquipe)
                             ->where('idt_movimento', $evento->idt_movimento)
                             ->first();
                     } else {
@@ -360,9 +370,10 @@ class ImportService
                             ->first();
                     }
 
-                    if (!$equipe) {
+                    if (! $equipe) {
                         $this->writeLog($logPath, "Linha {$line}: Equipe '{$nomeEquipe}' não encontrada para o movimento deste evento.");
                         $stats['errors']++;
+
                         continue;
                     }
 
@@ -371,7 +382,7 @@ class ImportService
                     if ($cpfClean) {
                         $pessoa = Pessoa::where('num_cpf_pessoa', $cpfClean)->first();
                     }
-                    if (!$pessoa) {
+                    if (! $pessoa) {
                         $pessoa = Pessoa::where('eml_pessoa', $emailClean)->first();
                     }
 
@@ -392,7 +403,7 @@ class ImportService
 
                     if ($pessoa) {
                         // Atualiza a pessoa
-                        $pessoa->update(array_filter($dadosPessoa, fn($v) => !is_null($v)));
+                        $pessoa->update(array_filter($dadosPessoa, fn ($v) => ! is_null($v)));
                         $stats['updated']++;
                         $this->writeLog($logPath, "Linha {$line}: Pessoa existente atualizada (ID: {$pessoa->idt_pessoa}, Nome: {$pessoa->nom_pessoa}).");
                     } else {
@@ -431,7 +442,7 @@ class ImportService
 
                 } catch (\Throwable $e) {
                     $stats['errors']++;
-                    $this->writeLog($logPath, "Linha {$line}: Erro no processamento - " . $e->getMessage() . "\n" . $e->getTraceAsString());
+                    $this->writeLog($logPath, "Linha {$line}: Erro no processamento - ".$e->getMessage()."\n".$e->getTraceAsString());
                 }
             }
         });
@@ -449,7 +460,7 @@ class ImportService
         // Verifica se já existe um User com o mesmo email
         $user = User::where('email', trim(strtolower($pessoa->eml_pessoa)))->first();
 
-        if (!$user) {
+        if (! $user) {
             $senha = $pessoa->dat_nascimento ? $pessoa->dat_nascimento->format('Ymd') : '12345678';
             $user = User::create([
                 'name' => $pessoa->nom_pessoa,
@@ -516,6 +527,7 @@ class ImportService
                 $headerMap['camiseta_pagou'] = $index;
             }
         }
+
         return $headerMap;
     }
 
@@ -535,6 +547,7 @@ class ImportService
         // Transforma caracteres especiais e espaços em underscores
         $header = preg_replace('/[^a-z0-9_]/', '_', $header);
         $header = preg_replace('/_+/', '_', $header);
+
         return trim($header, '_');
     }
 
@@ -547,7 +560,7 @@ class ImportService
         $keys = [
             'cpf', 'nome', 'apelido', 'telefone', 'email', 'data_nascimento', 'genero', 'tamanho_camiseta', 'endereco',
             'cor_troca', 'taxa_pagou', 'presente', 'equipe', 'coordenador', 'primeira_vez', 'recomendado', 'lideranca',
-            'destaque', 'avaliacao', 'camiseta_pediu', 'camiseta_pagou'
+            'destaque', 'avaliacao', 'camiseta_pediu', 'camiseta_pagou',
         ];
 
         foreach ($keys as $key) {
@@ -570,6 +583,7 @@ class ImportService
     {
         $semicolons = substr_count($headerLine, ';');
         $commas = substr_count($headerLine, ',');
+
         return $semicolons > $commas ? ';' : ',';
     }
 
@@ -578,7 +592,9 @@ class ImportService
      */
     private function parseBirthDate($value): ?string
     {
-        if (!$value) return null;
+        if (! $value) {
+            return null;
+        }
         $value = trim($value);
 
         // DD/MM/AAAA
@@ -603,7 +619,9 @@ class ImportService
      */
     private function parseGenero($value): ?Genero
     {
-        if (!$value) return null;
+        if (! $value) {
+            return null;
+        }
         $val = strtoupper(trim($value));
 
         if (in_array($val, ['M', 'MASCULINO'])) {
@@ -621,7 +639,10 @@ class ImportService
      */
     private function parseTamanhoCamiseta($value): ?TamanhoCamiseta
     {
-        if (!$value) return null;
+        if (! $value) {
+            return null;
+        }
+
         return TamanhoCamiseta::tryFrom(strtoupper(trim($value)));
     }
 
@@ -630,9 +651,12 @@ class ImportService
      */
     private function parseCorTroca($value): ?string
     {
-        if (!$value) return null;
+        if (! $value) {
+            return null;
+        }
         $val = strtolower(trim($value));
         $cor = CorTroca::tryFrom($val);
+
         return $cor ? $cor->value : null;
     }
 
@@ -641,8 +665,11 @@ class ImportService
      */
     private function parseBoolean($value): bool
     {
-        if (!$value) return false;
+        if (! $value) {
+            return false;
+        }
         $val = trim(strtolower($value));
+
         return in_array($val, ['1', 'yes', 'y', 'sim', 's', 'true', 'confirmado', 'pago', 'presente']);
     }
 
@@ -652,7 +679,7 @@ class ImportService
     private function writeLog(string $path, string $message): void
     {
         $dir = dirname($path);
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
         $timestamp = now()->toDateTimeString();

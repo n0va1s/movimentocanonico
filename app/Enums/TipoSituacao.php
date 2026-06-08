@@ -5,7 +5,7 @@ namespace App\Enums;
 enum TipoSituacao: string
 {
     case NOVA = 'N'; // criada pelos pais ou pelo candidato
-    case SELECIONADA = 'S'; // selecionada por atender aos requisitos 
+    case SELECIONADA = 'S'; // selecionada por atender aos requisitos
     case ENVIADA = 'E'; // enviada por email para confirmacao por um dos pais
     case RECEBIDA = 'R'; // documentacao recebida
     case PAGA = 'P'; // confirmada com pagamento
@@ -27,7 +27,7 @@ enum TipoSituacao: string
 
     public function badge(): array
     {
-         return match ($this) {
+        return match ($this) {
             self::NOVA => ['bg' => 'bg-slate-500', 'text' => 'text-slate-500', 'hover' => 'hover:bg-slate-600 hover:border-slate-600', 'border' => 'border-slate-500', 'light' => 'bg-slate-50 dark:bg-slate-900/20 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700'],
             self::SELECIONADA => ['bg' => 'bg-indigo-500', 'text' => 'text-indigo-500', 'hover' => 'hover:bg-indigo-600 hover:border-indigo-600', 'border' => 'border-indigo-500', 'light' => 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-700'],
             self::ENVIADA => ['bg' => 'bg-blue-500', 'text' => 'text-blue-500', 'hover' => 'hover:bg-blue-600 hover:border-blue-600', 'border' => 'border-blue-500', 'light' => 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700'],

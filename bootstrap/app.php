@@ -7,7 +7,9 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use Livewire\Features\SupportDisablingBackButtonCache\DisableBackButtonCacheMiddleware;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -23,7 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->append(TraceIdMiddleware::class);
         $middleware->web(append: [
-            \Livewire\Features\SupportDisablingBackButtonCache\DisableBackButtonCacheMiddleware::class,
+            DisableBackButtonCacheMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
@@ -33,7 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             // Garante que o erro sempre vai para o log, independente do Telegram
-            \Illuminate\Support\Facades\Log::error($e->getMessage(), [
+            Log::error($e->getMessage(), [
                 'exception' => get_class($e),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
@@ -57,7 +59,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     Cache::put('error_notification_'.$errorHash, true, now()->addMinutes(5));
                 }
             } catch (Throwable $cacheException) {
-                \Illuminate\Support\Facades\Log::warning('Falha ao enviar notificação de erro (cache/telegram indisponível)', [
+                Log::warning('Falha ao enviar notificação de erro (cache/telegram indisponível)', [
                     'cache_error' => $cacheException->getMessage(),
                 ]);
             }

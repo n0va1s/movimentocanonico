@@ -55,8 +55,6 @@ function makeValidPayload($overrides = [])
     ], $overrides);
 }
 
-
-
 /*
 |--------------------------------------------------------------------------
 | CREATE / STORE
@@ -126,9 +124,9 @@ describe('Confirmação', function () {
 
         Volt::actingAs($this->admin)
             ->test('evento.partials.voluntarios', ['evento' => $this->evento])
-            ->set('selectedEquipes.' . $this->pessoa->idt_pessoa, $this->equipe3->idt_equipe)
-            ->set('indCoordenador.' . $this->pessoa->idt_pessoa, true)
-            ->set('indPrimeiraVez.' . $this->pessoa->idt_pessoa, true)
+            ->set('selectedEquipes.'.$this->pessoa->idt_pessoa, $this->equipe3->idt_equipe)
+            ->set('indCoordenador.'.$this->pessoa->idt_pessoa, true)
+            ->set('indPrimeiraVez.'.$this->pessoa->idt_pessoa, true)
             ->call('confirmarTrabalhador', $this->pessoa->idt_pessoa)
             ->assertHasNoErrors();
 
@@ -163,7 +161,7 @@ describe('Confirmação', function () {
 
         Volt::actingAs($coord)
             ->test('evento.partials.voluntarios', ['evento' => $this->evento])
-            ->set('selectedEquipes.' . $this->pessoa->idt_pessoa, $this->equipe2->idt_equipe)
+            ->set('selectedEquipes.'.$this->pessoa->idt_pessoa, $this->equipe2->idt_equipe)
             ->call('confirmarTrabalhador', $this->pessoa->idt_pessoa)
             ->assertHasNoErrors();
 

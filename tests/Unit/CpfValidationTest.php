@@ -1,7 +1,6 @@
 <?php
 
 use App\Services\CpfService;
-use App\Rules\Cpf;
 
 test('pode formatar CPF com mascara', function () {
     expect(CpfService::format('12345678901'))->toBe('123.456.789-01');

@@ -22,22 +22,22 @@ beforeEach(function () {
     $this->movimento = TipoMovimento::first();
 
     // Usuários por perfil
-    $this->admin  = User::factory()->create(['role' => 'admin']);
-    $this->coord  = User::factory()->create(['role' => 'coord']);
-    $this->espec  = User::factory()->create(['role' => 'espec']);
-    $this->user   = User::factory()->create(['role' => 'user']);
+    $this->admin = User::factory()->create(['role' => 'admin']);
+    $this->coord = User::factory()->create(['role' => 'coord']);
+    $this->espec = User::factory()->create(['role' => 'espec']);
+    $this->user = User::factory()->create(['role' => 'user']);
 
     // Pessoas vinculadas
     Pessoa::factory()->for($this->admin, 'usuario')->create();
     Pessoa::factory()->for($this->coord, 'usuario')->create();
     Pessoa::factory()->for($this->espec, 'usuario')->create();
-    Pessoa::factory()->for($this->user,  'usuario')->create();
+    Pessoa::factory()->for($this->user, 'usuario')->create();
 
     // Evento do tipo ENCONTRO (habilita todas as abas)
     $this->evento = Evento::factory()->create([
         'idt_movimento' => $this->movimento->idt_movimento,
-        'tip_evento'    => TipoEvento::ENCONTRO->value,
-        'des_evento'    => 'Encontro de Gerenciamento',
+        'tip_evento' => TipoEvento::ENCONTRO->value,
+        'des_evento' => 'Encontro de Gerenciamento',
     ]);
 
     $this->equipe = TipoEquipe::first();
@@ -100,17 +100,17 @@ describe('Prestação de Contas — contas.blade.php', function () {
             ->assertHasNoErrors();
 
         $this->assertDatabaseHas('evento', [
-            'idt_evento'    => $this->evento->idt_evento,
-            'val_receita'   => 1500.00,
-            'val_despesa'   => 800.00,
+            'idt_evento' => $this->evento->idt_evento,
+            'val_receita' => 1500.00,
+            'val_despesa' => 800.00,
             'txt_relatorio' => 'Relatório do evento de teste.',
         ]);
     });
 
     test('mount pré-carrega valores existentes do evento', function () {
         $this->evento->update([
-            'val_receita'   => 2000.00,
-            'val_despesa'   => 1200.00,
+            'val_receita' => 2000.00,
+            'val_despesa' => 1200.00,
             'txt_relatorio' => 'Relatório existente.',
         ]);
 
@@ -180,9 +180,9 @@ describe('Voluntários — confirmarTrabalhador', function () {
 
         // Voluntário pendente
         $this->voluntario = Voluntario::factory()->create([
-            'idt_pessoa'      => $this->pessoaVol->idt_pessoa,
-            'idt_evento'      => $this->evento->idt_evento,
-            'idt_equipe'      => $this->equipe->idt_equipe,
+            'idt_pessoa' => $this->pessoaVol->idt_pessoa,
+            'idt_evento' => $this->evento->idt_evento,
+            'idt_equipe' => $this->equipe->idt_equipe,
             'idt_trabalhador' => null,
         ]);
     });
@@ -241,9 +241,9 @@ describe('Voluntários — confirmarTrabalhador', function () {
 
         // Segunda candidatura da mesma pessoa
         Voluntario::factory()->create([
-            'idt_pessoa'      => $this->pessoaVol->idt_pessoa,
-            'idt_evento'      => $this->evento->idt_evento,
-            'idt_equipe'      => $equipe2->idt_equipe,
+            'idt_pessoa' => $this->pessoaVol->idt_pessoa,
+            'idt_evento' => $this->evento->idt_evento,
+            'idt_equipe' => $equipe2->idt_equipe,
             'idt_trabalhador' => null,
         ]);
 
@@ -273,15 +273,15 @@ describe('Presença — togglePresenca', function () {
         $this->pessoaT = createPessoa();
 
         $this->participante = Participante::factory()->create([
-            'idt_pessoa'   => $this->pessoaP->idt_pessoa,
-            'idt_evento'   => $this->evento->idt_evento,
+            'idt_pessoa' => $this->pessoaP->idt_pessoa,
+            'idt_evento' => $this->evento->idt_evento,
             'ind_presente' => false,
         ]);
 
         $this->trabalhador = Trabalhador::factory()->create([
-            'idt_pessoa'   => $this->pessoaT->idt_pessoa,
-            'idt_evento'   => $this->evento->idt_evento,
-            'idt_equipe'   => $this->equipe->idt_equipe,
+            'idt_pessoa' => $this->pessoaT->idt_pessoa,
+            'idt_evento' => $this->evento->idt_evento,
+            'idt_equipe' => $this->equipe->idt_equipe,
             'ind_presente' => false,
         ]);
     });
@@ -349,8 +349,8 @@ describe('Presença — togglePresenca', function () {
     test('busca por nome filtra corretamente', function () {
         $pessoaEspecifica = Pessoa::factory()->create(['nom_pessoa' => 'Zacarias Único']);
         Participante::factory()->create([
-            'idt_pessoa'   => $pessoaEspecifica->idt_pessoa,
-            'idt_evento'   => $this->evento->idt_evento,
+            'idt_pessoa' => $pessoaEspecifica->idt_pessoa,
+            'idt_evento' => $this->evento->idt_evento,
             'ind_presente' => false,
         ]);
 
@@ -374,36 +374,36 @@ describe('Quadrante — filtro por presença', function () {
     beforeEach(function () {
         $this->actingAs($this->admin);
 
-        $this->pessoaPresente    = createPessoa();
-        $this->pessoaAusente     = createPessoa();
-        $this->trabPresente      = createPessoa();
-        $this->trabAusente       = createPessoa();
+        $this->pessoaPresente = createPessoa();
+        $this->pessoaAusente = createPessoa();
+        $this->trabPresente = createPessoa();
+        $this->trabAusente = createPessoa();
 
         Participante::factory()->create([
-            'idt_pessoa'   => $this->pessoaPresente->idt_pessoa,
-            'idt_evento'   => $this->evento->idt_evento,
+            'idt_pessoa' => $this->pessoaPresente->idt_pessoa,
+            'idt_evento' => $this->evento->idt_evento,
             'ind_presente' => true,
             'tip_cor_troca' => 'azul',
         ]);
 
         Participante::factory()->create([
-            'idt_pessoa'   => $this->pessoaAusente->idt_pessoa,
-            'idt_evento'   => $this->evento->idt_evento,
+            'idt_pessoa' => $this->pessoaAusente->idt_pessoa,
+            'idt_evento' => $this->evento->idt_evento,
             'ind_presente' => false,
             'tip_cor_troca' => 'verde',
         ]);
 
         Trabalhador::factory()->create([
-            'idt_pessoa'   => $this->trabPresente->idt_pessoa,
-            'idt_evento'   => $this->evento->idt_evento,
-            'idt_equipe'   => $this->equipe->idt_equipe,
+            'idt_pessoa' => $this->trabPresente->idt_pessoa,
+            'idt_evento' => $this->evento->idt_evento,
+            'idt_equipe' => $this->equipe->idt_equipe,
             'ind_presente' => true,
         ]);
 
         Trabalhador::factory()->create([
-            'idt_pessoa'   => $this->trabAusente->idt_pessoa,
-            'idt_evento'   => $this->evento->idt_evento,
-            'idt_equipe'   => $this->equipe->idt_equipe,
+            'idt_pessoa' => $this->trabAusente->idt_pessoa,
+            'idt_evento' => $this->evento->idt_evento,
+            'idt_equipe' => $this->equipe->idt_equipe,
             'ind_presente' => false,
         ]);
     });
@@ -455,8 +455,8 @@ describe('Quadrante — filtro por presença', function () {
         // Participante começa ausente
         $novaPessoa = createPessoa();
         $novoParticipante = Participante::factory()->create([
-            'idt_pessoa'   => $novaPessoa->idt_pessoa,
-            'idt_evento'   => $this->evento->idt_evento,
+            'idt_pessoa' => $novaPessoa->idt_pessoa,
+            'idt_evento' => $this->evento->idt_evento,
             'ind_presente' => false,
         ]);
 
