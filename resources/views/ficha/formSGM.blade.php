@@ -238,6 +238,7 @@
             <form method="POST" enctype="multipart/form-data" @submit="setTimeout(() => enviando = true, 50)"
                 action="{{ $ficha->exists ? route('sgm.update', $ficha) : route('sgm.store') }}" class="space-y-8">
                 @csrf
+                @if ($ficha->exists) @method('PUT') @endif
 
                 {{-- ===== DADOS BÁSICOS ===== --}}
                 <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-4 sm:p-6">
