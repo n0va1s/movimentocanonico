@@ -58,18 +58,7 @@
                         :current="request()->routeIs('pessoas.index')" wire:navigate>
                         {{ __('Pessoas') }}
                     </flux:navlist.item>
-                    <flux:navlist.item icon="document-text" :href="route('vem.index')"
-                        :current="request()->routeIs('vem.*')" wire:navigate>
-                        {{ __('Fichas VEM') }}
-                    </flux:navlist.item>
-                    <flux:navlist.item icon="document-text" :href="route('sgm.index')"
-                        :current="request()->routeIs('sgm.*')" wire:navigate>
-                        {{ __('Fichas SGM') }}
-                    </flux:navlist.item>
-                    <flux:navlist.item icon="document-text" :href="route('ecc.index')"
-                        :current="request()->routeIs('ecc.*')" wire:navigate>
-                        {{ __('Fichas ECC') }}
-                    </flux:navlist.item>
+
                 @endif
             </flux:navlist.group>
         </flux:navlist>

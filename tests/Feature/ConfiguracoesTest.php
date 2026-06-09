@@ -5,7 +5,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('admin can access configuracoes index and see all 6 cards', function () {
+test('admin can access configuracoes index and see all 9 cards', function () {
     $admin = User::factory()->create(['role' => 'admin']);
     $this->actingAs($admin)
         ->get(route('configuracoes.index'))
@@ -16,10 +16,13 @@ test('admin can access configuracoes index and see all 6 cards', function () {
         ->assertSee('Tipos de Equipes')
         ->assertSee('Tipos de Restrições')
         ->assertSee('Perfil de Usuário')
-        ->assertSee('Importar Planilhas');
+        ->assertSee('Importar Planilhas')
+        ->assertSee('Fichas VEM')
+        ->assertSee('Fichas SGM')
+        ->assertSee('Fichas ECC');
 });
 
-test('especialista can access configuracoes index and only see the 6th card (Importar Planilhas)', function () {
+test('especialista can access configuracoes index and only see the 4 authorized cards', function () {
     $espec = User::factory()->create(['role' => 'espec']);
     $this->actingAs($espec)
         ->get(route('configuracoes.index'))
@@ -30,7 +33,10 @@ test('especialista can access configuracoes index and only see the 6th card (Imp
         ->assertDontSee('Tipos de Equipes')
         ->assertDontSee('Tipos de Restrições')
         ->assertDontSee('Perfil de Usuário')
-        ->assertSee('Importar Planilhas');
+        ->assertSee('Importar Planilhas')
+        ->assertSee('Fichas VEM')
+        ->assertSee('Fichas SGM')
+        ->assertSee('Fichas ECC');
 });
 
 test('coordenador cannot access configuracoes index', function () {

@@ -10,6 +10,7 @@ new class extends Component {
 
     public function mount(Evento $evento): void {
         $this->evento = $evento;
+        $this->evento->loadMissing('foto');
     }
 
     #[Computed]
@@ -83,8 +84,8 @@ new class extends Component {
 
             {{-- Lateral: Imagem --}}
            <div class="shrink-0 bg-zinc-50 border-r" style="width: 2.2cm; border-color: {{ $pessoa['grupo_cor'] }}44;">
-                @if($evento->foto?->med_foto)
-                    <img src="{{ asset('storage/' . $evento->foto->med_foto) }}"
+                @if($evento->foto?->med_logo)
+                    <img src="{{ asset('storage/' . $evento->foto->med_logo) }}"
                         class="w-full h-full object-cover object-top grayscale opacity-80"
                         alt="{{ $evento->des_evento }}" />
                 @else
@@ -96,6 +97,16 @@ new class extends Component {
 
             {{-- Conteúdo Direita --}}
             <div class="flex-1 flex flex-col p-3 overflow-hidden">
+                {{-- Informações do Evento --}}
+                <div class="mb-1 text-center">
+                    <p class="text-[12px] font-black text-zinc-800 leading-tight uppercase truncate">
+                        {{ $evento->num_evento }} - {{ $evento->des_evento }}
+                    </p>
+                    <p class="text-[8px] text-zinc-500 font-medium leading-none mt-0.5">
+                        {{ $evento->dat_inicio?->format('d/m/Y') }} a {{ $evento->dat_termino?->format('d/m/Y') }}
+                    </p>
+                </div>
+
                 {{-- Badge do Grupo --}}
                 <div class="mb-1">
                     <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded text-white"
@@ -120,18 +131,20 @@ new class extends Component {
                 <div class="flex flex-wrap gap-1 mt-auto pt-2 border-t border-zinc-100">
                 @foreach($pessoa['restricoes'] as $r)
                     @php
-                        $tipoRestricao = $r->tip_restricao instanceof \App\Enums\TipoRestricao
+                        $tipoEnum = $r->tip_restricao instanceof \App\Enums\TipoRestricao
                             ? $r->tip_restricao
                             : \App\Enums\TipoRestricao::tryFrom($r->tip_restricao);
+                        $tipoLabel = $tipoEnum ? $tipoEnum->label() : $r->tip_restricao;
+                        $corClass = $r->getCor();
                     @endphp
 
-                    <span class="bg-red-50 text-red-700 text-[8px] font-bold px-1.5 py-0.5 rounded border border-red-100 flex items-center gap-1">
-                        @if($tipoRestricao)
-                            <span>{{ $tipoRestricao->icon() }}</span>
-                            <span>{{ $tipoRestricao->label() }}</span>
+                    <span class="{{ $corClass }} text-[8px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                        @if($tipoEnum)
+                            <span>{{ $tipoEnum->icon() }}</span>
+                            <span>{{ $tipoLabel }}: {{ $r->des_restricao }}</span>
                         @else
                             <span>⚠️</span>
-                            <span>{{ $r->tip_restricao }}</span>
+                            <span>{{ $r->des_restricao }}</span>
                         @endif
                     </span>
                 @endforeach

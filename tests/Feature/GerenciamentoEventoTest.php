@@ -473,3 +473,48 @@ describe('Quadrante — filtro por presença', function () {
         expect($totalDepois)->toBe($totalAntes + 1);
     });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Participantes — componente Livewire Volt
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Participantes — participantes.blade.php', function () {
+
+    beforeEach(function () {
+        $this->actingAs($this->admin);
+
+        $this->pessoaP = createPessoa();
+
+        $this->participante = Participante::factory()->create([
+            'idt_pessoa' => $this->pessoaP->idt_pessoa,
+            'idt_evento' => $this->evento->idt_evento,
+            'tip_cor_troca' => 'azul',
+        ]);
+    });
+
+    test('atualizarTroca muda tip_cor_troca e dispara notify', function () {
+        Volt::test('evento.partials.participantes', ['evento' => $this->evento])
+            ->call('atualizarTroca', $this->participante->idt_participante, 'verde')
+            ->assertHasNoErrors()
+            ->assertDispatched('notify');
+
+        expect($this->participante->fresh()->tip_cor_troca)->toBe('verde');
+    });
+
+    test('excluirParticipante remove participante e dispara notify', function () {
+        Volt::test('evento.partials.participantes', ['evento' => $this->evento])
+            ->call('excluirParticipante', $this->participante->idt_participante)
+            ->assertHasNoErrors()
+            ->assertDispatched('notify');
+
+        $this->assertDatabaseMissing('participante', [
+            'idt_participante' => $this->participante->idt_participante,
+        ]);
+    });
+
+    test('exportar executa com sucesso', function () {
+        Volt::test('evento.partials.participantes', ['evento' => $this->evento])
+            ->call('exportar')
+            ->assertOk();
+    });
+});

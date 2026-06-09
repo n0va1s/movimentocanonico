@@ -34,13 +34,13 @@ new class extends Component {
 
         $todasAbas = [
             'resumo'       => ['icon' => 'chart-bar',      'label' => 'Resumo'],
-            'participantes'=> ['icon' => 'user-group',    'label' => 'Participantes'],
             'fichas'       => ['icon' => 'document-text', 'label' => 'Fichas',        'encontro_only' => true],
+            'participantes'=> ['icon' => 'user-group',    'label' => 'Participantes'],
             'voluntarios'  => ['icon' => 'hand-raised',   'label' => 'Voluntários',   'encontro_only' => true],
             'trabalhadores'=> ['icon' => 'briefcase',     'label' => 'Trabalhadores', 'encontro_only' => true],
             'crachas'      => ['icon' => 'identification','label' => 'Crachás'],
-            'quadrante'    => ['icon' => 'table-cells',   'label' => 'Quadrante',     'encontro_only' => true],            
             'presenca'     => ['icon' => 'finger-print',  'label' => 'Presença'],
+            'quadrante'    => ['icon' => 'table-cells',   'label' => 'Quadrante',     'encontro_only' => true],            
             'contas'       => ['icon' => 'banknotes',     'label' => 'Prestação de Contas'],
         ];
 

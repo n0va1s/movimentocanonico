@@ -99,6 +99,11 @@ class Pessoa extends Model
             ->withTimestamps();
     }
 
+    public function fichas()
+    {
+        return $this->hasMany(Ficha::class, 'idt_pessoa', 'idt_pessoa');
+    }
+
     public function participantes()
     {
         return $this->hasMany(Participante::class, 'idt_pessoa');
