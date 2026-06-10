@@ -100,8 +100,24 @@ new class extends Component {
 
     <div class="flex flex-col md:flex-row gap-8">
         {{-- Sidebar de Navegação --}}
-        <aside class="w-full md:w-64 space-y-1">
-            <nav class="flex flex-col gap-1">
+        <aside x-data="{ isOpen: false }" class="w-full md:w-64 space-y-2">
+            {{-- Botão de Toggle Mobile --}}
+            <button 
+                type="button"
+                x-on:click="isOpen = !isOpen"
+                class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-medium text-zinc-700 dark:text-zinc-200 shadow-sm md:hidden cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"
+            >
+                <span class="flex items-center gap-2">
+                    <flux:icon :name="$this->tabs[$activeTab]['icon']" class="size-4 text-zinc-500" />
+                    <span>{{ $this->tabs[$activeTab]['label'] }}</span>
+                </span>
+                <flux:icon.chevron-down class="size-4 text-zinc-500 transition-transform duration-200" x-bind:class="isOpen ? 'rotate-180' : ''" />
+            </button>
+
+            <nav 
+                x-bind:class="isOpen ? 'block' : 'hidden md:block'"
+                class="flex flex-col gap-1"
+            >
                 <flux:navlist>
                     @foreach ($this->tabs as $tab => $meta)
                         <flux:navlist.item
@@ -110,6 +126,7 @@ new class extends Component {
                             :variant="$activeTab === '{{ $tab }}' ? 'bullet' : 'ghost'"
                             icon="{{ $meta['icon'] }}"
                             class="cursor-pointer"
+                            x-on:click="isOpen = false"
                         >
                             {{ $meta['label'] }}
                         </flux:navlist.item>
