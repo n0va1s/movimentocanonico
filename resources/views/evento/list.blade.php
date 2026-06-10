@@ -19,7 +19,7 @@
         {{-- Filtros  --}}
         <nav class="bg-white dark:bg-zinc-800 p-5 rounded-xl border border-gray-200 dark:border-zinc-700 shadow-sm mb-8">
             <form method="GET" action="{{ route('eventos.index') }}" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                <div class="md:col-span-6">
+                <div class="md:col-span-4">
                     <flux:input name="search" value="{{ $search }}" icon="magnifying-glass" placeholder="Buscar por descrição ou número..." />
                 </div>
 
@@ -33,9 +33,18 @@
                     </flux:select>
                 </div>
 
-                <div class="md:col-span-3 flex gap-2">
+                <div class="md:col-span-3">
+                    <flux:select name="tip_evento" placeholder="Todos os Tipos">
+                        <flux:select.option value="" :selected="empty($tip_evento)">Todos</flux:select.option>
+                        <flux:select.option value="P" :selected="($tip_evento ?? null) === 'P'">Pós-encontro</flux:select.option>
+                        <flux:select.option value="D" :selected="($tip_evento ?? null) === 'D'">Desafio</flux:select.option>
+                        <flux:select.option value="E" :selected="($tip_evento ?? null) === 'E'">Encontro Anual</flux:select.option>
+                    </flux:select>
+                </div>
+
+                <div class="md:col-span-2 flex gap-2">
                     <flux:button type="submit" variant="filled" color="blue" class="flex-1">Filtrar</flux:button>
-                    @if ($search || $idt_movimento)
+                    @if ($search || $idt_movimento || ($tip_evento ?? null))
                         <flux:button href="{{ route('eventos.index') }}" icon="x-mark" variant="ghost" />
                     @endif
                 </div>

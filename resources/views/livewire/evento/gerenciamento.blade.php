@@ -17,6 +17,11 @@ new class extends Component {
             'trabalhadores',
             'voluntarios as voluntarios_count' => fn($q) => $q->whereNull('idt_trabalhador')->distinct('idt_pessoa'),
         ]);
+
+        $abas = array_keys($this->tabs());
+        if (!in_array($this->activeTab, $abas) && !empty($abas)) {
+            $this->activeTab = $abas[0];
+        }
     }
 
     public function setTab(string $tab): void
@@ -102,14 +107,17 @@ new class extends Component {
         {{-- Sidebar de Navegação --}}
         <aside x-data="{ isOpen: false }" class="w-full md:w-64 space-y-2">
             {{-- Botão de Toggle Mobile --}}
+            @php
+                $tabMeta = $this->tabs[$activeTab] ?? (array_values($this->tabs)[0] ?? ['icon' => 'chart-bar', 'label' => 'Painel']);
+            @endphp
             <button 
                 type="button"
                 x-on:click="isOpen = !isOpen"
                 class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-medium text-zinc-700 dark:text-zinc-200 shadow-sm md:hidden cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"
             >
                 <span class="flex items-center gap-2">
-                    <flux:icon :name="$this->tabs[$activeTab]['icon']" class="size-4 text-zinc-500" />
-                    <span>{{ $this->tabs[$activeTab]['label'] }}</span>
+                    <flux:icon :name="$tabMeta['icon']" class="size-4 text-zinc-500" />
+                    <span>{{ $tabMeta['label'] }}</span>
                 </span>
                 <flux:icon.chevron-down class="size-4 text-zinc-500 transition-transform duration-200" x-bind:class="isOpen ? 'rotate-180' : ''" />
             </button>
