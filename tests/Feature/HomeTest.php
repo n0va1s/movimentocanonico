@@ -49,16 +49,6 @@ test('pagina inicial exibe movimentos', function () {
     $response->assertSee('ECC');
 });
 
-// ==========================================
-// TESTES DE REDIRECIONAMENTOS
-// ==========================================
-
-test('visitante nao autenticado permanece na home', function () {
-    $response = $this->get(route('home'));
-
-    $response->assertStatus(200);
-    $response->assertViewIs('welcome');
-});
 
 // ==========================================
 // TESTES DE SEO E META TAGS

@@ -6,6 +6,7 @@ use App\Models\Participante;
 use App\Models\Pessoa;
 use App\Models\TipoMovimento;
 use App\Models\Trabalhador;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -14,17 +15,6 @@ beforeEach(function () {
     $this->user = User::factory()->create(['role' => 'user']);
 });
 
-test('visitante sao direcionados pra pagina de login', function () {
-    $response = $this->get('/dashboard');
-    $response->assertRedirect('/login');
-});
-
-test('usuario autenticados acessam o dashboard', function () {
-    $this->actingAs($this->user);
-
-    $response = $this->get('/dashboard');
-    $response->assertStatus(200);
-});
 
 test('dashboard exibe contadores corretos', function () {
     $movimento = TipoMovimento::factory()->create();

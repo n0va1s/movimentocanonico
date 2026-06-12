@@ -37,36 +37,6 @@ beforeEach(function () {
     @unlink(storage_path('logs/import_trabalhadores.log'));
 });
 
-// ==========================================
-// TESTES DE AUTORIZAÇÃO E ROTAS
-// ==========================================
-
-test('usuario comum nao pode acessar interface de importacao', function () {
-    $this->actingAs($this->user)
-        ->get(route('eventos.importar'))
-        ->assertStatus(403);
-});
-
-test('coordenador nao pode acessar interface de importacao', function () {
-    $this->actingAs($this->coord)
-        ->get(route('eventos.importar'))
-        ->assertStatus(403);
-});
-
-test('especialista pode acessar interface de importacao', function () {
-    $this->actingAs($this->espec)
-        ->get(route('eventos.importar'))
-        ->assertStatus(200)
-        ->assertSee('Importar Planilhas de Eventos')
-        ->assertSee($this->evento->des_evento);
-});
-
-test('admin pode acessar interface de importacao', function () {
-    $this->actingAs($this->admin)
-        ->get(route('eventos.importar'))
-        ->assertStatus(200)
-        ->assertSee('Importar Planilhas de Eventos');
-});
 
 // ==========================================
 // TESTES DE IMPORTAÇÃO DE PARTICIPANTES

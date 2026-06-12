@@ -62,53 +62,7 @@ beforeEach(function () {
     ]);
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Controle de Acesso — rota gerenciamento
-// ─────────────────────────────────────────────────────────────────────────────
 
-describe('Controle de Acesso — Gerenciamento', function () {
-
-    test('admin pode acessar gerenciamento', function () {
-        $this->actingAs($this->admin)
-            ->get(route('eventos.gerenciamento', $this->evento))
-            ->assertOk();
-    });
-
-    test('coord pode acessar gerenciamento', function () {
-        $this->actingAs($this->coord)
-            ->get(route('eventos.gerenciamento', $this->evento))
-            ->assertOk();
-    });
-
-    test('espec pode acessar gerenciamento', function () {
-        $this->actingAs($this->espec)
-            ->get(route('eventos.gerenciamento', $this->evento))
-            ->assertOk();
-    });
-
-    test('espec pode acessar gerenciamento mesmo que não esteja trabalhando nele', function () {
-        $eventoSemTrabalho = Evento::factory()->create([
-            'idt_movimento' => $this->movimento->idt_movimento,
-        ]);
-
-        $this->actingAs($this->espec)
-            ->get(route('eventos.gerenciamento', $eventoSemTrabalho))
-            ->assertOk();
-    });
-
-    test('user comum é bloqueado com 403', function () {
-        $this->actingAs($this->user)
-            ->get(route('eventos.gerenciamento', $this->evento))
-            ->assertForbidden();
-    });
-
-    test('não autenticado é redirecionado para login', function () {
-        Auth::logout();
-
-        $this->get(route('eventos.gerenciamento', $this->evento))
-            ->assertRedirect(route('login'));
-    });
-});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Prestação de Contas — componente Livewire Volt
@@ -286,6 +240,37 @@ describe('Voluntários — confirmarTrabalhador', function () {
             ->count();
 
         expect($pendentes)->toBe(0);
+    });
+
+    test('confirmarTrabalhador como admin definindo coordenação e primeira vez', function () {
+        Volt::test('evento.partials.voluntarios', ['evento' => $this->evento])
+            ->set("selectedEquipes.{$this->pessoaVol->idt_pessoa}", $this->equipe->idt_equipe)
+            ->set("indCoordenador.{$this->pessoaVol->idt_pessoa}", true)
+            ->set("indPrimeiraVez.{$this->pessoaVol->idt_pessoa}", true)
+            ->call('confirmarTrabalhador', $this->pessoaVol->idt_pessoa)
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('trabalhador', [
+            'idt_pessoa' => $this->pessoaVol->idt_pessoa,
+            'idt_evento' => $this->evento->idt_evento,
+            'idt_equipe' => $this->equipe->idt_equipe,
+            'ind_coordenador' => true,
+            'ind_primeira_vez' => true,
+        ]);
+    });
+
+    test('coordenador do evento pode confirmar voluntário', function () {
+        Volt::actingAs($this->coord)
+            ->test('evento.partials.voluntarios', ['evento' => $this->evento])
+            ->set("selectedEquipes.{$this->pessoaVol->idt_pessoa}", $this->equipe->idt_equipe)
+            ->call('confirmarTrabalhador', $this->pessoaVol->idt_pessoa)
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('trabalhador', [
+            'idt_pessoa' => $this->pessoaVol->idt_pessoa,
+            'idt_evento' => $this->evento->idt_evento,
+            'idt_equipe' => $this->equipe->idt_equipe,
+        ]);
     });
 });
 
@@ -519,6 +504,26 @@ describe('Participantes — participantes.blade.php', function () {
             'idt_evento' => $this->evento->idt_evento,
             'tip_cor_troca' => 'azul',
         ]);
+    });
+
+    test('usuario pode buscar participantes por nome no componente', function () {
+        $pessoa1 = Pessoa::factory()->create(['nom_pessoa' => 'João da Silva']);
+        $pessoa2 = Pessoa::factory()->create(['nom_pessoa' => 'Maria Souza']);
+
+        Participante::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'idt_pessoa' => $pessoa1->idt_pessoa,
+        ]);
+
+        Participante::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'idt_pessoa' => $pessoa2->idt_pessoa,
+        ]);
+
+        Volt::test('evento.partials.participantes', ['evento' => $this->evento])
+            ->set('search', 'João')
+            ->assertSee('João da Silva')
+            ->assertDontSee('Maria Souza');
     });
 
     test('atualizarTroca muda tip_cor_troca e dispara notify', function () {

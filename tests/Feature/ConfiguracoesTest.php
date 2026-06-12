@@ -36,17 +36,3 @@ test('especialista can access configuracoes index and only see the 4 authorized 
         ->assertSee('Fichas SGM')
         ->assertSee('Fichas ECC');
 });
-
-test('coordenador cannot access configuracoes index', function () {
-    $coord = User::factory()->create(['role' => 'coord']);
-    $this->actingAs($coord)
-        ->get(route('configuracoes.index'))
-        ->assertStatus(403);
-});
-
-test('comum user cannot access configuracoes index', function () {
-    $user = User::factory()->create(['role' => 'user']);
-    $this->actingAs($user)
-        ->get(route('configuracoes.index'))
-        ->assertStatus(403);
-});

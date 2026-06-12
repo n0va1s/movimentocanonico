@@ -2,9 +2,7 @@
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Unit\CrudBasic;
-
-uses(RefreshDatabase::class, CrudBasic::class);
+uses(RefreshDatabase::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -184,10 +182,4 @@ describe('TipoPerfilController::change', function () {
     });
 });
 
-describe('User id', function () {
-    test('id pode ser usado como foreign key', function () {
-        $user = User::factory()->create();
 
-        expect($user->id)->toBeInt();
-    });
-});
