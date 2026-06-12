@@ -7,6 +7,87 @@
             <p class="text-gray-600 dark:text-gray-400 mt-1">Essa é a força da sua comunidade</p>
         </div>
 
+        {{-- Card de Saldo do Mercadinho (Pessoal) --}}
+        @if($contaMercadinho)
+            @php
+                $saldo = (float) $contaMercadinho->val_saldo;
+            @endphp
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 dark:from-zinc-800 dark:to-zinc-900 text-white rounded-2xl p-6 shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border border-blue-500/20">
+                <div class="space-y-1">
+                    <span class="text-xs font-bold uppercase tracking-wider text-blue-200 dark:text-zinc-400">Meu Extrato do Mercadinho</span>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <x-heroicon-s-shopping-cart class="w-5 h-5 text-white" />
+                        {{ $contaMercadinho->evento->des_evento }}
+                    </h2>
+                </div>
+
+                <div class="flex items-center gap-6">
+                    <div class="text-right">
+                        <div class="text-xs text-blue-200 dark:text-zinc-400">Meu Saldo Atual</div>
+                        <div class="text-2xl font-black {{ $saldo < 0 ? 'text-red-300' : 'text-green-300' }}">
+                            R$ {{ number_format($saldo, 2, ',', '.') }}
+                        </div>
+                    </div>
+                    
+                    <flux:modal.trigger name="meu-extrato">
+                        <flux:button variant="filled" size="sm" class="bg-white hover:bg-zinc-150 text-blue-600 dark:bg-zinc-700 dark:text-white dark:hover:bg-zinc-650 font-bold px-4 py-2 rounded-xl cursor-pointer">
+                            Ver Extrato
+                        </flux:button>
+                    </flux:modal.trigger>
+                </div>
+            </div>
+            
+            {{-- Modal do Extrato Pessoal --}}
+            <flux:modal name="meu-extrato" class="w-full max-w-2xl">
+                <div class="space-y-6">
+                    <div>
+                        <flux:heading size="lg">Meu Extrato do Mercadinho</flux:heading>
+                        <flux:subheading>{{ $contaMercadinho->evento->des_evento }}</flux:subheading>
+                    </div>
+
+                    <div class="border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden max-h-96 overflow-y-auto">
+                        @if($contaMercadinho->transacoes->isEmpty())
+                            <div class="p-8 text-center text-zinc-500 italic text-sm">
+                                Nenhuma compra ou depósito registrado neste evento.
+                            </div>
+                        @else
+                            <flux:table>
+                                <flux:table.columns>
+                                    <flux:table.column>Data</flux:table.column>
+                                    <flux:table.column>Item / Descrição</flux:table.column>
+                                    <flux:table.column>Valor</flux:table.column>
+                                </flux:table.columns>
+
+                                <flux:table.rows>
+                                    @foreach($contaMercadinho->transacoes as $trans)
+                                        @php
+                                            $isDebito = $trans->tip_transacao === 'C';
+                                        @endphp
+                                        <flux:table.row>
+                                            <flux:table.cell class="text-xs">
+                                                {{ $trans->dat_transacao->format('d/m/Y H:i') }}
+                                            </flux:table.cell>
+                                            <flux:table.cell class="font-medium text-xs">
+                                                {{ $trans->nom_item ?? $trans->des_transacao }}
+                                                @if($trans->qtd_item)
+                                                    <span class="text-zinc-400"> (x{{ $trans->qtd_item }})</span>
+                                                @endif
+                                            </flux:table.cell>
+                                            <flux:table.cell class="font-bold text-xs">
+                                                <span class="{{ $isDebito ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400' }}">
+                                                    {{ $isDebito ? '-' : '+' }} R$ {{ number_format($trans->val_transacao, 2, ',', '.') }}
+                                                </span>
+                                            </flux:table.cell>
+                                        </flux:table.row>
+                                    @endforeach
+                                </flux:table.rows>
+                            </flux:table>
+                        @endif
+                    </div>
+                </div>
+            </flux:modal>
+        @endif
+
         {{-- Grid de Estatísticas (Totalizadores) --}}
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <a href="{{ route('eventos.index') }}">
@@ -70,39 +151,8 @@
                 </div>
             </section>
 
-            {{-- Lado Direito: Fichas Recentes --}}
-            <section
-                class="bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-gray-200 dark:border-zinc-700 overflow-hidden">
-                <header
-                    class="px-6 py-4 border-b border-gray-100 dark:border-zinc-700 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-800/50">
-                    <h2 class="font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                        <x-heroicon-s-sparkles class="w-5 h-5 text-yellow-500" />
-                        Inscrições Recentes
-                    </h2>
-                </header>
-
-                <div class="p-6">
-                    <div class="space-y-4">
-                        @forelse ($fichasrecentes as $ficha)
-                            <div
-                                class="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors border border-transparent hover:border-gray-100 dark:hover:border-zinc-600">
-                                <div
-                                    class="w-10 h-10 rounded-full bg-gray-100 dark:bg-zinc-900 flex items-center justify-center text-gray-500 font-bold text-xs uppercase">
-                                    {{ substr($ficha->nom_candidato, 0, 2) }}
-                                </div>
-                                <div class="flex-1">
-                                    <p class="text-sm font-bold text-gray-900 dark:text-white">
-                                        {{ $ficha->nom_candidato }}</p>
-                                    <p class="text-xs text-gray-500">Inscrito em: {{ $ficha->evento?->des_evento ?? 'Evento não encontrado' }}</p>
-                                </div>
-                                <x-badge-movimento :sigla="$ficha->evento->movimento?->des_sigla ?? 'Sem Sigla' " />
-                            </div>
-                        @empty
-                            <p class="text-center py-8 text-sm text-gray-500">Nenhuma ficha recente.</p>
-                        @endforelse
-                    </div>
-                </div>
-            </section>
+            {{-- Lado Direito: Consulta de Saldo do Mercadinho --}}
+            <livewire:vendas.consulta-saldo />
         </div>
     </div>
 </x-layouts.app>

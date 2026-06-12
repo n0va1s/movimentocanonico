@@ -57,9 +57,6 @@ $rotasAdmin = [
     '/contatos',
     '/configuracoes/role',
     '/configuracoes/equipe',
-    '/configuracoes/movimento',
-    '/configuracoes/responsavel',
-    '/configuracoes/restricao',
     '/eventos/create',
     '/pessoas',
     '/pessoas/create',
@@ -108,9 +105,52 @@ foreach ($rotasAdminEspec as $rota) {
 
     test("espec acessa {$rota} (admin,espec)", function () use ($rota) {
         createMovimentos();
-        $this->actingAs(userComRole('espec'))
+        
+        $idtMovimento = null;
+        if (str_contains($rota, '/vem')) {
+            $idtMovimento = \App\Models\TipoMovimento::where('des_sigla', 'VEM')->first()?->idt_movimento;
+        } elseif (str_contains($rota, '/ecc')) {
+            $idtMovimento = \App\Models\TipoMovimento::where('des_sigla', 'ECC')->first()?->idt_movimento;
+        } elseif (str_contains($rota, '/sgm')) {
+            $idtMovimento = \App\Models\TipoMovimento::where('des_sigla', 'Segue-Me')->first()?->idt_movimento;
+        } else {
+            $idtMovimento = \App\Models\TipoMovimento::first()?->idt_movimento;
+        }
+
+        $user = User::factory()->create([
+            'role' => 'espec',
+            'idt_movimento' => $idtMovimento
+        ]);
+
+        $this->actingAs($user)
             ->get($rota)
             ->assertStatus(200);
+    });
+
+    test("espec de outro movimento recebe 403 em {$rota}", function () use ($rota) {
+        createMovimentos();
+        
+        $idtMovimento = null;
+        if (str_contains($rota, '/vem')) {
+            $idtMovimento = \App\Models\TipoMovimento::where('des_sigla', 'ECC')->first()?->idt_movimento;
+        } elseif (str_contains($rota, '/ecc')) {
+            $idtMovimento = \App\Models\TipoMovimento::where('des_sigla', 'Segue-Me')->first()?->idt_movimento;
+        } elseif (str_contains($rota, '/sgm')) {
+            $idtMovimento = \App\Models\TipoMovimento::where('des_sigla', 'VEM')->first()?->idt_movimento;
+        }
+        
+        if ($idtMovimento) {
+            $user = User::factory()->create([
+                'role' => 'espec',
+                'idt_movimento' => $idtMovimento
+            ]);
+            
+            $this->actingAs($user)
+                ->get($rota)
+                ->assertStatus(403);
+        }
+    })->skip(function () use ($rota) {
+        return !str_contains($rota, '/vem') && !str_contains($rota, '/ecc') && !str_contains($rota, '/sgm');
     });
 
     foreach (['coord', 'user'] as $perfil) {

@@ -51,7 +51,7 @@ class FichaSGMController extends Controller
         }
 
         $hoje = now()->startOfDay();
-        $eventos = Evento::where('idt_movimento', TipoMovimento::SegueMe)
+        $eventos = Evento::where('idt_movimento', TipoMovimento::SGM)
             ->where(function ($q) use ($hoje) {
                 $q->where('dat_inicio', '>=', $hoje)
                     ->orWhere('dat_termino', '>=', $hoje)
@@ -74,7 +74,7 @@ class FichaSGMController extends Controller
                 return $query->where('tip_situacao', $situacao);
             })
             ->whereHas('evento', function ($query) {
-                $query->where('idt_movimento', TipoMovimento::SegueMe);
+                $query->where('idt_movimento', TipoMovimento::SGM);
             })
             ->orderBy('created_at', 'desc')
             ->paginate(10)
@@ -97,15 +97,15 @@ class FichaSGMController extends Controller
         Log::info('Acesso ao formulário de criação de ficha SGM', $context);
 
         $ficha = new Ficha;
-        $ficha->idt_movimento = TipoMovimento::SegueMe;
+        $ficha->idt_movimento = TipoMovimento::SGM;
         $ficha->setRelation('fichaSGM', new FichaSGM);
 
-        $eventos = Evento::getByTipo(TipoMovimento::SegueMe, 'E', 3);
+        $eventos = Evento::getByTipo(TipoMovimento::SGM, 'E', 3);
 
         return view('ficha.formSGM', array_merge($this->fichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,
             'eventos' => $eventos,
-            'movimentopadrao' => TipoMovimento::SegueMe,
+            'movimentopadrao' => TipoMovimento::SGM,
         ]));
     }
 
@@ -190,8 +190,8 @@ class FichaSGMController extends Controller
 
         return view('ficha.formSGM', array_merge($this->fichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,
-            'eventos' => Evento::where('idt_movimento', TipoMovimento::SegueMe)->get(),
-            'movimentopadrao' => TipoMovimento::SegueMe,
+            'eventos' => Evento::where('idt_movimento', TipoMovimento::SGM)->get(),
+            'movimentopadrao' => TipoMovimento::SGM,
         ]));
     }
 
@@ -205,8 +205,8 @@ class FichaSGMController extends Controller
 
         return view('ficha.formSGM', array_merge($this->fichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,
-            'eventos' => Evento::where('idt_movimento', TipoMovimento::SegueMe)->get(),
-            'movimentopadrao' => TipoMovimento::SegueMe,
+            'eventos' => Evento::where('idt_movimento', TipoMovimento::SGM)->get(),
+            'movimentopadrao' => TipoMovimento::SGM,
         ]));
     }
 

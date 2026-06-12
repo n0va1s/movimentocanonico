@@ -10,7 +10,7 @@ Este documento descreve o que cada perfil de usuário pode acessar no sistema. O
 |--------|--------------|-----------|
 | Administrador | `admin` | Acesso total ao sistema |
 | Coordenador | `coord` | Acesso operacional a eventos e equipes |
-| Especialista | `espec` | Acesso ao gerenciamento de eventos específicos |
+| Especialista | `espec` | Acesso ao gerenciamento de eventos específicos (restrito ao seu movimento) |
 | Usuário | `user` | Acesso básico pós-login |
 
 ---
@@ -118,7 +118,7 @@ Além de tudo que os perfis anteriores acessam.
 |------|-----------|
 | `GET /eventos/{evento}/gerenciamento` | Gerenciamento de um evento específico |
 
-> **Observação:** Para `coord` e `espec`, o acesso ao gerenciamento é restrito aos eventos em que o usuário está cadastrado como trabalhador. Para `admin`, o acesso é irrestrito.
+> **Observação:** Para `coord` e `espec`, o acesso ao gerenciamento é restrito aos eventos em que o usuário está cadastrado como trabalhador. Além disso, para `espec`, todo o acesso a eventos, fichas (VEM, ECC, SGM), importações e contadores do dashboard é restrito estritamente ao movimento indicado em `idt_movimento` na tabela `users`. Para `admin`, o acesso é irrestrito.
 
 ### Abas do gerenciamento de evento
 

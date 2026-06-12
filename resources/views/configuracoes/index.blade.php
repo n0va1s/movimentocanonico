@@ -7,28 +7,6 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             @if (Auth::user()->isAdmin())
-                <!-- Card 1 -->
-                <a href="{{ route('movimento.index') }}"
-                    class="block bg-white dark:bg-zinc-600 rounded-xl shadow hover:shadow-lg transition p-6 text-center">
-                    <div class="flex flex-col items-center justify-center h-full">
-                        <x-heroicon-o-flag class="w-12 h-12 text-blue-600 mb-4" />
-                        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Tipos de Movimentos</h2>
-                        <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm">Gerencie os tipos de movimentos e siglas
-                            como ECC, VEM, Segue-Me, etc.</p>
-                    </div>
-                </a>
-
-                <!-- Card 2 -->
-                <a href="{{ route('responsavel.index') }}"
-                    class="block bg-white dark:bg-zinc-600 rounded-xl shadow hover:shadow-lg transition p-6 text-center">
-                    <div class="flex flex-col items-center justify-center h-full">
-                        <x-heroicon-o-user-group class="w-12 h-12 text-green-600 mb-4" />
-                        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Tipos de Responsáveis</h2>
-                        <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm">Configure os vínculos familiares como pai,
-                            mãe, padrinho e outros.</p>
-                    </div>
-                </a>
-
                 <!-- Card 3 -->
                 <a href="{{ route('equipe.index') }}"
                     class="block bg-white dark:bg-zinc-600 rounded-xl shadow hover:shadow-lg transition p-6 text-center">
@@ -40,17 +18,6 @@
                     </div>
                 </a>
 
-                <!-- Card 4 -->
-                <a href="{{ route('restricao.index') }}"
-                    class="block bg-white dark:bg-zinc-600 rounded-xl shadow hover:shadow-lg transition p-6 text-center">
-                    <div class="flex flex-col items-center justify-center h-full">
-                        <x-heroicon-o-exclamation-circle class="w-12 h-12 text-red-600 mb-4" />
-                        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Tipos de Restrições</h2>
-                        <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm">Adicione restrições alimentares ou de saúde
-                            como alergias ou PNE.</p>
-                    </div>
-                </a>
-
                 <!-- Card 5 -->
                 <a href="{{ route('role.index') }}"
                     class="block bg-white dark:bg-zinc-600 rounded-xl shadow hover:shadow-lg transition p-6 text-center">
@@ -59,6 +26,46 @@
                         <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Perfil de Usuário</h2>
                         <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm">Defina as permissões de acesso do usuário.
                         </p>
+                    </div>
+                </a>
+
+                <!-- Card: Limpar Cache -->
+                <a href="/limpar-tudo"
+                    class="block bg-white dark:bg-zinc-600 rounded-xl shadow hover:shadow-lg transition p-6 text-center">
+                    <div class="flex flex-col items-center justify-center h-full">
+                        <x-heroicon-o-trash class="w-12 h-12 text-yellow-600 mb-4" />
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Limpar Cache</h2>
+                        <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm">Limpa as configurações, views e otimizações em cache do sistema.</p>
+                    </div>
+                </a>
+
+                <!-- Card: Otimizar Tudo -->
+                <a href="/otimizar-tudo"
+                    class="block bg-white dark:bg-zinc-600 rounded-xl shadow hover:shadow-lg transition p-6 text-center">
+                    <div class="flex flex-col items-center justify-center h-full">
+                        <x-heroicon-o-bolt class="w-12 h-12 text-amber-500 mb-4" />
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Otimizar Tudo</h2>
+                        <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm">Executa a otimização de cache de rotas e arquivos do Laravel.</p>
+                    </div>
+                </a>
+
+                <!-- Card: Criar Link Storage -->
+                <a href="/storage-link"
+                    class="block bg-white dark:bg-zinc-600 rounded-xl shadow hover:shadow-lg transition p-6 text-center">
+                    <div class="flex flex-col items-center justify-center h-full">
+                        <x-heroicon-o-link class="w-12 h-12 text-blue-500 mb-4" />
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Storage Link</h2>
+                        <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm">Recria o link simbólico da pasta storage pública para arquivos.</p>
+                    </div>
+                </a>
+
+                <!-- Card: Encerrar Eventos Finalizados -->
+                <a href="/encerrar-eventos"
+                    class="block bg-white dark:bg-zinc-600 rounded-xl shadow hover:shadow-lg transition p-6 text-center">
+                    <div class="flex flex-col items-center justify-center h-full">
+                        <x-heroicon-o-archive-box class="w-12 h-12 text-red-500 mb-4" />
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Encerrar Eventos</h2>
+                        <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm">Busca por eventos cuja data de término já passou e os encerra/arquiva.</p>
                     </div>
                 </a>
             @endif
@@ -74,6 +81,7 @@
             </a>
 
             <!-- Card 7: Fichas VEM -->
+            @if (Auth::user()->isAdmin() || (Auth::user()->isEspec() && Auth::user()->idt_movimento === \App\Models\TipoMovimento::VEM))
             <a href="{{ route('vem.index') }}"
                 class="block bg-white dark:bg-zinc-600 rounded-xl shadow hover:shadow-lg transition p-6 text-center">
                 <div class="flex flex-col items-center justify-center h-full">
@@ -82,8 +90,10 @@
                     <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm">Gerencie as inscrições, status e aprovações de Fichas VEM.</p>
                 </div>
             </a>
+            @endif
 
             <!-- Card 8: Fichas SGM -->
+            @if (Auth::user()->isAdmin() || (Auth::user()->isEspec() && Auth::user()->idt_movimento === \App\Models\TipoMovimento::SegueMe))
             <a href="{{ route('sgm.index') }}"
                 class="block bg-white dark:bg-zinc-600 rounded-xl shadow hover:shadow-lg transition p-6 text-center">
                 <div class="flex flex-col items-center justify-center h-full">
@@ -92,8 +102,10 @@
                     <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm">Gerencie as inscrições, status e aprovações de Fichas SGM.</p>
                 </div>
             </a>
+            @endif
 
             <!-- Card 9: Fichas ECC -->
+            @if (Auth::user()->isAdmin() || (Auth::user()->isEspec() && Auth::user()->idt_movimento === \App\Models\TipoMovimento::ECC))
             <a href="{{ route('ecc.index') }}"
                 class="block bg-white dark:bg-zinc-600 rounded-xl shadow hover:shadow-lg transition p-6 text-center">
                 <div class="flex flex-col items-center justify-center h-full">
@@ -102,6 +114,7 @@
                     <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm">Gerencie as inscrições, status e aprovações de Fichas ECC.</p>
                 </div>
             </a>
+            @endif
         </div>
     </section>
 </x-layouts.app>

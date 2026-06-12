@@ -11,7 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->user = createUser();
+    $this->user = User::factory()->create(['role' => 'user']);
 });
 
 test('visitante sao direcionados pra pagina de login', function () {
@@ -67,22 +67,7 @@ test('dashboard exibe proximos eventos', function () {
     $response->assertSee('Evento Futuro');
 });
 
-test('dashboard exibe fichas recentes', function () {
-    $movimento = TipoMovimento::factory()->create();
-    $evento = Evento::factory()->create(['idt_movimento' => $movimento->idt_movimento]);
 
-    $ficha = Ficha::factory()->create([
-        'idt_evento' => $evento->idt_evento,
-        'nom_candidato' => 'João Silva',
-    ]);
-
-    $this->actingAs($this->user);
-    $response = $this->get('/dashboard');
-
-    $response->assertStatus(200);
-    $response->assertViewHas('fichasrecentes');
-    $response->assertSee('João Silva');
-});
 
 test('dashboard conta participantes unicos', function () {
     $movimento = TipoMovimento::factory()->create();

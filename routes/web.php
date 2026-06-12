@@ -12,10 +12,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\PessoaController;
 use App\Http\Controllers\TipoEquipeController;
-use App\Http\Controllers\TipoMovimentoController;
 use App\Http\Controllers\TipoPerfilController;
-use App\Http\Controllers\TipoResponsavelController;
-use App\Http\Controllers\TipoRestricaoController;
 use App\Http\Controllers\TrabalhadorController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
@@ -34,20 +31,6 @@ Route::get('/limpar-tudo', function () {
     return 'Clear realizado! Tente acessar a home agora.';
 });
 
-Route::get('/test-role', function () {
-    if (! auth()->check()) {
-        return 'Not authenticated';
-    }
-    $user = auth()->user();
-
-    return [
-        'user' => $user->only(['id', 'name', 'email', 'role']),
-        'isAdmin' => $user->isAdmin(),
-        'hasRole_admin_espec_coord' => $user->hasRole('admin', 'espec', 'coord'),
-        'hasRole_admin_espec' => $user->hasRole('admin', 'espec'),
-    ];
-});
-
 Route::get('/otimizar-tudo', function () {
     Artisan::call('optimize');
 
@@ -61,6 +44,16 @@ Route::get('/storage-link', function () {
         return 'Link simbólico criado com sucesso!';
     } catch (Exception $e) {
         return 'Erro ao criar o link: '.$e->getMessage();
+    }
+});
+
+Route::get('/encerrar-eventos', function () {
+    try {
+        Artisan::call('mov:deletar-eventos-finalizados');
+
+        return 'Eventos finalizados encerrados com sucesso!';
+    } catch (Exception $e) {
+        return 'Erro ao encerrar eventos: '.$e->getMessage();
     }
 });
 
@@ -174,38 +167,44 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware(['role:admin,espec'])->group(function () {
 
-        // Fichas VEM — listagem, aprovação e CRUD
-        Route::get('/fichas/vem', [FichaVemController::class, 'index'])->name('vem.index');
-        Route::get('fichas/vem/{id}/approve', [FichaVemController::class, 'approve'])->name('vem.approve');
-        Route::post('fichas/vem/{id}/situacao', [FichaVemController::class, 'updateSituacao'])->name('vem.situacao');
-        Route::get('/fichas/vem/create', [FichaVemController::class, 'create'])->name('vem.create');
-        Route::get('/fichas/vem/{vem}', [FichaVemController::class, 'show'])->name('vem.show');
-        Route::get('/fichas/vem/{vem}/edit', [FichaVemController::class, 'edit'])->name('vem.edit');
-        Route::put('/fichas/vem/{vem}', [FichaVemController::class, 'update'])->name('vem.update');
-        Route::patch('/fichas/vem/{vem}', [FichaVemController::class, 'update']);
-        Route::delete('/fichas/vem/{vem}', [FichaVemController::class, 'destroy'])->name('vem.destroy');
+        Route::middleware(['espec.movimento:2'])->group(function () {
+            // Fichas VEM — listagem, aprovação e CRUD
+            Route::get('/fichas/vem', [FichaVemController::class, 'index'])->name('vem.index');
+            Route::get('fichas/vem/{id}/approve', [FichaVemController::class, 'approve'])->name('vem.approve');
+            Route::post('fichas/vem/{id}/situacao', [FichaVemController::class, 'updateSituacao'])->name('vem.situacao');
+            Route::get('/fichas/vem/create', [FichaVemController::class, 'create'])->name('vem.create');
+            Route::get('/fichas/vem/{vem}', [FichaVemController::class, 'show'])->name('vem.show');
+            Route::get('/fichas/vem/{vem}/edit', [FichaVemController::class, 'edit'])->name('vem.edit');
+            Route::put('/fichas/vem/{vem}', [FichaVemController::class, 'update'])->name('vem.update');
+            Route::patch('/fichas/vem/{vem}', [FichaVemController::class, 'update']);
+            Route::delete('/fichas/vem/{vem}', [FichaVemController::class, 'destroy'])->name('vem.destroy');
+        });
 
-        // Fichas ECC — listagem, aprovação e CRUD
-        Route::get('/fichas/ecc', [FichaEccController::class, 'index'])->name('ecc.index');
-        Route::get('fichas/ecc/{id}/approve', [FichaEccController::class, 'approve'])->name('ecc.approve');
-        Route::post('fichas/ecc/{id}/situacao', [FichaEccController::class, 'updateSituacao'])->name('ecc.situacao');
-        Route::get('/fichas/ecc/create', [FichaEccController::class, 'create'])->name('ecc.create');
-        Route::get('/fichas/ecc/{ecc}', [FichaEccController::class, 'show'])->name('ecc.show');
-        Route::get('/fichas/ecc/{ecc}/edit', [FichaEccController::class, 'edit'])->name('ecc.edit');
-        Route::put('/fichas/ecc/{ecc}', [FichaEccController::class, 'update'])->name('ecc.update');
-        Route::patch('/fichas/ecc/{ecc}', [FichaEccController::class, 'update']);
-        Route::delete('/fichas/ecc/{ecc}', [FichaEccController::class, 'destroy'])->name('ecc.destroy');
+        Route::middleware(['espec.movimento:1'])->group(function () {
+            // Fichas ECC — listagem, aprovação e CRUD
+            Route::get('/fichas/ecc', [FichaEccController::class, 'index'])->name('ecc.index');
+            Route::get('fichas/ecc/{id}/approve', [FichaEccController::class, 'approve'])->name('ecc.approve');
+            Route::post('fichas/ecc/{id}/situacao', [FichaEccController::class, 'updateSituacao'])->name('ecc.situacao');
+            Route::get('/fichas/ecc/create', [FichaEccController::class, 'create'])->name('ecc.create');
+            Route::get('/fichas/ecc/{ecc}', [FichaEccController::class, 'show'])->name('ecc.show');
+            Route::get('/fichas/ecc/{ecc}/edit', [FichaEccController::class, 'edit'])->name('ecc.edit');
+            Route::put('/fichas/ecc/{ecc}', [FichaEccController::class, 'update'])->name('ecc.update');
+            Route::patch('/fichas/ecc/{ecc}', [FichaEccController::class, 'update']);
+            Route::delete('/fichas/ecc/{ecc}', [FichaEccController::class, 'destroy'])->name('ecc.destroy');
+        });
 
-        // Fichas SGM — listagem, aprovação e CRUD
-        Route::get('/fichas/sgm', [FichaSGMController::class, 'index'])->name('sgm.index');
-        Route::get('fichas/sgm/{id}/approve', [FichaSGMController::class, 'approve'])->name('sgm.approve');
-        Route::post('fichas/sgm/{id}/situacao', [FichaSGMController::class, 'updateSituacao'])->name('sgm.situacao');
-        Route::get('/fichas/sgm/create', [FichaSGMController::class, 'create'])->name('sgm.create');
-        Route::get('/fichas/sgm/{sgm}', [FichaSGMController::class, 'show'])->name('sgm.show');
-        Route::get('/fichas/sgm/{sgm}/edit', [FichaSGMController::class, 'edit'])->name('sgm.edit');
-        Route::put('/fichas/sgm/{sgm}', [FichaSGMController::class, 'update'])->name('sgm.update');
-        Route::patch('/fichas/sgm/{sgm}', [FichaSGMController::class, 'update']);
-        Route::delete('/fichas/sgm/{sgm}', [FichaSGMController::class, 'destroy'])->name('sgm.destroy');
+        Route::middleware(['espec.movimento:3'])->group(function () {
+            // Fichas SGM — listagem, aprovação e CRUD
+            Route::get('/fichas/sgm', [FichaSGMController::class, 'index'])->name('sgm.index');
+            Route::get('fichas/sgm/{id}/approve', [FichaSGMController::class, 'approve'])->name('sgm.approve');
+            Route::post('fichas/sgm/{id}/situacao', [FichaSGMController::class, 'updateSituacao'])->name('sgm.situacao');
+            Route::get('/fichas/sgm/create', [FichaSGMController::class, 'create'])->name('sgm.create');
+            Route::get('/fichas/sgm/{sgm}', [FichaSGMController::class, 'show'])->name('sgm.show');
+            Route::get('/fichas/sgm/{sgm}/edit', [FichaSGMController::class, 'edit'])->name('sgm.edit');
+            Route::put('/fichas/sgm/{sgm}', [FichaSGMController::class, 'update'])->name('sgm.update');
+            Route::patch('/fichas/sgm/{sgm}', [FichaSGMController::class, 'update']);
+            Route::delete('/fichas/sgm/{sgm}', [FichaSGMController::class, 'destroy'])->name('sgm.destroy');
+        });
     });
 
     Route::middleware(['role:admin'])->group(function () {
@@ -217,9 +216,6 @@ Route::middleware(['auth'])->group(function () {
 
         Route::resources([
             'configuracoes/equipe' => TipoEquipeController::class,
-            'configuracoes/movimento' => TipoMovimentoController::class,
-            'configuracoes/responsavel' => TipoResponsavelController::class,
-            'configuracoes/restricao' => TipoRestricaoController::class,
         ]);
     });
 });

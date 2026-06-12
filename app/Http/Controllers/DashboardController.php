@@ -26,36 +26,66 @@ class DashboardController extends Controller
         // Otimização 1: Eager Loading com colunas específicas para reduzir memória
         $proximoseventos = Evento::with(['movimento:idt_movimento,des_sigla'])
             ->where('dat_inicio', '>=', now())
+            ->when(auth()->user()->isEspec(), function ($q) {
+                $q->where('idt_movimento', auth()->user()->idt_movimento);
+            })
             ->orderBy('dat_inicio', 'asc')
             ->take(5)
             ->select('idt_evento', 'des_evento', 'dat_inicio', 'idt_movimento')
             ->get();
 
-        // Otimização 2: Carregamento aninhado (Nested Eager Loading) para evitar N+1 na sigla do movimento
-        $fichasrecentes = Ficha::with(['evento.movimento:idt_movimento,des_sigla'])
-            ->orderBy('created_at', 'desc')
-            ->take(5)
-            ->select('idt_ficha', 'idt_evento', 'nom_candidato', 'dat_nascimento')
-            ->get();
-
         // Otimização 3: Queries de contagem simples
-        $qtdEventosAtivos = Evento::where('dat_termino', '>=', today())->count();
-        $qtdFichasCadastradas = Ficha::count();
+        $qtdEventosAtivos = Evento::where('dat_termino', '>=', today())
+            ->when(auth()->user()->isEspec(), function ($q) {
+                $q->where('idt_movimento', auth()->user()->idt_movimento);
+            })
+            ->count();
+
+        $qtdFichasCadastradas = Ficha::when(auth()->user()->isEspec(), function ($q) {
+            $q->whereHas('evento', function ($eq) {
+                $eq->where('idt_movimento', auth()->user()->idt_movimento);
+            });
+        })->count();
 
         // Otimização 4: Se o banco crescer muito, considere Cache::remember nestes contadores de distinct
-        $qtdParticipantesCadastrados = Participante::distinct('idt_pessoa')->count('idt_pessoa');
-        $qtdTrabalhadoresCadastrados = Trabalhador::distinct('idt_pessoa')->count('idt_pessoa');
+        $qtdParticipantesCadastrados = Participante::distinct('idt_pessoa')
+            ->when(auth()->user()->isEspec(), function ($q) {
+                $q->whereHas('evento', function ($eq) {
+                    $eq->where('idt_movimento', auth()->user()->idt_movimento);
+                });
+            })
+            ->count('idt_pessoa');
+
+        $qtdTrabalhadoresCadastrados = Trabalhador::distinct('idt_pessoa')
+            ->when(auth()->user()->isEspec(), function ($q) {
+                $q->whereHas('evento', function ($eq) {
+                    $eq->where('idt_movimento', auth()->user()->idt_movimento);
+                });
+            })
+            ->count('idt_pessoa');
+
+        $pessoa = auth()->user()->pessoa;
+        $contaMercadinho = null;
+        if ($pessoa) {
+            $contaMercadinho = \App\Models\Conta::with(['evento', 'transacoes' => fn($q) => $q->orderBy('dat_transacao', 'desc')])
+                ->where('idt_pessoa', $pessoa->idt_pessoa)
+                ->whereHas('evento', function($q) {
+                    $q->where('dat_termino', '>=', today()->subDays(7));
+                })
+                ->orderByDesc('created_at')
+                ->first();
+        }
 
         $duration = round((microtime(true) - $start) * 1000, 2);
         Log::notice('Dashboard carregado', ['duration_ms' => $duration]);
 
         return view('dashboard', compact(
             'proximoseventos',
-            'fichasrecentes',
             'qtdEventosAtivos',
             'qtdFichasCadastradas',
             'qtdParticipantesCadastrados',
-            'qtdTrabalhadoresCadastrados'
+            'qtdTrabalhadoresCadastrados',
+            'contaMercadinho'
         ));
     }
 }

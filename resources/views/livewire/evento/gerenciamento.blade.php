@@ -11,6 +11,8 @@ new class extends Component {
 
     public function mount(Evento $evento): void
     {
+        \Illuminate\Support\Facades\Gate::authorize('acessar-gerenciamento-evento', $evento);
+
         $this->evento = $evento->load(['movimento'])->loadCount([
             'fichas',
             'participantes',
@@ -42,6 +44,7 @@ new class extends Component {
             'presenca'     => ['icon' => 'finger-print',  'label' => 'Presença'],
             'quadrante'    => ['icon' => 'table-cells',   'label' => 'Quadrante',     'encontro_only' => true],            
             'contas'       => ['icon' => 'banknotes',     'label' => 'Prestação de Contas'],
+            'mercadinho'   => ['icon' => 'shopping-cart', 'label' => 'Mercadinho'],
         ];
 
         return array_filter($todasAbas, function ($aba, $tab) use ($isEncontro, $evento) {
@@ -140,6 +143,7 @@ new class extends Component {
                 @case('quadrante') <livewire:evento.partials.quadrante :evento="$evento" /> @break
                 @case('crachas') <livewire:evento.partials.crachas :evento="$evento" /> @break
                 @case('contas') <livewire:evento.partials.contas :evento="$evento" /> @break
+                @case('mercadinho') <livewire:vendas.index :evento="$evento" /> @break
             @endswitch
         @else
             <div class="p-4 text-zinc-500 italic">

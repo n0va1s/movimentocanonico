@@ -17,7 +17,7 @@ A autorização de usuários no sistema é categorizada nos quatro perfis abaixo
 |--------|--------------|-----------|
 | Administrador | `admin` | Acesso total ao sistema |
 | Coordenador | `coord` | Acesso operacional a eventos e equipes |
-| Especialista | `espec` | Acesso ao gerenciamento de eventos específicos |
+| Especialista | `espec` | Acesso ao gerenciamento de eventos específicos (restrito ao seu movimento) |
 | Usuário | `user` | Acesso básico pós-login |
 
 ---
@@ -94,7 +94,7 @@ Acesso restrito ao gerenciamento operacional de eventos específicos.
 
 *   `GET /eventos/{evento}/gerenciamento` - Gerenciamento de um evento específico
 
-> **Regra de Segurança Crítica:** Para `coord` e `espec`, o acesso ao gerenciamento é restrito **exclusivamente** aos eventos em que o usuário está ativamente cadastrado como trabalhador. Para `admin`, o acesso é irrestrito.
+> **Regra de Segurança Crítica:** Para `coord` e `espec`, o acesso ao gerenciamento é restrito **exclusivamente** aos eventos em que o usuário está ativamente cadastrado como trabalhador. Além disso, o perfil `espec` é estritamente restrito a eventos, fichas, importações e dashboards do seu próprio movimento (`idt_movimento` do usuário). Para `admin`, o acesso é irrestrito.
 
 #### Permissões por Aba no Gerenciamento do Evento:
 | Aba | `coord` | `espec` | `admin` |
@@ -188,5 +188,6 @@ Sempre que criar novas rotas, endpoints, controllers ou views, valide os seguint
 - [ ] **Proteção de Rota:** A rota possui o middleware `role` explícito ou está encapsulada em um grupo de rotas com o middleware correspondente em `routes/web.php`?
 - [ ] **Validação de ID Próprio:** Para rotas de edição de perfil/dados pessoais, o controller valida se o ID solicitado é exatamente igual a `auth()->id()` ou `auth()->user()->idt_pessoa`?
 - [ ] **Vínculo com Evento:** Para rotas sob `/eventos/{evento}/gerenciamento`, o controller ou a Policy valida se o usuário autenticado (`coord` ou `espec`) está ativamente alocado como trabalhador nesse evento?
+- [ ] **Restrição de Movimento (Especialista):** Para o perfil `espec`, as views, listagens, contadores do dashboard, importações e rotas de fichas estão estritamente filtradas ou protegidas contra acesso a outros movimentos que não o cadastrado em `idt_movimento`?
 - [ ] **Validação de Coordenador:** Para o perfil `coord`, o controller valida se o flag `ind_coordenador` é verdadeiro para aquele usuário no contexto do evento?
 - [ ] **Exclusividade Admin:** Qualquer alteração estrutural, CRUDs de base de dados globais (pessoas, eventos inteiros, contatos ou fichas) e configurações estão estritamente bloqueados para qualquer usuário que não possua a role `admin`?

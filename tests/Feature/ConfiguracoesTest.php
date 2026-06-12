@@ -5,17 +5,18 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('admin can access configuracoes index and see all 9 cards', function () {
+test('admin can access configuracoes index and see all authorized cards', function () {
     $admin = User::factory()->create(['role' => 'admin']);
     $this->actingAs($admin)
         ->get(route('configuracoes.index'))
         ->assertStatus(200)
         ->assertViewIs('configuracoes.index')
-        ->assertSee('Tipos de Movimentos')
-        ->assertSee('Tipos de Responsáveis')
         ->assertSee('Tipos de Equipes')
-        ->assertSee('Tipos de Restrições')
         ->assertSee('Perfil de Usuário')
+        ->assertSee('Limpar Cache')
+        ->assertSee('Otimizar Tudo')
+        ->assertSee('Storage Link')
+        ->assertSee('Encerrar Eventos')
         ->assertSee('Importar Planilhas')
         ->assertSee('Fichas VEM')
         ->assertSee('Fichas SGM')
@@ -28,10 +29,7 @@ test('especialista can access configuracoes index and only see the 4 authorized 
         ->get(route('configuracoes.index'))
         ->assertStatus(200)
         ->assertViewIs('configuracoes.index')
-        ->assertDontSee('Tipos de Movimentos')
-        ->assertDontSee('Tipos de Responsáveis')
         ->assertDontSee('Tipos de Equipes')
-        ->assertDontSee('Tipos de Restrições')
         ->assertDontSee('Perfil de Usuário')
         ->assertSee('Importar Planilhas')
         ->assertSee('Fichas VEM')

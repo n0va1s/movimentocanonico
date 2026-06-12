@@ -137,14 +137,14 @@ class HomeController extends Controller
     public function fichaSgm()
     {
         $ficha = new Ficha;
-        $ficha->idt_movimento = TipoMovimento::SegueMe;
+        $ficha->idt_movimento = TipoMovimento::SGM;
         $ficha->setRelation('fichaSGM', new FichaSGM);
-        $eventos = Evento::getByTipo(TipoMovimento::SegueMe, 'E', 3);
+        $eventos = Evento::getByTipo(TipoMovimento::SGM, 'E', 3);
 
         return view('ficha.formSGM', array_merge(FichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,
             'eventos' => $eventos,
-            'movimentopadrao' => TipoMovimento::SegueMe,
+            'movimentopadrao' => TipoMovimento::SGM,
         ]));
     }
 }

@@ -28,6 +28,9 @@ class ImportController extends Controller
                 ->orWhere('dat_termino', '>=', $hoje)
                 ->orWhereNull('dat_termino');
         })
+            ->when(auth()->user()->isEspec(), function ($q) {
+                $q->where('idt_movimento', auth()->user()->idt_movimento);
+            })
             ->with('movimento')
             ->orderBy('dat_inicio', 'asc')
             ->get();
@@ -52,6 +55,11 @@ class ImportController extends Controller
 
         try {
             $evento = Evento::findOrFail($request->evento_id);
+
+            if (auth()->user()->isEspec() && (is_null(auth()->user()->idt_movimento) || (int) $evento->idt_movimento !== (int) auth()->user()->idt_movimento)) {
+                abort(403, 'Acesso não autorizado para este movimento.');
+            }
+
             $file = $request->file('arquivo_participantes');
             $filePath = $file->getRealPath();
 
@@ -97,6 +105,11 @@ class ImportController extends Controller
 
         try {
             $evento = Evento::findOrFail($request->evento_id);
+
+            if (auth()->user()->isEspec() && (is_null(auth()->user()->idt_movimento) || (int) $evento->idt_movimento !== (int) auth()->user()->idt_movimento)) {
+                abort(403, 'Acesso não autorizado para este movimento.');
+            }
+
             $file = $request->file('arquivo_trabalhadores');
             $filePath = $file->getRealPath();
 
