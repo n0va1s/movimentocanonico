@@ -278,7 +278,7 @@ new class extends Component {
 
 <div class="space-y-6">
     {{-- Menu Local de Abas --}}
-    <div class="flex border-b border-zinc-200 dark:border-zinc-700">
+    <div class="flex overflow-x-auto no-scrollbar border-b border-zinc-200 dark:border-zinc-700 whitespace-nowrap">
         <button 
             wire:click="$set('activeSubTab', 'operacao')" 
             class="px-4 py-2 font-semibold text-sm border-b-2 {{ $activeSubTab === 'operacao' ? 'border-blue-600 text-blue-600' : 'border-transparent text-zinc-500 hover:text-zinc-700' }}"
@@ -298,28 +298,28 @@ new class extends Component {
         <livewire:vendas.produtos />
     @else
         {{-- Tela Principal de Operação --}}
-        <div class="space-y-6">
+        <div class="space-y-6 px-4 sm:px-6 md:px-0">
             {{-- Cards Resumo Financeiro --}}
-            <div class="flex flex-row gap-4">
-                <div class="flex-1 p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
                     <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Total Consumido</div>
                     <div class="text-2xl font-bold mt-1 text-zinc-950 dark:text-white">
                         R$ {{ number_format($this->resumoFinanceiro['faturamento'], 2, ',', '.') }}
                     </div>
                 </div>
-                <div class="flex-1 p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
+                <div class="p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
                     <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Total Recebido</div>
                     <div class="text-2xl font-bold mt-1 text-green-600 dark:text-green-400">
                         R$ {{ number_format($this->resumoFinanceiro['recebido'], 2, ',', '.') }}
                     </div>
                 </div>
-                <div class="flex-1 p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
+                <div class="p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
                     <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Saldo Devido (A Receber)</div>
                     <div class="text-2xl font-bold mt-1 text-red-600 dark:text-red-400">
                         R$ {{ number_format($this->resumoFinanceiro['devedores'], 2, ',', '.') }}
                     </div>
                 </div>
-                <div class="flex-1 p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
+                <div class="p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
                     <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Saldos Positivos (Créditos)</div>
                     <div class="text-2xl font-bold mt-1 text-blue-600 dark:text-blue-400">
                         R$ {{ number_format($this->resumoFinanceiro['credores'], 2, ',', '.') }}
@@ -334,13 +334,13 @@ new class extends Component {
             @endif
 
             {{-- Filtros e Lista de Contas --}}
-            <div class="bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-4">
+            <div class="bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 p-4 sm:p-6 space-y-4">
                 <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
                     <div class="w-full md:w-80">
                         <flux:input wire:model.live.debounce.300ms="search" placeholder="Buscar pessoa..." icon="magnifying-glass" />
                     </div>
                     
-                    <div class="flex gap-2">
+                    <div class="flex flex-wrap gap-2 w-full md:w-auto justify-start md:justify-end">
                         <flux:button 
                             size="sm"
                             :variant="$filtroSaldo === 'todos' ? 'primary' : 'ghost'"
@@ -365,8 +365,8 @@ new class extends Component {
                     </div>
                 </div>
 
-                {{-- Tabela de Pessoas e Contas --}}
-                <div class="border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden">
+                {{-- Tabela de Pessoas e Contas (Desktop) --}}
+                <div class="hidden md:block border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden">
                     @if($this->pessoas->isEmpty())
                         <div class="p-8 text-center text-zinc-500 italic">
                             Nenhum participante ou trabalhador encontrado.
@@ -427,6 +427,114 @@ new class extends Component {
                                 @endforeach
                             </flux:table.rows>
                         </flux:table>
+                    @endif
+                </div>
+
+                {{-- Lista de Pessoas (Mobile - Acordeão) --}}
+                <div class="md:hidden">
+                    @if($this->pessoas->isEmpty())
+                        <div class="p-8 text-center text-zinc-500 italic border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800">
+                            Nenhum participante ou trabalhador encontrado.
+                        </div>
+                    @else
+                        <div class="space-y-3">
+                            @foreach($this->pessoas as $pessoa)
+                                @php
+                                    $conta = $this->getConta($pessoa->idt_pessoa);
+                                    $saldo = (float) $conta->val_saldo;
+                                    
+                                    // Identificar papel no evento
+                                    $isTrabalhador = $pessoa->trabalhadores()->where('idt_evento', $evento->idt_evento)->exists();
+                                    $tipoLabel = $isTrabalhador ? 'Trabalhador' : 'Participante';
+                                    $tipoColor = $isTrabalhador ? 'purple' : 'green';
+                                @endphp
+                                <div 
+                                    x-data="{ expanded: false }" 
+                                    class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden shadow-xs transition-all duration-200"
+                                    :class="expanded ? 'ring-1 ring-blue-500/50 border-blue-500/50 bg-zinc-50/10 dark:bg-zinc-800/50' : ''"
+                                >
+                                    {{-- Cabeçalho do Accordion (Recolhido) --}}
+                                    <button 
+                                        @click="expanded = !expanded"
+                                        type="button"
+                                        class="w-full flex items-center justify-between p-4 text-left focus:outline-none"
+                                    >
+                                        <div class="flex-1 min-w-0 pr-4">
+                                            <div class="font-semibold text-zinc-950 dark:text-white truncate">
+                                                {{ $pessoa->nom_pessoa }}
+                                            </div>
+                                            <div class="flex items-center gap-2 mt-1 flex-wrap">
+                                                @if($pessoa->nom_apelido)
+                                                    <span class="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                                                        ({{ $pessoa->nom_apelido }})
+                                                    </span>
+                                                @endif
+                                                <flux:badge :color="$tipoColor" size="sm" class="font-bold scale-90 origin-left">
+                                                    {{ $tipoLabel }}
+                                                </flux:badge>
+                                            </div>
+                                        </div>
+                                        
+                                        {{-- Chevron Icon --}}
+                                        <div class="text-zinc-400 dark:text-zinc-500 transition-transform duration-200" :class="expanded ? 'rotate-180' : ''">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                                            </svg>
+                                        </div>
+                                    </button>
+
+                                    {{-- Conteúdo Expandido --}}
+                                    <div 
+                                        x-show="expanded" 
+                                        x-collapse
+                                        class="border-t border-zinc-150 dark:border-zinc-700/50 bg-zinc-50/50 dark:bg-zinc-900/20 p-4 space-y-3"
+                                    >
+                                        <div class="flex justify-between items-center text-sm">
+                                            <span class="text-zinc-500 dark:text-zinc-400">Saldo Atual:</span>
+                                            <span class="font-bold text-base {{ $saldo < 0 ? 'text-red-600 dark:text-red-400' : ($saldo > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-500') }}">
+                                                R$ {{ number_format($saldo, 2, ',', '.') }}
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="space-y-2 pt-2">
+                                            {{-- Botão Principal de Compra --}}
+                                            <flux:button 
+                                                icon="shopping-bag" 
+                                                variant="primary" 
+                                                class="w-full justify-center"
+                                                wire:click="openCompra({{ $pessoa->idt_pessoa }})"
+                                            >
+                                                Lançar Compra
+                                            </flux:button>
+                                            
+                                            <div class="flex flex-col sm:flex-row gap-2">
+                                                {{-- Botão de Crédito --}}
+                                                <flux:button 
+                                                    size="sm" 
+                                                    icon="banknotes" 
+                                                    color="green" 
+                                                    class="w-full sm:flex-1 justify-center"
+                                                    wire:click="openCredito({{ $pessoa->idt_pessoa }})"
+                                                >
+                                                    Crédito / Pgto
+                                                </flux:button>
+                                                
+                                                {{-- Botão de Extrato --}}
+                                                <flux:button 
+                                                    size="sm" 
+                                                    icon="document-magnifying-glass" 
+                                                    variant="ghost" 
+                                                    class="w-full sm:flex-1 justify-center"
+                                                    wire:click="openExtrato({{ $pessoa->idt_pessoa }})"
+                                                >
+                                                    Extrato
+                                                </flux:button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
                     @endif
                 </div>
 
