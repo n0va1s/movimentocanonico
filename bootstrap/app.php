@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\RestrictEspecMovement;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\TraceIdMiddleware;
 use App\Notifications\SystemExceptionTelegram;
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'role' => RoleMiddleware::class,
+            'espec.movimento' => RestrictEspecMovement::class,
         ]);
 
         $middleware->append(TraceIdMiddleware::class);

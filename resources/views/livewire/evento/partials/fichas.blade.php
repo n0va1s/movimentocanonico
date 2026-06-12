@@ -61,7 +61,7 @@ new class extends Component {
     {
         return match ((int) $ficha->evento->idt_movimento) {
             \App\Models\TipoMovimento::VEM     => ['show' => 'vem.show',  'edit' => 'vem.edit',  'destroy' => 'vem.destroy'],
-            \App\Models\TipoMovimento::SegueMe => ['show' => 'sgm.show',  'edit' => 'sgm.edit',  'destroy' => 'sgm.destroy'],
+            \App\Models\TipoMovimento::SGM => ['show' => 'sgm.show',  'edit' => 'sgm.edit',  'destroy' => 'sgm.destroy'],
             \App\Models\TipoMovimento::ECC     => ['show' => 'ecc.show',  'edit' => 'ecc.edit',  'destroy' => 'ecc.destroy'],
             default                            => ['show' => 'vem.show',  'edit' => 'vem.edit',  'destroy' => 'vem.destroy'],
         };
@@ -201,17 +201,18 @@ new class extends Component {
 <div class="space-y-4">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-            <flux:heading size="lg">Fichas de Inscrição</flux:heading>
+            <div class="flex items-center gap-3">
+                <flux:heading size="lg">Fichas de Inscrição</flux:heading>
+                <flux:button wire:click="exportar" icon="arrow-down-tray" variant="outline" size="sm" title="Exportar CSV">
+                    Exportar
+                </flux:button>
+            </div>
             <flux:subheading>Analise e aprove os candidatos para este evento.</flux:subheading>
         </div>
 
-        <div class="flex items-center gap-2 w-full md:w-auto">
+        <div class="w-full md:w-auto">
             <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="Buscar ficha..."
                 class="w-full md:max-w-xs" />
-
-            <flux:button wire:click="exportar" icon="arrow-down-tray" variant="outline" size="sm" title="Exportar CSV">
-                Exportar
-            </flux:button>
         </div>
     </div>
 

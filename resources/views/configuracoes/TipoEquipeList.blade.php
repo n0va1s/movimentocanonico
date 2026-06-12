@@ -26,6 +26,7 @@
                 <thead class="bg-gray-100">
                     <tr>
                         <th scope="col" class="p-3 font-semibold  dark:text-gray-800">Equipe</th>
+                        <th scope="col" class="p-3 font-semibold  dark:text-gray-800">Movimento</th>
                         <th scope="col" class="p-3 font-semibold text-center dark:text-gray-800 w-24">Ações</th>
                     </tr>
                 </thead>
@@ -33,6 +34,7 @@
                     @forelse ($equipes as $equipe)
                         <tr class="border-t hover:bg-gray-200 dark:hover:bg-gray-500">
                             <td class="p-3 text-gray-900 dark:text-gray-100">{{ $equipe->des_grupo }}</td>
+                            <td class="p-3 text-gray-900 dark:text-gray-100">{{ $equipe->movimento?->des_sigla ?? 'Não Vinculado' }}</td>
 
                             <td class="p-3 flex justify-end items-center gap-2">
                                 <a href="{{ route('equipe.edit', $equipe->idt_equipe) }}"
@@ -57,7 +59,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="p-4 text-center text-gray-500">
+                            <td colspan="3" class="p-4 text-center text-gray-500">
                                 Nenhum tipo de equipe cadastrado.
                             </td>
                         </tr>

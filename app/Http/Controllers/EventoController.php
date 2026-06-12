@@ -52,9 +52,11 @@ class EventoController extends Controller
             ->paginate(12)
             ->withQueryString();
 
+        $movimentos = TipoMovimento::all(['idt_movimento', 'des_sigla']);
+
         return view('evento.list', [
             'eventos' => $eventos,
-            'movimentos' => TipoMovimento::all(['idt_movimento', 'des_sigla']),
+            'movimentos' => $movimentos,
             'search' => $request->search,
             'idt_movimento' => $request->idt_movimento,
             'tip_evento' => $tip_evento,

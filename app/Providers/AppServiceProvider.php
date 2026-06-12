@@ -45,6 +45,10 @@ class AppServiceProvider extends ServiceProvider
                 return true;
             }
 
+            if ($user->isEspec()) {
+                return ! is_null($user->idt_movimento) && (int) $evento->idt_movimento === (int) $user->idt_movimento;
+            }
+
             return $user->trabalhaNoEvento($evento->idt_evento);
         });
 
@@ -60,7 +64,10 @@ class AppServiceProvider extends ServiceProvider
                     return true;
                 }
 
-                // coord e espec precisam estar cadastrados no evento
+                if ($user->isEspec()) {
+                    return ! is_null($user->idt_movimento) && (int) $evento->idt_movimento === (int) $user->idt_movimento;
+                }
+
                 return $user->trabalhaNoEvento($evento->idt_evento);
             });
         }

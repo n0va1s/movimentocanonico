@@ -61,6 +61,7 @@ enum Perfil: string
             'fichas' => [self::ADMIN->value, self::ESPEC->value],
             'voluntarios' => [self::ADMIN->value, self::ESPEC->value],
             'contas' => [self::ADMIN->value, self::ESPEC->value],
+            'mercadinho' => [self::ADMIN->value, self::COORD->value, self::ESPEC->value],
         ];
     }
 }

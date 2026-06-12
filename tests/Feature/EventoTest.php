@@ -1021,3 +1021,86 @@ describe('EventoService — confirmarParticipacao', function () {
         $this->assertDatabaseCount('participante', 1);
     });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EventoController — Espec e Movimentos Adicionais
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('EventoController — Espec e Movimentos Adicionais', function () {
+
+    test('especialista vê eventos de todos os movimentos na listagem geral', function () {
+        $movVem = TipoMovimento::where('des_sigla', 'VEM')->first();
+        $movEcc = TipoMovimento::where('des_sigla', 'ECC')->first();
+        $movSgm = TipoMovimento::where('des_sigla', 'Segue-Me')->first();
+
+        $eventoVem = Evento::factory()->create(['idt_movimento' => $movVem->idt_movimento, 'des_evento' => 'Evento VEM Teste']);
+        $eventoEcc = Evento::factory()->create(['idt_movimento' => $movEcc->idt_movimento, 'des_evento' => 'Evento ECC Teste']);
+        $eventoSgm = Evento::factory()->create(['idt_movimento' => $movSgm->idt_movimento, 'des_evento' => 'Evento SGM Teste']);
+
+        $espec = User::factory()->create([
+            'role' => 'espec',
+            'idt_movimento' => $movVem->idt_movimento,
+        ]);
+
+        $response = $this->actingAs($espec)->get(route('eventos.index'));
+
+        $response->assertOk();
+        $eventos = $response->viewData('eventos');
+
+        expect($eventos->pluck('des_evento'))->toContain('Evento VEM Teste')
+            ->toContain('Evento ECC Teste')
+            ->toContain('Evento SGM Teste');
+    });
+
+    test('especialista vê o botão de gerenciar somente nos eventos do seu próprio movimento mesmo que não esteja trabalhando nele', function () {
+        $movVem = TipoMovimento::where('des_sigla', 'VEM')->first();
+        $movEcc = TipoMovimento::where('des_sigla', 'ECC')->first();
+
+        $espec = User::factory()->create([
+            'role' => 'espec',
+            'idt_movimento' => $movVem->idt_movimento,
+        ]);
+        
+        $eventoVem = Evento::factory()->create(['idt_movimento' => $movVem->idt_movimento, 'des_evento' => 'Meu Movimento']);
+        $eventoEcc = Evento::factory()->create(['idt_movimento' => $movEcc->idt_movimento, 'des_evento' => 'Outro Movimento']);
+
+        $response = $this->actingAs($espec)->get(route('eventos.index'));
+        $response->assertOk();
+
+        $response->assertSee(route('eventos.gerenciamento', $eventoVem));
+        $response->assertDontSee(route('eventos.gerenciamento', $eventoEcc));
+    });
+
+    test('especialista vê na sua timeline eventos de todos os movimentos que participou/trabalhou', function () {
+        $movVem = TipoMovimento::where('des_sigla', 'VEM')->first();
+        $movEcc = TipoMovimento::where('des_sigla', 'ECC')->first();
+
+        $espec = User::factory()->create([
+            'role' => 'espec',
+            'idt_movimento' => $movVem->idt_movimento,
+        ]);
+        
+        $pessoaEspec = $espec->pessoa;
+
+        $eventoVem = Evento::factory()->create(['idt_movimento' => $movVem->idt_movimento, 'des_evento' => 'Trabalho VEM', 'dat_inicio' => '2024-03-10']);
+        $eventoEcc = Evento::factory()->create(['idt_movimento' => $movEcc->idt_movimento, 'des_evento' => 'Participacao ECC', 'dat_inicio' => '2024-05-15']);
+
+        $equipe = TipoEquipe::first();
+        Trabalhador::factory()->create([
+            'idt_pessoa' => $pessoaEspec->idt_pessoa,
+            'idt_evento' => $eventoVem->idt_evento,
+            'idt_equipe' => $equipe->idt_equipe,
+        ]);
+
+        Participante::factory()->create([
+            'idt_pessoa' => $pessoaEspec->idt_pessoa,
+            'idt_evento' => $eventoEcc->idt_evento,
+        ]);
+
+        $response = $this->actingAs($espec)->get(route('timeline.index'));
+        $response->assertOk();
+
+        $response->assertSee('Trabalho VEM');
+        $response->assertSee('Participacao ECC');
+    });
+});

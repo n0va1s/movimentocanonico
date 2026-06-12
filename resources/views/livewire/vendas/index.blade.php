@@ -1,0 +1,738 @@
+<?php
+
+use App\Models\Evento;
+use App\Models\Pessoa;
+use App\Models\Conta;
+use App\Models\Transacao;
+use App\Models\Produto;
+use Livewire\Volt\Component;
+use Livewire\WithPagination;
+use Livewire\Attributes\Computed;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+
+new class extends Component {
+    use WithPagination;
+
+    public Evento $evento;
+    public string $activeSubTab = 'operacao'; // 'operacao' ou 'catalogo'
+    
+    // Filtros e Buscas
+    public string $search = '';
+    public string $filtroSaldo = 'todos'; // 'todos', 'devedores', 'credores'
+    
+    // Modais e Seleções
+    public ?int $selectedPessoaId = null;
+    public bool $showCompraModal = false;
+    public bool $showCreditoModal = false;
+    public bool $showExtratoModal = false;
+
+    // Aportes de Crédito / Quitação
+    public string $val_aporte = '';
+    public string $des_aporte = '';
+    public string $tip_transacao_credito = 'D'; // 'D' (Depósito) ou 'P' (Pagamento/Quitação)
+
+    // Carrinho de Compras
+    public array $cart = []; // [idt_produto => ['qtd' => X, 'nom' => Y, 'val' => Z]]
+    public string $nom_avulso = '';
+    public string $val_avulso_preco = '';
+    public int $qtd_avulso = 1;
+
+    public function mount(Evento $evento): void
+    {
+        $this->evento = $evento;
+    }
+
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingFiltroSaldo(): void
+    {
+        $this->resetPage();
+    }
+
+    #[Computed]
+    public function pessoas()
+    {
+        $eventoId = $this->evento->idt_evento;
+        $filtro = $this->filtroSaldo;
+
+        return Pessoa::where(function($query) use ($eventoId) {
+            $query->whereHas('participantes', fn($q) => $q->where('idt_evento', $eventoId))
+                  ->orWhereHas('trabalhadores', fn($q) => $q->where('idt_evento', $eventoId));
+        })
+        ->when($this->search, function($q) {
+            $q->searchByName($this->search);
+        })
+        ->when($filtro !== 'todos', function($q) use ($filtro, $eventoId) {
+            $q->whereHas('fichas', function($q) {}) // Apenas força o carregamento ou usa join simples.
+            // Para filtrar pelo saldo na conta do evento, fazemos um whereHas ou subquery
+            ->whereExists(function($query) use ($eventoId, $filtro) {
+                $query->select(DB::raw(1))
+                      ->from('conta')
+                      ->whereColumn('conta.idt_pessoa', 'pessoa.idt_pessoa')
+                      ->where('conta.idt_evento', $eventoId)
+                      ->when($filtro === 'devedores', fn($query) => $query->where('val_saldo', '<', 0))
+                      ->when($filtro === 'credores', fn($query) => $query->where('val_saldo', '>', 0));
+            });
+        })
+        ->orderBy('nom_pessoa', 'asc')
+        ->paginate(10);
+    }
+
+    #[Computed]
+    public function produtosDisponiveis()
+    {
+        return Produto::orderBy('nom_produto', 'asc')->get();
+    }
+
+    #[Computed]
+    public function resumoFinanceiro(): array
+    {
+        $eventoId = $this->evento->idt_evento;
+        
+        $contas = Conta::where('idt_evento', $eventoId)->get();
+
+        $faturamento = Transacao::whereHas('conta', fn($q) => $q->where('idt_evento', $eventoId))
+            ->where('tip_transacao', 'C')
+            ->sum('val_transacao');
+
+        $recebido = Transacao::whereHas('conta', fn($q) => $q->where('idt_evento', $eventoId))
+            ->whereIn('tip_transacao', ['D', 'P'])
+            ->sum('val_transacao');
+
+        $devedores = $contas->where('val_saldo', '<', 0)->sum('val_saldo');
+        $credores = $contas->where('val_saldo', '>', 0)->sum('val_saldo');
+
+        return [
+            'faturamento' => (float) $faturamento,
+            'recebido' => (float) $recebido,
+            'devedores' => abs((float) $devedores),
+            'credores' => (float) $credores,
+        ];
+    }
+
+    public function getConta(int $idt_pessoa): Conta
+    {
+        return Conta::firstOrCreate(
+            ['idt_pessoa' => $idt_pessoa, 'idt_evento' => $this->evento->idt_evento],
+            ['val_saldo' => 0.00, 'usu_inclusao' => Auth::id()]
+        );
+    }
+
+    // Ações de Modal
+    public function openCompra(int $idt_pessoa): void
+    {
+        $this->selectedPessoaId = $idt_pessoa;
+        $this->cart = [];
+        $this->nom_avulso = '';
+        $this->val_avulso_preco = '';
+        $this->qtd_avulso = 1;
+        $this->showCompraModal = true;
+    }
+
+    public function openCredito(int $idt_pessoa): void
+    {
+        $this->selectedPessoaId = $idt_pessoa;
+        $this->val_aporte = '';
+        $this->des_aporte = '';
+        $this->tip_transacao_credito = 'D';
+        $this->showCreditoModal = true;
+    }
+
+    public function openExtrato(int $idt_pessoa): void
+    {
+        $this->selectedPessoaId = $idt_pessoa;
+        $this->showExtratoModal = true;
+    }
+
+    // Lógicas de Carrinho
+    public function adicionarAoCarrinho(int $idt_produto): void
+    {
+        $produto = Produto::find($idt_produto);
+        if (!$produto) return;
+
+        $qtdNoCarrinho = $this->cart[$idt_produto]['qtd'] ?? 0;
+
+        if ($produto->qtd_produto < ($qtdNoCarrinho + 1)) {
+            session()->flash('cart_error', "Estoque insuficiente para {$produto->nom_produto} (Disponível: {$produto->qtd_produto}).");
+            return;
+        }
+
+        if (isset($this->cart[$idt_produto])) {
+            $this->cart[$idt_produto]['qtd']++;
+        } else {
+            $this->cart[$idt_produto] = [
+                'nom' => $produto->nom_produto,
+                'val' => (float) $produto->val_preco,
+                'qtd' => 1
+            ];
+        }
+    }
+
+    public function removerDoCarrinho(int $idt_produto): void
+    {
+        if (isset($this->cart[$idt_produto])) {
+            if ($this->cart[$idt_produto]['qtd'] > 1) {
+                $this->cart[$idt_produto]['qtd']--;
+            } else {
+                unset($this->cart[$idt_produto]);
+            }
+        }
+    }
+
+    public function finalizarCompra(): void
+    {
+        if (!$this->selectedPessoaId) return;
+        
+        $conta = $this->getConta($this->selectedPessoaId);
+
+        DB::transaction(function() use ($conta) {
+            // Lançar itens do catálogo
+            foreach ($this->cart as $idt_produto => $item) {
+                $produto = Produto::lockForUpdate()->find($idt_produto);
+                if (!$produto || $produto->qtd_produto < $item['qtd']) {
+                    throw new \Exception("Estoque esgotado durante o processamento para: " . ($produto->nom_produto ?? 'Produto'));
+                }
+
+                Transacao::create([
+                    'idt_conta' => $conta->idt_conta,
+                    'idt_produto' => $idt_produto,
+                    'tip_transacao' => 'C',
+                    'nom_item' => $produto->nom_produto,
+                    'qtd_item' => $item['qtd'],
+                    'val_unitario' => $produto->val_preco,
+                    'val_transacao' => $item['qtd'] * $produto->val_preco,
+                    'dat_transacao' => now(),
+                    'usu_inclusao' => Auth::id(),
+                ]);
+            }
+
+            // Lançar item avulso se houver
+            if (!empty($this->nom_avulso) && !empty($this->val_avulso_preco)) {
+                $preco = (float) str_replace(',', '.', $this->val_avulso_preco);
+                Transacao::create([
+                    'idt_conta' => $conta->idt_conta,
+                    'idt_produto' => null,
+                    'tip_transacao' => 'C',
+                    'nom_item' => $this->nom_avulso,
+                    'qtd_item' => $this->qtd_avulso,
+                    'val_unitario' => $preco,
+                    'val_transacao' => $this->qtd_avulso * $preco,
+                    'dat_transacao' => now(),
+                    'usu_inclusao' => Auth::id(),
+                ]);
+            }
+        });
+
+        $this->showCompraModal = false;
+        $this->cart = [];
+        $this->nom_avulso = '';
+        $this->val_avulso_preco = '';
+        session()->flash('success', 'Compra registrada com sucesso!');
+    }
+
+    // Lançamento de Crédito/Aporte
+    public function registrarCredito(): void
+    {
+        $this->validate([
+            'val_aporte' => 'required|numeric|min:0.01',
+            'des_aporte' => 'nullable|string|max:255',
+            'tip_transacao_credito' => 'required|in:D,P'
+        ]);
+
+        $conta = $this->getConta($this->selectedPessoaId);
+        $valor = (float) $this->val_aporte;
+        
+        $desc = $this->des_aporte;
+        if (empty($desc)) {
+            $desc = $this->tip_transacao_credito === 'D' ? 'Crédito Antecipado' : 'Pagamento de Conta';
+        }
+
+        Transacao::create([
+            'idt_conta' => $conta->idt_conta,
+            'idt_produto' => null,
+            'tip_transacao' => $this->tip_transacao_credito,
+            'nom_item' => $desc,
+            'val_transacao' => $valor,
+            'dat_transacao' => now(),
+            'usu_inclusao' => Auth::id(),
+        ]);
+
+        $this->showCreditoModal = false;
+        session()->flash('success', 'Crédito/Pagamento registrado com sucesso!');
+    }
+
+    // Estorno de transação
+    public function estornarTransacao(int $idt_transacao): void
+    {
+        $transacao = Transacao::find($idt_transacao);
+        if ($transacao) {
+            $transacao->delete();
+            session()->flash('success', 'Transação estornada com sucesso!');
+        }
+    }
+}; ?>
+
+<div class="space-y-6">
+    {{-- Menu Local de Abas --}}
+    <div class="flex border-b border-zinc-200 dark:border-zinc-700">
+        <button 
+            wire:click="$set('activeSubTab', 'operacao')" 
+            class="px-4 py-2 font-semibold text-sm border-b-2 {{ $activeSubTab === 'operacao' ? 'border-blue-600 text-blue-600' : 'border-transparent text-zinc-500 hover:text-zinc-700' }}"
+        >
+            Operar Mercadinho
+        </button>
+        <button 
+            wire:click="$set('activeSubTab', 'catalogo')" 
+            class="px-4 py-2 font-semibold text-sm border-b-2 {{ $activeSubTab === 'catalogo' ? 'border-blue-600 text-blue-600' : 'border-transparent text-zinc-500 hover:text-zinc-700' }}"
+        >
+            Produtos e Estoque
+        </button>
+    </div>
+
+    @if($activeSubTab === 'catalogo')
+        {{-- Tela do Catálogo --}}
+        <livewire:vendas.produtos />
+    @else
+        {{-- Tela Principal de Operação --}}
+        <div class="space-y-6">
+            {{-- Cards Resumo Financeiro --}}
+            <div class="flex flex-row gap-4">
+                <div class="flex-1 p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
+                    <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Total Consumido</div>
+                    <div class="text-2xl font-bold mt-1 text-zinc-950 dark:text-white">
+                        R$ {{ number_format($this->resumoFinanceiro['faturamento'], 2, ',', '.') }}
+                    </div>
+                </div>
+                <div class="flex-1 p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
+                    <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Total Recebido</div>
+                    <div class="text-2xl font-bold mt-1 text-green-600 dark:text-green-400">
+                        R$ {{ number_format($this->resumoFinanceiro['recebido'], 2, ',', '.') }}
+                    </div>
+                </div>
+                <div class="flex-1 p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
+                    <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Saldo Devido (A Receber)</div>
+                    <div class="text-2xl font-bold mt-1 text-red-600 dark:text-red-400">
+                        R$ {{ number_format($this->resumoFinanceiro['devedores'], 2, ',', '.') }}
+                    </div>
+                </div>
+                <div class="flex-1 p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
+                    <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Saldos Positivos (Créditos)</div>
+                    <div class="text-2xl font-bold mt-1 text-blue-600 dark:text-blue-400">
+                        R$ {{ number_format($this->resumoFinanceiro['credores'], 2, ',', '.') }}
+                    </div>
+                </div>
+            </div>
+
+            @if (session()->has('success'))
+                <div class="p-4 bg-green-50 border border-green-200 text-green-700 dark:bg-green-950/20 dark:border-green-900/50 dark:text-green-400 rounded-xl text-sm font-medium">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            {{-- Filtros e Lista de Contas --}}
+            <div class="bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-4">
+                <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div class="w-full md:w-80">
+                        <flux:input wire:model.live.debounce.300ms="search" placeholder="Buscar pessoa..." icon="magnifying-glass" />
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <flux:button 
+                            size="sm"
+                            :variant="$filtroSaldo === 'todos' ? 'primary' : 'ghost'"
+                            wire:click="$set('filtroSaldo', 'todos')"
+                        >
+                            Todos
+                        </flux:button>
+                        <flux:button 
+                            size="sm"
+                            :variant="$filtroSaldo === 'devedores' ? 'primary' : 'ghost'"
+                            wire:click="$set('filtroSaldo', 'devedores')"
+                        >
+                            Saldo Devedor
+                        </flux:button>
+                        <flux:button 
+                            size="sm"
+                            :variant="$filtroSaldo === 'credores' ? 'primary' : 'ghost'"
+                            wire:click="$set('filtroSaldo', 'credores')"
+                        >
+                            Com Crédito
+                        </flux:button>
+                    </div>
+                </div>
+
+                {{-- Tabela de Pessoas e Contas --}}
+                <div class="border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden">
+                    @if($this->pessoas->isEmpty())
+                        <div class="p-8 text-center text-zinc-500 italic">
+                            Nenhum participante ou trabalhador encontrado.
+                        </div>
+                    @else
+                        <flux:table>
+                            <flux:table.columns>
+                                <flux:table.column>Nome / Apelido</flux:table.column>
+                                <flux:table.column>Tipo</flux:table.column>
+                                <flux:table.column>Saldo Atual</flux:table.column>
+                                <flux:table.column class="text-right">Ações</flux:table.column>
+                            </flux:table.columns>
+
+                            <flux:table.rows>
+                                @foreach($this->pessoas as $pessoa)
+                                    @php
+                                        $conta = $this->getConta($pessoa->idt_pessoa);
+                                        $saldo = (float) $conta->val_saldo;
+                                        
+                                        // Identificar papel no evento
+                                        $isTrabalhador = $pessoa->trabalhadores()->where('idt_evento', $evento->idt_evento)->exists();
+                                        $tipoLabel = $isTrabalhador ? 'Trabalhador' : 'Participante';
+                                        $tipoColor = $isTrabalhador ? 'purple' : 'green';
+                                    @endphp
+                                    <flux:table.row :key="$pessoa->idt_pessoa">
+                                        <flux:table.cell>
+                                            <div class="font-semibold text-zinc-950 dark:text-white">
+                                                {{ $pessoa->nom_pessoa }}
+                                            </div>
+                                            @if($pessoa->nom_apelido)
+                                                <div class="text-xs text-zinc-400">
+                                                    ({{ $pessoa->nom_apelido }})
+                                                </div>
+                                            @endif
+                                        </flux:table.cell>
+                                        <flux:table.cell>
+                                            <flux:badge :color="$tipoColor" size="sm" class="font-bold">
+                                                {{ $tipoLabel }}
+                                            </flux:badge>
+                                        </flux:table.cell>
+                                        <flux:table.cell>
+                                            <span class="font-bold text-sm {{ $saldo < 0 ? 'text-red-600 dark:text-red-400' : ($saldo > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-500') }}">
+                                                R$ {{ number_format($saldo, 2, ',', '.') }}
+                                            </span>
+                                        </flux:table.cell>
+                                        <flux:table.cell class="text-right space-x-1">
+                                            <flux:button size="sm" icon="shopping-bag" wire:click="openCompra({{ $pessoa->idt_pessoa }})">
+                                                Lançar Compra
+                                            </flux:button>
+                                            <flux:button size="sm" icon="banknotes" color="green" wire:click="openCredito({{ $pessoa->idt_pessoa }})">
+                                                Crédito / Pgto
+                                            </flux:button>
+                                            <flux:button size="sm" icon="document-magnifying-glass" variant="ghost" wire:click="openExtrato({{ $pessoa->idt_pessoa }})">
+                                                Extrato
+                                            </flux:button>
+                                        </flux:table.cell>
+                                    </flux:table.row>
+                                @endforeach
+                            </flux:table.rows>
+                        </flux:table>
+                    @endif
+                </div>
+
+                {{-- Paginação --}}
+                <div class="mt-4">
+                    {{ $this->pessoas->links() }}
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- MODAL LANÇAR COMPRA --}}
+    @if($showCompraModal && $selectedPessoaId)
+        @php
+            $pessoaSelected = Pessoa::find($selectedPessoaId);
+            $totalCarrinho = collect($cart)->sum(fn($item) => $item['qtd'] * $item['val']);
+            
+            // Valor avulso parcial
+            $valorAvulsoTotal = 0;
+            if (!empty($nom_avulso) && !empty($val_avulso_preco)) {
+                $precoAvulsoClean = (float) str_replace(',', '.', $val_avulso_preco);
+                $valorAvulsoTotal = $qtd_avulso * $precoAvulsoClean;
+            }
+            $totalFinalCompra = $totalCarrinho + $valorAvulsoTotal;
+        @endphp
+        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div class="w-full max-w-4xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-2xl rounded-2xl overflow-hidden p-6 space-y-6 flex flex-col max-h-[90vh]">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <flux:heading size="lg">Registrar Compra - {{ $pessoaSelected->nom_pessoa }}</flux:heading>
+                        <flux:subheading>Selecione produtos do catálogo ou insira um item avulso.</flux:subheading>
+                    </div>
+                    <flux:button variant="ghost" icon="x-mark" wire:click="$set('showCompraModal', false)"></flux:button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-hidden flex-1">
+                    {{-- Lado Esquerdo: Catálogo de Produtos --}}
+                    <div class="flex flex-col space-y-3 overflow-hidden">
+                        <div class="font-bold text-zinc-950 dark:text-white text-sm">Catálogo de Produtos</div>
+                        <div class="overflow-y-auto flex-1 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 space-y-2 bg-zinc-50 dark:bg-zinc-900/50">
+                            @if(session()->has('cart_error'))
+                                <div class="p-2.5 bg-red-50 text-red-700 text-xs rounded-lg font-bold border border-red-200">
+                                    {{ session('cart_error') }}
+                                </div>
+                            @endif
+
+                            @forelse($this->produtosDisponiveis as $prod)
+                                <div class="flex items-center justify-between p-3 bg-white dark:bg-zinc-800 rounded-lg shadow-xs border border-zinc-150 dark:border-zinc-700">
+                                    <div>
+                                        <div class="font-semibold text-sm text-zinc-900 dark:text-white">{{ $prod->nom_produto }}</div>
+                                        <div class="text-xs text-zinc-400">R$ {{ number_format($prod->val_preco, 2, ',', '.') }} | Estoque: {{ $prod->qtd_produto }}</div>
+                                    </div>
+                                    <flux:button 
+                                        size="xs" 
+                                        variant="filled" 
+                                        icon="plus" 
+                                        :disabled="$prod->qtd_produto <= 0"
+                                        wire:click="adicionarAoCarrinho({{ $prod->idt_produto }})"
+                                    >
+                                        Add
+                                    </flux:button>
+                                </div>
+                            @empty
+                                <div class="text-center text-xs text-zinc-500 py-8 italic">
+                                    Nenhum produto cadastrado no catálogo.
+                                </div>
+                            @endforelse
+                        </div>
+
+                        {{-- Item Avulso --}}
+                        <div class="border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 space-y-3 bg-white dark:bg-zinc-800">
+                            <div class="font-bold text-zinc-950 dark:text-white text-sm">Venda de Item Avulso</div>
+                            <div class="grid grid-cols-12 gap-2">
+                                <div class="col-span-5">
+                                    <flux:input wire:model="nom_avulso" placeholder="Ex: Doce" size="sm" />
+                                </div>
+                                <div class="col-span-4">
+                                    <flux:input wire:model="val_avulso_preco" placeholder="Preço (R$)" size="sm" />
+                                </div>
+                                <div class="col-span-3">
+                                    <flux:input wire:model="qtd_avulso" type="number" min="1" size="sm" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Lado Direito: Carrinho de Compras --}}
+                    <div class="flex flex-col border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 bg-white dark:bg-zinc-800 justify-between overflow-hidden">
+                        <div class="flex flex-col overflow-hidden flex-1">
+                            <div class="font-bold text-zinc-950 dark:text-white text-sm mb-3">Resumo da Compra</div>
+                            
+                            <div class="flex-1 overflow-y-auto space-y-2 pr-1">
+                                @if(empty($cart) && empty($nom_avulso))
+                                    <div class="text-center text-zinc-500 py-12 italic text-sm">
+                                        Nenhum item selecionado.
+                                    </div>
+                                @endif
+
+                                @foreach($cart as $id_prod => $item)
+                                    <div class="flex items-center justify-between p-2.5 bg-zinc-50 dark:bg-zinc-900 rounded-lg">
+                                        <div class="text-sm">
+                                            <span class="font-semibold text-zinc-900 dark:text-white">{{ $item['nom'] }}</span>
+                                            <span class="text-xs text-zinc-400"> (x{{ $item['qtd'] }})</span>
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-sm font-bold text-zinc-700 dark:text-zinc-300">
+                                                R$ {{ number_format($item['qtd'] * $item['val'], 2, ',', '.') }}
+                                            </span>
+                                            <flux:button size="xs" variant="ghost" icon="trash" class="text-red-500" wire:click="removerDoCarrinho({{ $id_prod }})"></flux:button>
+                                        </div>
+                                    </div>
+                                @endforeach
+
+                                @if(!empty($nom_avulso) && !empty($val_avulso_preco))
+                                    <div class="flex items-center justify-between p-2.5 bg-yellow-50/50 dark:bg-yellow-950/20 border border-yellow-100 dark:border-yellow-900/40 rounded-lg">
+                                        <div class="text-sm">
+                                            <span class="font-semibold text-yellow-800 dark:text-yellow-400">{{ $nom_avulso }}</span>
+                                            <span class="text-xs text-zinc-400"> (x{{ $qtd_avulso }} - Avulso)</span>
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-sm font-bold text-yellow-800 dark:text-yellow-400">
+                                                R$ {{ number_format($valorAvulsoTotal, 2, ',', '.') }}
+                                            </span>
+                                            <flux:button size="xs" variant="ghost" icon="trash" class="text-red-500" wire:click="$set('nom_avulso', '')"></flux:button>
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+
+                        <div class="border-t border-zinc-200 dark:border-zinc-700 pt-4 mt-4 space-y-4">
+                            <div class="flex justify-between items-center font-bold text-lg text-zinc-950 dark:text-white">
+                                <span>Total:</span>
+                                <span>R$ {{ number_format($totalFinalCompra, 2, ',', '.') }}</span>
+                            </div>
+
+                            <div class="flex gap-2 justify-end">
+                                <flux:button variant="ghost" wire:click="$set('showCompraModal', false)">Fechar</flux:button>
+                                <flux:button 
+                                    variant="primary" 
+                                    :disabled="($totalFinalCompra <= 0)"
+                                    wire:click="finalizarCompra"
+                                >
+                                    Confirmar Compra
+                                </flux:button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- MODAL ADICIONAR CRÉDITO / PAGAMENTO --}}
+    @if($showCreditoModal && $selectedPessoaId)
+        @php
+            $pessoaSelected = Pessoa::find($selectedPessoaId);
+            $contaSelected = $this->getConta($selectedPessoaId);
+        @endphp
+        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div class="w-full max-w-md bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-2xl rounded-2xl p-6 space-y-6">
+                <div>
+                    <flux:heading size="lg">Lançar Crédito / Pagamento - {{ $pessoaSelected->nom_pessoa }}</flux:heading>
+                    <flux:subheading>Adicione créditos antecipados ou quitação de saldo pendente.</flux:subheading>
+                </div>
+
+                <div class="text-sm bg-zinc-50 dark:bg-zinc-900 p-3 rounded-lg flex justify-between">
+                    <span class="text-zinc-500">Saldo Atual:</span>
+                    <span class="font-bold {{ $contaSelected->val_saldo < 0 ? 'text-red-600' : ($contaSelected->val_saldo > 0 ? 'text-blue-600' : 'text-zinc-500') }}">
+                        R$ {{ number_format($contaSelected->val_saldo, 2, ',', '.') }}
+                    </span>
+                </div>
+
+                <form wire:submit.prevent="registrarCredito" class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium text-zinc-800 dark:text-zinc-200">Tipo de Lançamento</label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                <input type="radio" wire:model="tip_transacao_credito" value="D" class="text-blue-600 border-zinc-300 focus:ring-blue-500">
+                                <span>Crédito / Aporte Antecipado</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                <input type="radio" wire:model="tip_transacao_credito" value="P" class="text-blue-600 border-zinc-300 focus:ring-blue-500">
+                                <span>Quitar Saldo Final</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <flux:input wire:model="val_aporte" label="Valor (R$)" type="number" step="0.01" min="0.01" placeholder="Ex: 50.00" required />
+                    
+                    <flux:input wire:model="des_aporte" label="Observação (Opcional)" placeholder="Ex: PIX recebido por Maria" />
+
+                    <flux:separator />
+
+                    <div class="flex justify-end gap-3">
+                        <flux:button variant="ghost" wire:click="$set('showCreditoModal', false)">Cancelar</flux:button>
+                        <flux:button variant="primary" type="submit" color="green">Salvar Lançamento</flux:button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
+
+    {{-- MODAL EXTRATO DE TRANSAÇÕES --}}
+    @if($showExtratoModal && $selectedPessoaId)
+        @php
+            $pessoaSelected = Pessoa::find($selectedPessoaId);
+            $contaSelected = $this->getConta($selectedPessoaId);
+            $transacoesList = $contaSelected->transacoes()->orderBy('dat_transacao', 'desc')->get();
+        @endphp
+        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div class="w-full max-w-2xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-2xl rounded-2xl p-6 space-y-6 flex flex-col max-h-[85vh]">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <flux:heading size="lg">Extrato Financeiro - {{ $pessoaSelected->nom_pessoa }}</flux:heading>
+                        <flux:subheading>Extrato detalhado do consumo no Mercadinho durante o evento.</flux:subheading>
+                    </div>
+                    <flux:button variant="ghost" icon="x-mark" wire:click="$set('showExtratoModal', false)"></flux:button>
+                </div>
+
+                <div class="grid grid-cols-3 gap-4 p-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl text-center text-sm">
+                    <div>
+                        <div class="text-xs text-zinc-400">Total Compras</div>
+                        <div class="font-bold text-zinc-800 dark:text-zinc-200">
+                            R$ {{ number_format($transacoesList->where('tip_transacao', 'C')->sum('val_transacao'), 2, ',', '.') }}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-zinc-400">Total Aportado</div>
+                        <div class="font-bold text-green-600 dark:text-green-400">
+                            R$ {{ number_format($transacoesList->whereIn('tip_transacao', ['D', 'P'])->sum('val_transacao'), 2, ',', '.') }}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-zinc-400">Saldo Atual</div>
+                        <div class="font-bold {{ $contaSelected->val_saldo < 0 ? 'text-red-600' : ($contaSelected->val_saldo > 0 ? 'text-blue-600' : 'text-zinc-500') }}">
+                            R$ {{ number_format($contaSelected->val_saldo, 2, ',', '.') }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-y-auto flex-1 border border-zinc-200 dark:border-zinc-700 rounded-xl">
+                    @if($transacoesList->isEmpty())
+                        <div class="p-8 text-center text-zinc-500 italic text-sm">
+                            Nenhuma movimentação financeira registrada nesta conta.
+                        </div>
+                    @else
+                        <flux:table>
+                            <flux:table.columns>
+                                <flux:table.column>Data/Hora</flux:table.column>
+                                <flux:table.column>Descrição</flux:table.column>
+                                <flux:table.column>Operação</flux:table.column>
+                                <flux:table.column>Valor</flux:table.column>
+                                <flux:table.column class="text-right">Ação</flux:table.column>
+                            </flux:table.columns>
+
+                            <flux:table.rows>
+                                @foreach($transacoesList as $trans)
+                                    @php
+                                        $isDebito = $trans->tip_transacao === 'C';
+                                        $opLabel = $trans->tip_transacao === 'C' ? 'Compra' : ($trans->tip_transacao === 'D' ? 'Aporte' : 'Pagamento');
+                                        $opColor = $trans->tip_transacao === 'C' ? 'red' : ($trans->tip_transacao === 'D' ? 'blue' : 'green');
+                                    @endphp
+                                    <flux:table.row :key="$trans->idt_transacao">
+                                        <flux:table.cell class="text-xs">
+                                            {{ $trans->dat_transacao->format('d/m H:i') }}
+                                        </flux:table.cell>
+                                        <flux:table.cell class="font-medium text-xs">
+                                            {{ $trans->nom_item ?? $trans->des_transacao }}
+                                            @if($trans->qtd_item)
+                                                <span class="text-zinc-400"> (x{{ $trans->qtd_item }})</span>
+                                            @endif
+                                        </flux:table.cell>
+                                        <flux:table.cell>
+                                            <flux:badge :color="$opColor" size="sm" class="font-semibold text-[10px] uppercase">
+                                                {{ $opLabel }}
+                                            </flux:badge>
+                                        </flux:table.cell>
+                                        <flux:table.cell class="font-bold text-xs">
+                                            <span class="{{ $isDebito ? 'text-zinc-700 dark:text-zinc-300' : 'text-green-600' }}">
+                                                {{ $isDebito ? '-' : '+' }} R$ {{ number_format($trans->val_transacao, 2, ',', '.') }}
+                                            </span>
+                                        </flux:table.cell>
+                                        <flux:table.cell class="text-right">
+                                            <flux:button 
+                                                size="xs" 
+                                                variant="ghost" 
+                                                class="text-red-500 hover:text-red-700" 
+                                                icon="arrow-uturn-left"
+                                                wire:confirm="Deseja realmente estornar esta transação? Isso reverterá o saldo da conta e devolverá os itens ao estoque (se aplicável)."
+                                                wire:click="estornarTransacao({{ $trans->idt_transacao }})"
+                                            >
+                                                Estornar
+                                            </flux:button>
+                                        </flux:table.cell>
+                                    </flux:table.row>
+                                @endforeach
+                            </flux:table.rows>
+                        </flux:table>
+                    @endif
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <flux:button variant="ghost" wire:click="$set('showExtratoModal', false)">Fechar</flux:button>
+                </div>
+            </div>
+        </div>
+    @endif
+</div>

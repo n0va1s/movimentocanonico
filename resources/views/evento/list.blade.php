@@ -98,12 +98,14 @@
                             <div class="flex items-center text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">
                                 <x-heroicon-o-tag class="w-4 h-4 mr-2 shrink-0" />
                                 <span class="flex-1">{{ $evento->tip_evento->label() }}</span>
-                                @if (Auth::user()?->hasRole('admin', 'espec'))
-                                    <a href="{{ route('eventos.gerenciamento', $evento) }}"
-                                       title="Gerenciamento"
-                                       class="ml-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                        <x-heroicon-o-cog-6-tooth class="w-8 h-8" />
-                                    </a>
+                                @if (Auth::user()?->isAdmin() || (Auth::user()?->isEspec() && (int) Auth::user()->idt_movimento === (int) $evento->idt_movimento))
+                                    @can('acessar-gerenciamento-evento', $evento)
+                                        <a href="{{ route('eventos.gerenciamento', $evento) }}"
+                                           title="Gerenciamento"
+                                           class="ml-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                            <x-heroicon-o-cog-6-tooth class="w-8 h-8" />
+                                        </a>
+                                    @endcan
                                 @endif
                             </div>
                         </div>

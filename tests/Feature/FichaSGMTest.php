@@ -83,7 +83,7 @@ beforeEach(function () {
         ['idt_movimento' => 3, 'nom_movimento' => 'Encontro de Jovens com Cristo', 'des_sigla' => 'Segue-Me', 'dat_inicio' => '1990-12-31', 'created_at' => now(), 'updated_at' => now()],
     ]);
 
-    $this->evento = Evento::factory()->create(['idt_movimento' => TipoMovimento::SegueMe]);
+    $this->evento = Evento::factory()->create(['idt_movimento' => TipoMovimento::SGM]);
     $this->responsavel = TipoResponsavel::factory()->create();
     $this->restricoes = TipoRestricao::factory()->count(2)->create();
 });
@@ -167,7 +167,7 @@ describe('FichaSGMController — Listagem', function () {
     });
 
     test('listagem filtra por evento', function () {
-        $evento2 = Evento::factory()->create(['idt_movimento' => TipoMovimento::SegueMe]);
+        $evento2 = Evento::factory()->create(['idt_movimento' => TipoMovimento::SGM]);
 
         $ficha1 = Ficha::factory()->create(['idt_evento' => $this->evento->idt_evento]);
         FichaSGM::factory()->create(['idt_ficha' => $ficha1->idt_ficha]);

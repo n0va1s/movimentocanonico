@@ -16,7 +16,7 @@ class TipoEquipeController extends Controller
      */
     public function index()
     {
-        $equipes = TipoEquipe::all();
+        $equipes = TipoEquipe::with('movimento')->get();
 
         return view('configuracoes.TipoEquipeList', compact('equipes'));
     }

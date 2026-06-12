@@ -24,14 +24,17 @@ beforeEach(function () {
     // Usuários por perfil
     $this->admin = User::factory()->create(['role' => 'admin']);
     $this->coord = User::factory()->create(['role' => 'coord']);
-    $this->espec = User::factory()->create(['role' => 'espec']);
+    $this->espec = User::factory()->create([
+        'role' => 'espec',
+        'idt_movimento' => $this->movimento->idt_movimento,
+    ]);
     $this->user = User::factory()->create(['role' => 'user']);
 
     // Pessoas vinculadas
-    Pessoa::factory()->for($this->admin, 'usuario')->create();
-    Pessoa::factory()->for($this->coord, 'usuario')->create();
-    Pessoa::factory()->for($this->espec, 'usuario')->create();
-    Pessoa::factory()->for($this->user, 'usuario')->create();
+    $pessoaAdmin = $this->admin->pessoa;
+    $pessoaCoord = $this->coord->pessoa;
+    $pessoaEspec = $this->espec->pessoa;
+    $pessoaUser = $this->user->pessoa;
 
     // Evento do tipo ENCONTRO (habilita todas as abas)
     $this->evento = Evento::factory()->create([
@@ -41,6 +44,22 @@ beforeEach(function () {
     ]);
 
     $this->equipe = TipoEquipe::first();
+
+    // Vincula coord e espec como trabalhadores do evento para que passem nos Gates
+    Trabalhador::factory()->create([
+        'idt_pessoa' => $pessoaCoord->idt_pessoa,
+        'idt_evento' => $this->evento->idt_evento,
+        'idt_equipe' => $this->equipe->idt_equipe,
+        'ind_coordenador' => true,
+        'ind_presente' => false,
+    ]);
+
+    Trabalhador::factory()->create([
+        'idt_pessoa' => $pessoaEspec->idt_pessoa,
+        'idt_evento' => $this->evento->idt_evento,
+        'idt_equipe' => $this->equipe->idt_equipe,
+        'ind_presente' => false,
+    ]);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -64,6 +83,16 @@ describe('Controle de Acesso — Gerenciamento', function () {
     test('espec pode acessar gerenciamento', function () {
         $this->actingAs($this->espec)
             ->get(route('eventos.gerenciamento', $this->evento))
+            ->assertOk();
+    });
+
+    test('espec pode acessar gerenciamento mesmo que não esteja trabalhando nele', function () {
+        $eventoSemTrabalho = Evento::factory()->create([
+            'idt_movimento' => $this->movimento->idt_movimento,
+        ]);
+
+        $this->actingAs($this->espec)
+            ->get(route('eventos.gerenciamento', $eventoSemTrabalho))
             ->assertOk();
     });
 
@@ -471,5 +500,50 @@ describe('Quadrante — filtro por presença', function () {
             ->get('totalParticipantes');
 
         expect($totalDepois)->toBe($totalAntes + 1);
+    });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Participantes — componente Livewire Volt
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Participantes — participantes.blade.php', function () {
+
+    beforeEach(function () {
+        $this->actingAs($this->admin);
+
+        $this->pessoaP = createPessoa();
+
+        $this->participante = Participante::factory()->create([
+            'idt_pessoa' => $this->pessoaP->idt_pessoa,
+            'idt_evento' => $this->evento->idt_evento,
+            'tip_cor_troca' => 'azul',
+        ]);
+    });
+
+    test('atualizarTroca muda tip_cor_troca e dispara notify', function () {
+        Volt::test('evento.partials.participantes', ['evento' => $this->evento])
+            ->call('atualizarTroca', $this->participante->idt_participante, 'verde')
+            ->assertHasNoErrors()
+            ->assertDispatched('notify');
+
+        expect($this->participante->fresh()->tip_cor_troca)->toBe('verde');
+    });
+
+    test('excluirParticipante remove participante e dispara notify', function () {
+        Volt::test('evento.partials.participantes', ['evento' => $this->evento])
+            ->call('excluirParticipante', $this->participante->idt_participante)
+            ->assertHasNoErrors()
+            ->assertDispatched('notify');
+
+        $this->assertDatabaseMissing('participante', [
+            'idt_participante' => $this->participante->idt_participante,
+        ]);
+    });
+
+    test('exportar executa com sucesso', function () {
+        Volt::test('evento.partials.participantes', ['evento' => $this->evento])
+            ->call('exportar')
+            ->assertOk();
     });
 });

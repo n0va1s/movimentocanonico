@@ -62,6 +62,13 @@ class User extends Authenticatable
             return true;
         }
 
+        if ($this->isEspec()) {
+            $evento = \App\Models\Evento::find($idtEvento);
+            if (! $evento || is_null($this->idt_movimento) || (int) $evento->idt_movimento !== (int) $this->idt_movimento) {
+                return false;
+            }
+        }
+
         $pessoa = $this->pessoa;
 
         if (! $pessoa) {
@@ -77,6 +84,11 @@ class User extends Authenticatable
     public function pessoa()
     {
         return $this->hasOne(Pessoa::class, 'idt_usuario', 'id');
+    }
+
+    public function movimento()
+    {
+        return $this->belongsTo(TipoMovimento::class, 'idt_movimento', 'idt_movimento');
     }
 
     protected static function boot()
@@ -112,6 +124,7 @@ class User extends Authenticatable
         'phone',
         'password',
         'role',
+        'idt_movimento',
     ];
 
     /**
