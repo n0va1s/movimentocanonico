@@ -452,7 +452,7 @@ new class extends Component {
             }
             $totalFinalCompra = $totalCarrinho + $valorAvulsoTotal;
         @endphp
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div class="w-full max-w-4xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-2xl rounded-2xl overflow-hidden p-6 space-y-6 flex flex-col max-h-[90vh]">
                 <div class="flex justify-between items-start">
                     <div>
@@ -586,7 +586,7 @@ new class extends Component {
             $pessoaSelected = Pessoa::find($selectedPessoaId);
             $contaSelected = $this->getConta($selectedPessoaId);
         @endphp
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div class="w-full max-w-md bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-2xl rounded-2xl p-6 space-y-6">
                 <div>
                     <flux:heading size="lg">Lançar Crédito / Pagamento - {{ $pessoaSelected->nom_pessoa }}</flux:heading>
@@ -637,7 +637,7 @@ new class extends Component {
             $contaSelected = $this->getConta($selectedPessoaId);
             $transacoesList = $contaSelected->transacoes()->orderBy('dat_transacao', 'desc')->get();
         @endphp
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div class="w-full max-w-2xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-2xl rounded-2xl p-6 space-y-6 flex flex-col max-h-[85vh]">
                 <div class="flex justify-between items-start">
                     <div>
