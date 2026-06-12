@@ -312,7 +312,7 @@ new class extends Component {
         {{-- Tela Principal de Operação --}}
         <div class="space-y-6 px-4 sm:px-6 md:px-0">
             {{-- Cards Resumo Financeiro --}}
-            <div class="grid grid-cols-2 md:flex md:flex-row gap-4">
+            <div class="grid grid-cols-1 md:flex md:flex-row gap-4">
                 <div class="md:flex-1 p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
                     <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Total Consumido</div>
                     <div class="text-2xl font-bold mt-1 text-zinc-950 dark:text-white">
@@ -767,85 +767,141 @@ new class extends Component {
                     <flux:button variant="ghost" icon="x-mark" wire:click="$set('showExtratoModal', false)"></flux:button>
                 </div>
 
-                <div class="grid grid-cols-3 gap-4 p-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl text-center text-sm">
-                    <div>
-                        <div class="text-xs text-zinc-400">Total Compras</div>
-                        <div class="font-bold text-zinc-800 dark:text-zinc-200">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-zinc-50 dark:bg-zinc-900 rounded-xl text-center text-sm">
+                    <div class="flex flex-col items-center justify-center p-2">
+                        <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Total Compras</div>
+                        <div class="font-bold text-zinc-800 dark:text-zinc-200 text-base mt-1">
                             R$ {{ number_format($transacoesList->where('tip_transacao', 'C')->sum('val_transacao'), 2, ',', '.') }}
                         </div>
                     </div>
-                    <div>
-                        <div class="text-xs text-zinc-400">Total Aportado</div>
-                        <div class="font-bold text-green-600 dark:text-green-400">
+                    <div class="flex flex-col items-center justify-center p-2 border-t sm:border-t-0 sm:border-x border-zinc-200 dark:border-zinc-700">
+                        <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Total Aportado</div>
+                        <div class="font-bold text-green-600 dark:text-green-400 text-base mt-1">
                             R$ {{ number_format($transacoesList->whereIn('tip_transacao', ['D', 'P'])->sum('val_transacao'), 2, ',', '.') }}
                         </div>
                     </div>
-                    <div>
-                        <div class="text-xs text-zinc-400">Saldo Atual</div>
-                        <div class="font-bold {{ $contaSelected->val_saldo < 0 ? 'text-red-600' : ($contaSelected->val_saldo > 0 ? 'text-blue-600' : 'text-zinc-500') }}">
+                    <div class="flex flex-col items-center justify-center p-2 border-t sm:border-t-0 border-zinc-200 dark:border-zinc-700">
+                        <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Saldo Atual</div>
+                        <div class="font-bold text-base mt-1 {{ $contaSelected->val_saldo < 0 ? 'text-red-600' : ($contaSelected->val_saldo > 0 ? 'text-blue-600' : 'text-zinc-500') }}">
                             R$ {{ number_format($contaSelected->val_saldo, 2, ',', '.') }}
                         </div>
                     </div>
                 </div>
 
-                <div class="overflow-y-auto flex-1 border border-zinc-200 dark:border-zinc-700 rounded-xl">
+                <div class="overflow-y-auto flex-1 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800">
                     @if($transacoesList->isEmpty())
                         <div class="p-8 text-center text-zinc-500 italic text-sm">
                             Nenhuma movimentação financeira registrada nesta conta.
                         </div>
                     @else
-                        <flux:table>
-                            <flux:table.columns>
-                                <flux:table.column>Data/Hora</flux:table.column>
-                                <flux:table.column>Descrição</flux:table.column>
-                                <flux:table.column>Operação</flux:table.column>
-                                <flux:table.column>Valor</flux:table.column>
-                                <flux:table.column class="text-right">Ação</flux:table.column>
-                            </flux:table.columns>
+                        {{-- Tabela de Histórico (Desktop) --}}
+                        <div class="hidden md:block">
+                            <flux:table class="vendas-table">
+                                <flux:table.columns>
+                                    <flux:table.column class="px-3 py-3 align-middle">Data/Hora</flux:table.column>
+                                    <flux:table.column class="px-3 py-3 align-middle">Descrição</flux:table.column>
+                                    <flux:table.column class="px-3 py-3 align-middle">Operação</flux:table.column>
+                                    <flux:table.column class="px-3 py-3 align-middle">Valor</flux:table.column>
+                                    <flux:table.column class="px-3 py-3 align-middle text-right" align="end">Ação</flux:table.column>
+                                </flux:table.columns>
 
-                            <flux:table.rows>
-                                @foreach($transacoesList as $trans)
-                                    @php
-                                        $isDebito = $trans->tip_transacao === 'C';
-                                        $opLabel = $trans->tip_transacao === 'C' ? 'Compra' : ($trans->tip_transacao === 'D' ? 'Aporte' : 'Pagamento');
-                                        $opColor = $trans->tip_transacao === 'C' ? 'red' : ($trans->tip_transacao === 'D' ? 'blue' : 'green');
-                                    @endphp
-                                    <flux:table.row :key="$trans->idt_transacao">
-                                        <flux:table.cell class="text-xs">
-                                            {{ $trans->dat_transacao->format('d/m H:i') }}
-                                        </flux:table.cell>
-                                        <flux:table.cell class="font-medium text-xs">
-                                            {{ $trans->nom_item ?? $trans->des_transacao }}
-                                            @if($trans->qtd_item)
-                                                <span class="text-zinc-400"> (x{{ $trans->qtd_item }})</span>
-                                            @endif
-                                        </flux:table.cell>
-                                        <flux:table.cell>
-                                            <flux:badge :color="$opColor" size="sm" class="font-semibold text-[10px] uppercase">
-                                                {{ $opLabel }}
-                                            </flux:badge>
-                                        </flux:table.cell>
-                                        <flux:table.cell class="font-bold text-xs">
+                                <flux:table.rows>
+                                    @foreach($transacoesList as $trans)
+                                        @php
+                                            $isDebito = $trans->tip_transacao === 'C';
+                                            $opLabel = $trans->tip_transacao === 'C' ? 'Compra' : ($trans->tip_transacao === 'D' ? 'Aporte' : 'Pagamento');
+                                            $opColor = $trans->tip_transacao === 'C' ? 'red' : ($trans->tip_transacao === 'D' ? 'blue' : 'green');
+                                        @endphp
+                                        <flux:table.row :key="$trans->idt_transacao">
+                                            <flux:table.cell class="px-3 py-3 align-middle text-xs whitespace-nowrap">
+                                                {{ $trans->dat_transacao->format('d/m H:i') }}
+                                            </flux:table.cell>
+                                            <flux:table.cell class="px-3 py-3 align-middle font-medium text-xs min-w-[120px]">
+                                                {{ $trans->nom_item ?? $trans->des_transacao }}
+                                                @if($trans->qtd_item)
+                                                    <span class="text-zinc-400"> (x{{ $trans->qtd_item }})</span>
+                                                @endif
+                                            </flux:table.cell>
+                                            <flux:table.cell class="px-3 py-3 align-middle">
+                                                <flux:badge :color="$opColor" size="sm" class="font-semibold text-[10px] uppercase">
+                                                    {{ $opLabel }}
+                                                </flux:badge>
+                                            </flux:table.cell>
+                                            <flux:table.cell class="px-3 py-3 align-middle font-bold text-xs whitespace-nowrap">
+                                                <span class="{{ $isDebito ? 'text-zinc-700 dark:text-zinc-300' : 'text-green-600' }}">
+                                                    {{ $isDebito ? '-' : '+' }} R$ {{ number_format($trans->val_transacao, 2, ',', '.') }}
+                                                </span>
+                                            </flux:table.cell>
+                                            <flux:table.cell class="px-3 py-3 align-middle text-right" align="end">
+                                                <flux:button 
+                                                    size="xs" 
+                                                    variant="ghost" 
+                                                    class="text-red-500 hover:text-red-700" 
+                                                    icon="arrow-uturn-left"
+                                                    wire:confirm="Deseja realmente estornar esta transação? Isso reverterá o saldo da conta e devolverá os itens ao estoque (se aplicável)."
+                                                    wire:click="estornarTransacao({{ $trans->idt_transacao }})"
+                                                >
+                                                    Estornar
+                                                </flux:button>
+                                            </flux:table.cell>
+                                        </flux:table.row>
+                                    @endforeach
+                                </flux:table.rows>
+                            </flux:table>
+                        </div>
+
+                        {{-- Feed de Histórico (Mobile) --}}
+                        <div class="md:hidden flex flex-col divide-y divide-zinc-100 dark:divide-zinc-700">
+                            @foreach($transacoesList as $trans)
+                                @php
+                                    $isDebito = $trans->tip_transacao === 'C';
+                                    $opLabel = $trans->tip_transacao === 'C' ? 'Compra' : ($trans->tip_transacao === 'D' ? 'Aporte' : 'Pagamento');
+                                    $opColor = $trans->tip_transacao === 'C' ? 'red' : ($trans->tip_transacao === 'D' ? 'blue' : 'green');
+                                @endphp
+                                <div class="p-4 space-y-3">
+                                    {{-- Linha Superior: Descrição (esquerda) e Valor (direita) --}}
+                                    <div class="flex justify-between items-start gap-4">
+                                        <div class="flex flex-col">
+                                            <span class="font-semibold text-sm text-zinc-900 dark:text-white">
+                                                {{ $trans->nom_item ?? $trans->des_transacao }}
+                                                @if($trans->qtd_item)
+                                                    <span class="text-zinc-400 font-normal"> (x{{ $trans->qtd_item }})</span>
+                                                @endif
+                                            </span>
+                                            <span class="text-xs text-zinc-400 mt-0.5">
+                                                {{ $trans->dat_transacao->format('d/m H:i') }}
+                                            </span>
+                                        </div>
+                                        <div class="font-bold text-sm whitespace-nowrap text-right">
                                             <span class="{{ $isDebito ? 'text-zinc-700 dark:text-zinc-300' : 'text-green-600' }}">
                                                 {{ $isDebito ? '-' : '+' }} R$ {{ number_format($trans->val_transacao, 2, ',', '.') }}
                                             </span>
-                                        </flux:table.cell>
-                                        <flux:table.cell class="text-right">
+                                        </div>
+                                    </div>
+
+                                    {{-- Linha Inferior: Operação (esquerda) e Ação (direita) --}}
+                                    <div class="flex justify-between items-center gap-4">
+                                        <div>
+                                            <flux:badge :color="$opColor" size="sm" class="font-semibold text-[10px] uppercase">
+                                                {{ $opLabel }}
+                                            </flux:badge>
+                                        </div>
+                                        <div>
                                             <flux:button 
                                                 size="xs" 
                                                 variant="ghost" 
-                                                class="text-red-500 hover:text-red-700" 
+                                                class="text-red-500 hover:text-red-700 font-medium text-xs flex items-center gap-1" 
                                                 icon="arrow-uturn-left"
                                                 wire:confirm="Deseja realmente estornar esta transação? Isso reverterá o saldo da conta e devolverá os itens ao estoque (se aplicável)."
                                                 wire:click="estornarTransacao({{ $trans->idt_transacao }})"
                                             >
                                                 Estornar
                                             </flux:button>
-                                        </flux:table.cell>
-                                    </flux:table.row>
-                                @endforeach
-                            </flux:table.rows>
-                        </flux:table>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
                     @endif
                 </div>
 
