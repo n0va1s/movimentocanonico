@@ -89,7 +89,19 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6">
-    <div class="flex flex-col md:flex-row md:justify-between md:items-center">
+    <style>
+        /* Estilo para descolar tabelas das paredes do container no desktop */
+        .vendas-table [data-flux-column]:first-child,
+        .vendas-table [data-flux-cell]:first-child {
+            padding-left: 1.25rem !important;
+        }
+        .vendas-table [data-flux-column]:last-child,
+        .vendas-table [data-flux-cell]:last-child {
+            padding-right: 1.25rem !important;
+        }
+    </style>
+
+    <div class="flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
             <flux:heading size="lg">Catálogo de Produtos</flux:heading>
             <flux:subheading>Gerencie os produtos disponíveis para venda e seus estoques.</flux:subheading>
@@ -117,33 +129,33 @@ new class extends Component {
                 Nenhum produto cadastrado no catálogo.
             </div>
         @else
-            <flux:table>
+            <flux:table class="vendas-table">
                 <flux:table.columns>
-                    <flux:table.column>Nome</flux:table.column>
-                    <flux:table.column>Descrição</flux:table.column>
-                    <flux:table.column>Preço Unitário</flux:table.column>
-                    <flux:table.column class="text-center">Estoque</flux:table.column>
-                    <flux:table.column class="text-right">Ações</flux:table.column>
+                    <flux:table.column class="px-4 py-3 align-middle">Nome</flux:table.column>
+                    <flux:table.column class="px-4 py-3 align-middle">Descrição</flux:table.column>
+                    <flux:table.column class="px-4 py-3 align-middle">Preço Unitário</flux:table.column>
+                    <flux:table.column class="px-4 py-3 align-middle text-center" align="center">Estoque</flux:table.column>
+                    <flux:table.column class="px-4 py-3 align-middle text-right" align="end">Ações</flux:table.column>
                 </flux:table.columns>
 
                 <flux:table.rows>
                     @foreach($this->produtos as $prod)
                         <flux:table.row :key="$prod->idt_produto">
-                            <flux:table.cell class="font-semibold text-zinc-900 dark:text-white">
+                            <flux:table.cell class="px-4 py-3 align-middle font-semibold text-zinc-900 dark:text-white">
                                 {{ $prod->nom_produto }}
                             </flux:table.cell>
-                            <flux:table.cell class="text-zinc-500 max-w-xs truncate">
+                            <flux:table.cell class="px-4 py-3 align-middle text-zinc-500 max-w-xs truncate">
                                 {{ $prod->des_produto ?? '-' }}
                             </flux:table.cell>
-                            <flux:table.cell class="font-medium">
+                            <flux:table.cell class="px-4 py-3 align-middle font-medium">
                                 R$ {{ number_format($prod->val_preco, 2, ',', '.') }}
                             </flux:table.cell>
-                            <flux:table.cell class="text-center font-bold">
+                            <flux:table.cell class="px-4 py-3 align-middle text-center font-bold" align="center">
                                 <span class="px-2.5 py-0.5 rounded-full text-xs {{ $prod->qtd_produto > 0 ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400' : 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400' }}">
                                     {{ $prod->qtd_produto }}
                                 </span>
                             </flux:table.cell>
-                            <flux:table.cell class="text-right space-x-2">
+                            <flux:table.cell class="px-4 py-3 align-middle text-right space-x-2" align="end">
                                 <flux:button variant="ghost" size="sm" icon="pencil-square" wire:click="edit({{ $prod->idt_produto }})"></flux:button>
                                 <flux:button variant="ghost" size="sm" icon="trash" class="text-red-600 hover:text-red-700" wire:confirm="Deseja realmente remover este produto do catálogo?" wire:click="excluir({{ $prod->idt_produto }})"></flux:button>
                             </flux:table.cell>

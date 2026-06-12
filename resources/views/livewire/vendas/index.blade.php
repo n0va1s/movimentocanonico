@@ -277,6 +277,18 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6">
+    <style>
+        /* Estilo para descolar tabelas das paredes do container no desktop */
+        .vendas-table [data-flux-column]:first-child,
+        .vendas-table [data-flux-cell]:first-child {
+            padding-left: 1.25rem !important;
+        }
+        .vendas-table [data-flux-column]:last-child,
+        .vendas-table [data-flux-cell]:last-child {
+            padding-right: 1.25rem !important;
+        }
+    </style>
+
     {{-- Menu Local de Abas --}}
     <div class="flex overflow-x-auto no-scrollbar border-b border-zinc-200 dark:border-zinc-700 whitespace-nowrap">
         <button 
@@ -300,26 +312,26 @@ new class extends Component {
         {{-- Tela Principal de Operação --}}
         <div class="space-y-6 px-4 sm:px-6 md:px-0">
             {{-- Cards Resumo Financeiro --}}
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
+            <div class="grid grid-cols-2 md:flex md:flex-row gap-4">
+                <div class="md:flex-1 p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
                     <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Total Consumido</div>
                     <div class="text-2xl font-bold mt-1 text-zinc-950 dark:text-white">
                         R$ {{ number_format($this->resumoFinanceiro['faturamento'], 2, ',', '.') }}
                     </div>
                 </div>
-                <div class="p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
+                <div class="md:flex-1 p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
                     <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Total Recebido</div>
                     <div class="text-2xl font-bold mt-1 text-green-600 dark:text-green-400">
                         R$ {{ number_format($this->resumoFinanceiro['recebido'], 2, ',', '.') }}
                     </div>
                 </div>
-                <div class="p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
+                <div class="md:flex-1 p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
                     <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Saldo Devido (A Receber)</div>
                     <div class="text-2xl font-bold mt-1 text-red-600 dark:text-red-400">
                         R$ {{ number_format($this->resumoFinanceiro['devedores'], 2, ',', '.') }}
                     </div>
                 </div>
-                <div class="p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
+                <div class="md:flex-1 p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
                     <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Saldos Positivos (Créditos)</div>
                     <div class="text-2xl font-bold mt-1 text-blue-600 dark:text-blue-400">
                         R$ {{ number_format($this->resumoFinanceiro['credores'], 2, ',', '.') }}
@@ -336,11 +348,11 @@ new class extends Component {
             {{-- Filtros e Lista de Contas --}}
             <div class="bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 p-4 sm:p-6 space-y-4">
                 <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
-                    <div class="w-full md:w-80">
+                    <div class="w-full md:w-64">
                         <flux:input wire:model.live.debounce.300ms="search" placeholder="Buscar pessoa..." icon="magnifying-glass" />
                     </div>
                     
-                    <div class="flex flex-wrap gap-2 w-full md:w-auto justify-start md:justify-end">
+                    <div class="flex flex-wrap md:flex-nowrap gap-2 w-full md:w-auto justify-start md:justify-end">
                         <flux:button 
                             size="sm"
                             :variant="$filtroSaldo === 'todos' ? 'primary' : 'ghost'"
@@ -366,18 +378,18 @@ new class extends Component {
                 </div>
 
                 {{-- Tabela de Pessoas e Contas (Desktop) --}}
-                <div class="hidden md:block border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden">
+                <div class="hidden md:block border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden bg-white dark:bg-zinc-800">
                     @if($this->pessoas->isEmpty())
                         <div class="p-8 text-center text-zinc-500 italic">
                             Nenhum participante ou trabalhador encontrado.
                         </div>
                     @else
-                        <flux:table>
+                        <flux:table class="vendas-table">
                             <flux:table.columns>
-                                <flux:table.column>Nome / Apelido</flux:table.column>
-                                <flux:table.column>Tipo</flux:table.column>
-                                <flux:table.column>Saldo Atual</flux:table.column>
-                                <flux:table.column class="text-right">Ações</flux:table.column>
+                                <flux:table.column class="px-4 py-3 align-middle">Nome / Apelido</flux:table.column>
+                                <flux:table.column class="px-4 py-3 align-middle">Tipo</flux:table.column>
+                                <flux:table.column class="px-4 py-3 align-middle">Saldo Atual</flux:table.column>
+                                <flux:table.column class="px-4 py-3 align-middle text-right" align="end">Ações</flux:table.column>
                             </flux:table.columns>
 
                             <flux:table.rows>
@@ -392,7 +404,7 @@ new class extends Component {
                                         $tipoColor = $isTrabalhador ? 'purple' : 'green';
                                     @endphp
                                     <flux:table.row :key="$pessoa->idt_pessoa">
-                                        <flux:table.cell>
+                                        <flux:table.cell class="px-4 py-3 align-middle">
                                             <div class="font-semibold text-zinc-950 dark:text-white">
                                                 {{ $pessoa->nom_pessoa }}
                                             </div>
@@ -402,17 +414,17 @@ new class extends Component {
                                                 </div>
                                             @endif
                                         </flux:table.cell>
-                                        <flux:table.cell>
+                                        <flux:table.cell class="px-4 py-3 align-middle">
                                             <flux:badge :color="$tipoColor" size="sm" class="font-bold">
                                                 {{ $tipoLabel }}
                                             </flux:badge>
                                         </flux:table.cell>
-                                        <flux:table.cell>
+                                        <flux:table.cell class="px-4 py-3 align-middle">
                                             <span class="font-bold text-sm {{ $saldo < 0 ? 'text-red-600 dark:text-red-400' : ($saldo > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-500') }}">
                                                 R$ {{ number_format($saldo, 2, ',', '.') }}
                                             </span>
                                         </flux:table.cell>
-                                        <flux:table.cell class="text-right space-x-1">
+                                        <flux:table.cell class="px-4 py-3 align-middle text-right space-x-1" align="end">
                                             <flux:button size="sm" icon="shopping-bag" wire:click="openCompra({{ $pessoa->idt_pessoa }})">
                                                 Lançar Compra
                                             </flux:button>
@@ -562,7 +574,7 @@ new class extends Component {
         @endphp
         <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div class="w-full max-w-4xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-2xl rounded-2xl overflow-hidden p-6 space-y-6 flex flex-col max-h-[90vh]">
-                <div class="flex justify-between items-start">
+                <div class="flex justify-between items-start gap-4">
                     <div>
                         <flux:heading size="lg">Registrar Compra - {{ $pessoaSelected->nom_pessoa }}</flux:heading>
                         <flux:subheading>Selecione produtos do catálogo ou insira um item avulso.</flux:subheading>
