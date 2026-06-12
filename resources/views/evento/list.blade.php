@@ -17,38 +17,59 @@
         </header>
 
         {{-- Filtros  --}}
-        <nav class="bg-white dark:bg-zinc-800 p-5 rounded-xl border border-gray-200 dark:border-zinc-700 shadow-sm mb-8">
-            <form method="GET" action="{{ route('eventos.index') }}" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                <div class="md:col-span-4">
-                    <flux:input name="search" value="{{ $search }}" icon="magnifying-glass" placeholder="Buscar por descrição ou número..." />
-                </div>
+        <nav x-data="{ isFiltersOpen: false }" class="bg-white dark:bg-zinc-800 p-5 rounded-xl border border-gray-200 dark:border-zinc-700 shadow-sm mb-8">
+            {{-- Toggle Button for Mobile --}}
+            <button 
+                type="button" 
+                @click="isFiltersOpen = !isFiltersOpen" 
+                class="w-full flex items-center justify-between md:hidden text-zinc-700 dark:text-zinc-200 font-semibold text-sm cursor-pointer focus:outline-none"
+            >
+                <span class="flex items-center gap-2">
+                    <flux:icon name="funnel" variant="outline" class="size-4 text-zinc-500" />
+                    <span>Filtrar Eventos</span>
+                </span>
+                <flux:icon.chevron-down class="size-4 text-zinc-500 transition-transform duration-300" x-bind:class="isFiltersOpen ? 'rotate-180' : ''" />
+            </button>
 
-                <div class="md:col-span-3">
-                    <flux:select name="idt_movimento" placeholder="Todos os Movimentos">
-                        @foreach ($movimentos as $mov)
-                            <flux:select.option value="{{ $mov->idt_movimento }}" :selected="$idt_movimento == $mov->idt_movimento">
-                                {{ $mov->des_sigla }}
-                            </flux:select.option>
-                        @endforeach
-                    </flux:select>
-                </div>
+            {{-- Filter Content (Always visible on Desktop, expandable on Mobile with smooth grid transition) --}}
+            <div 
+                class="grid transition-all duration-300 ease-in-out" 
+                x-bind:class="isFiltersOpen ? 'grid-rows-[1fr] opacity-100 mt-4' : 'grid-rows-[0fr] opacity-0 md:opacity-100 md:grid-rows-[1fr]'"
+            >
+                <div class="overflow-hidden md:overflow-visible">
+                    <form method="GET" action="{{ route('eventos.index') }}" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                        <div class="md:col-span-4">
+                            <flux:input name="search" value="{{ $search }}" icon="magnifying-glass" placeholder="Buscar por descrição ou número..." />
+                        </div>
 
-                <div class="md:col-span-3">
-                    <flux:select name="tip_evento" placeholder="Todos os Tipos">
-                        <flux:select.option value="" :selected="empty($tip_evento)">Todos</flux:select.option>
-                        <flux:select.option value="P" :selected="($tip_evento ?? null) === 'P'">Pós-encontro</flux:select.option>
-                        <flux:select.option value="D" :selected="($tip_evento ?? null) === 'D'">Desafio</flux:select.option>
-                        <flux:select.option value="E" :selected="($tip_evento ?? null) === 'E'">Encontro Anual</flux:select.option>
-                    </flux:select>
-                </div>
+                        <div class="md:col-span-3">
+                            <flux:select name="idt_movimento" placeholder="Todos os Movimentos">
+                                @foreach ($movimentos as $mov)
+                                    <flux:select.option value="{{ $mov->idt_movimento }}" :selected="$idt_movimento == $mov->idt_movimento">
+                                        {{ $mov->des_sigla }}
+                                    </flux:select.option>
+                                @endforeach
+                            </flux:select>
+                        </div>
 
-                <div class="md:col-span-2 flex gap-2">
-                    <flux:button type="submit" variant="filled" color="blue" class="flex-1">Filtrar</flux:button>
-                    @if ($search || $idt_movimento || ($tip_evento ?? null))
-                        <flux:button href="{{ route('eventos.index') }}" icon="x-mark" variant="ghost" />
-                    @endif
+                        <div class="md:col-span-3">
+                            <flux:select name="tip_evento" placeholder="Todos os Tipos">
+                                <flux:select.option value="" :selected="empty($tip_evento)">Todos</flux:select.option>
+                                <flux:select.option value="P" :selected="($tip_evento ?? null) === 'P'">Pós-encontro</flux:select.option>
+                                <flux:select.option value="D" :selected="($tip_evento ?? null) === 'D'">Desafio</flux:select.option>
+                                <flux:select.option value="E" :selected="($tip_evento ?? null) === 'E'">Encontro Anual</flux:select.option>
+                            </flux:select>
+                        </div>
+
+                        <div class="md:col-span-2 flex gap-2">
+                            <flux:button type="submit" variant="filled" color="blue" class="flex-1">Filtrar</flux:button>
+                            @if ($search || $idt_movimento || ($tip_evento ?? null))
+                                <flux:button href="{{ route('eventos.index') }}" icon="x-mark" variant="ghost" />
+                            @endif
+                        </div>
+                    </form>
                 </div>
-            </form>
+            </div>
         </nav>
 
         {{-- Grid de Cards --}}
