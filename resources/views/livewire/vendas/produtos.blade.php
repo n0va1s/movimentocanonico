@@ -14,6 +14,8 @@ new class extends Component {
     public ?Produto $editingProduct = null;
     public bool $showModal = false;
 
+    public string $search = '';
+
     protected $rules = [
         'nom_produto' => 'required|string|max:100',
         'des_produto' => 'nullable|string|max:255',
@@ -24,7 +26,15 @@ new class extends Component {
     #[Computed]
     public function produtos()
     {
-        return Produto::orderBy('nom_produto', 'asc')->get();
+        return Produto::query()
+            ->when($this->search, function($query) {
+                $query->where(function($q) {
+                    $q->where('nom_produto', 'like', '%' . $this->search . '%')
+                      ->orWhere('des_produto', 'like', '%' . $this->search . '%');
+                });
+            })
+            ->orderBy('nom_produto', 'asc')
+            ->get();
     }
 
     public function openCreateModal(): void
@@ -79,12 +89,12 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6">
-    <div class="flex justify-between items-center">
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center">
         <div>
             <flux:heading size="lg">Catálogo de Produtos</flux:heading>
             <flux:subheading>Gerencie os produtos disponíveis para venda e seus estoques.</flux:subheading>
         </div>
-        <flux:button variant="primary" icon="plus" wire:click="openCreateModal">
+        <flux:button variant="primary" icon="plus" class="w-full mt-4 md:w-auto md:mt-0" wire:click="openCreateModal">
             Cadastrar Produto
         </flux:button>
     </div>
@@ -95,8 +105,13 @@ new class extends Component {
         </div>
     @endif
 
-    {{-- Tabela de Produtos --}}
-    <div class="border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden bg-white dark:bg-zinc-800">
+    {{-- Filtro de Busca --}}
+    <div class="w-full md:w-96">
+        <flux:input wire:model.live.debounce.300ms="search" placeholder="Buscar produto..." icon="magnifying-glass" />
+    </div>
+
+    {{-- Tabela de Produtos (Desktop) --}}
+    <div class="hidden md:block border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden bg-white dark:bg-zinc-800">
         @if($this->produtos->isEmpty())
             <div class="p-8 text-center text-zinc-500 italic">
                 Nenhum produto cadastrado no catálogo.
@@ -136,6 +151,44 @@ new class extends Component {
                     @endforeach
                 </flux:table.rows>
             </flux:table>
+        @endif
+    </div>
+
+    {{-- Lista de Produtos (Mobile - Cards) --}}
+    <div class="flex flex-col gap-4 md:hidden">
+        @if($this->produtos->isEmpty())
+            <div class="p-8 text-center text-zinc-500 italic bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700">
+                Nenhum produto cadastrado no catálogo.
+            </div>
+        @else
+            @foreach($this->produtos as $prod)
+                <div class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 shadow-xs space-y-2">
+                    <div class="flex justify-between items-start gap-4">
+                        <div class="font-bold text-zinc-950 dark:text-white text-base">
+                            {{ $prod->nom_produto }}
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <flux:button variant="ghost" size="sm" icon="pencil-square" wire:click="edit({{ $prod->idt_produto }})"></flux:button>
+                            <flux:button variant="ghost" size="sm" icon="trash" class="text-red-600 hover:text-red-700" wire:confirm="Deseja realmente remover este produto do catálogo?" wire:click="excluir({{ $prod->idt_produto }})"></flux:button>
+                        </div>
+                    </div>
+
+                    <div class="text-zinc-500 dark:text-zinc-400 text-sm">
+                        {{ $prod->des_produto ?? '-' }}
+                    </div>
+
+                    <div class="flex justify-between items-center pt-3 mt-3 border-t border-zinc-100 dark:border-zinc-700">
+                        <div class="font-medium text-sm text-zinc-900 dark:text-white">
+                            R$ {{ number_format($prod->val_preco, 2, ',', '.') }}
+                        </div>
+                        <div class="font-bold">
+                            <span class="px-2.5 py-0.5 rounded-full text-xs {{ $prod->qtd_produto > 0 ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400' : 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400' }}">
+                                Estoque: {{ $prod->qtd_produto }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
         @endif
     </div>
 
