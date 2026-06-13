@@ -312,28 +312,28 @@ new class extends Component {
         {{-- Tela Principal de Operação --}}
         <div class="space-y-6 px-4 sm:px-6 md:px-0">
             {{-- Cards Resumo Financeiro --}}
-            <div class="grid grid-cols-1 md:flex md:flex-row gap-4">
-                <div class="md:flex-1 p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
-                    <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Total Consumido</div>
-                    <div class="text-2xl font-bold mt-1 text-zinc-950 dark:text-white">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="p-4 sm:p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
+                    <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Consumido</div>
+                    <div class="text-base sm:text-2xl font-bold mt-1 text-zinc-950 dark:text-white whitespace-nowrap">
                         R$ {{ number_format($this->resumoFinanceiro['faturamento'], 2, ',', '.') }}
                     </div>
                 </div>
-                <div class="md:flex-1 p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
-                    <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Total Recebido</div>
-                    <div class="text-2xl font-bold mt-1 text-green-600 dark:text-green-400">
+                <div class="p-4 sm:p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
+                    <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Recebido</div>
+                    <div class="text-base sm:text-2xl font-bold mt-1 text-green-600 dark:text-green-400 whitespace-nowrap">
                         R$ {{ number_format($this->resumoFinanceiro['recebido'], 2, ',', '.') }}
                     </div>
                 </div>
-                <div class="md:flex-1 p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
-                    <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Saldo Devido (A Receber)</div>
-                    <div class="text-2xl font-bold mt-1 text-red-600 dark:text-red-400">
+                <div class="p-4 sm:p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
+                    <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Devido (a receber)</div>
+                    <div class="text-base sm:text-2xl font-bold mt-1 text-red-600 dark:text-red-400 whitespace-nowrap">
                         R$ {{ number_format($this->resumoFinanceiro['devedores'], 2, ',', '.') }}
                     </div>
                 </div>
-                <div class="md:flex-1 p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
-                    <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Saldos Positivos (Créditos)</div>
-                    <div class="text-2xl font-bold mt-1 text-blue-600 dark:text-blue-400">
+                <div class="p-4 sm:p-5 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
+                    <div class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Positivo (créditos)</div>
+                    <div class="text-base sm:text-2xl font-bold mt-1 text-blue-600 dark:text-blue-400 whitespace-nowrap">
                         R$ {{ number_format($this->resumoFinanceiro['credores'], 2, ',', '.') }}
                     </div>
                 </div>
