@@ -20,6 +20,7 @@ class Produto extends Model
         'des_produto',
         'val_preco',
         'qtd_produto',
+        'ind_favorito',
         'usu_inclusao',
         'usu_alteracao',
     ];
@@ -27,6 +28,7 @@ class Produto extends Model
     protected $casts = [
         'val_preco' => 'decimal:2',
         'qtd_produto' => 'integer',
+        'ind_favorito' => 'boolean',
     ];
 
     public function criador(): BelongsTo

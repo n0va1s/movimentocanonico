@@ -22,6 +22,8 @@ class TipoMovimento extends Model
 
     const SegueMe = 3;
 
+    const SGM = 3;
+
     protected $fillable = [
         'nom_movimento',
         'des_sigla',

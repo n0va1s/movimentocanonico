@@ -45,11 +45,11 @@ new class extends Component {
             'participantes'=> ['icon' => 'user-group',    'label' => 'Participantes'],
             'voluntarios'  => ['icon' => 'hand-raised',   'label' => 'Voluntários',   'encontro_only' => true],
             'trabalhadores'=> ['icon' => 'briefcase',     'label' => 'Trabalhadores', 'encontro_only' => true],
-            'crachas'      => ['icon' => 'identification','label' => 'Crachás'],
+            'crachas'      => ['icon' => 'identification','label' => 'Crachás',        'encontro_only' => true],
             'presenca'     => ['icon' => 'finger-print',  'label' => 'Presença'],
             'quadrante'    => ['icon' => 'table-cells',   'label' => 'Quadrante',     'encontro_only' => true],            
-            'contas'       => ['icon' => 'banknotes',     'label' => 'Prestação de Contas'],
             'mercadinho'   => ['icon' => 'shopping-cart', 'label' => 'Mercadinho'],
+            'contas'       => ['icon' => 'banknotes',     'label' => 'Prestação de Contas'],
         ];
 
         return array_filter($todasAbas, function ($aba, $tab) use ($isEncontro, $evento) {
@@ -119,10 +119,17 @@ new class extends Component {
 
         <flux:separator variant="subtle" />
 
-        {{-- Barra de Navegação Horizontal (Navbar/Tabs) - Desktop Only --}}
-        <div class="hidden md:block pt-2">
-            <nav class="flex flex-row items-center gap-1 overflow-x-auto whitespace-nowrap pb-1 no-scrollbar border-b border-zinc-200 dark:border-zinc-700">
-                @foreach ($this->tabs as $tab => $meta)
+        {{-- Barra de Navegação Horizontal (Navbar/Tabs) --}}
+        <div class="relative w-full border-b border-zinc-200 dark:border-zinc-700 mt-2">
+            @php
+                $mainKeys = ['resumo', 'participantes', 'presenca',  'mercadinho', 'contas'];
+                $tabs = $this->tabs;
+                
+                $mainTabs = array_filter($tabs, fn($key) => in_array($key, $mainKeys), ARRAY_FILTER_USE_KEY);
+                $moreTabs = array_filter($tabs, fn($key) => !in_array($key, $mainKeys), ARRAY_FILTER_USE_KEY);
+            @endphp
+            <nav class="flex flex-row items-center gap-1 overflow-x-auto whitespace-nowrap no-scrollbar pb-px">
+                @foreach ($mainTabs as $tab => $meta)
                     <button 
                         type="button"
                         wire:click="setTab('{{ $tab }}')"
@@ -133,46 +140,35 @@ new class extends Component {
                         <span>{{ $meta['label'] }}</span>
                     </button>
                 @endforeach
-            </nav>
-        </div>
-        {{-- Menu de Navegação Local (Mobile - Expansível) --}}
-        <div x-data="{ isOpen: false }" class="w-full md:hidden space-y-2 pt-2">
-            {{-- Botão de Toggle Mobile --}}
-            @php
-                $tabMeta = $this->tabs[$activeTab] ?? (array_values($this->tabs)[0] ?? ['icon' => 'chart-bar', 'label' => 'Painel']);
-            @endphp
-            <button 
-                type="button"
-                x-on:click="isOpen = !isOpen"
-                class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-medium text-zinc-700 dark:text-zinc-200 shadow-sm cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"
-            >
-                <span class="flex items-center gap-2">
-                    <flux:icon :name="$tabMeta['icon']" class="size-4 text-zinc-500" />
-                    <span>{{ $tabMeta['label'] }}</span>
-                </span>
-                <flux:icon.chevron-down class="size-4 text-zinc-500 transition-transform duration-200" x-bind:class="isOpen ? 'rotate-180' : ''" />
-            </button>
 
-            <nav 
-                x-show="isOpen"
-                x-collapse
-                class="flex flex-col gap-1"
-                style="display: none;"
-            >
-                <flux:navlist>
-                    @foreach ($this->tabs as $tab => $meta)
-                        <flux:navlist.item
-                            wire:click="setTab('{{ $tab }}')"
-                            wire:loading.attr="disabled"
-                            :variant="$activeTab === '{{ $tab }}' ? 'bullet' : 'ghost'"
-                            icon="{{ $meta['icon'] }}"
-                            class="cursor-pointer"
-                            x-on:click="isOpen = false"
+                @if ($this->evento->tip_evento === \App\Enums\TipoEvento::ENCONTRO && !empty($moreTabs))
+                    @php
+                        $isMoreActive = array_key_exists($activeTab, $moreTabs);
+                        $activeMoreLabel = $isMoreActive ? $moreTabs[$activeTab]['label'] : 'Mais opções';
+                        $activeMoreIcon = $isMoreActive ? $moreTabs[$activeTab]['icon'] : 'ellipsis-horizontal';
+                    @endphp
+                    <flux:dropdown>
+                        <button 
+                            type="button"
+                            class="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-[1px] transition-colors cursor-pointer focus:outline-none {{ $isMoreActive ? 'border-blue-600 text-blue-600 dark:text-blue-400 font-semibold' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300' }}"
                         >
-                            {{ $meta['label'] }}
-                        </flux:navlist.item>
-                    @endforeach
-                </flux:navlist>
+                            <flux:icon :name="$activeMoreIcon" class="size-4" />
+                            <span>{{ $activeMoreLabel }}</span>
+                            <flux:icon.chevron-down class="size-3 text-zinc-450" />
+                        </button>
+                        <flux:menu>
+                            @foreach ($moreTabs as $tab => $meta)
+                                <flux:menu.item 
+                                    wire:click="setTab('{{ $tab }}')"
+                                    icon="{{ $meta['icon'] }}"
+                                    class="cursor-pointer {{ $activeTab === $tab ? 'bg-zinc-100 dark:bg-zinc-700/50 font-semibold' : '' }}"
+                                >
+                                    {{ $meta['label'] }}
+                                </flux:menu.item>
+                            @endforeach
+                        </flux:menu>
+                    </flux:dropdown>
+                @endif
             </nav>
         </div>
     </header>

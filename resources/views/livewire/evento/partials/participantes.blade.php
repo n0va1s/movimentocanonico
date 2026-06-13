@@ -4,6 +4,7 @@ use App\Models\Evento;
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Enums\CorTroca;
 
 new class extends Component {
     use WithPagination;
@@ -25,7 +26,11 @@ new class extends Component {
     {
         $participante = \App\Models\Participante::with('pessoa')->findOrFail($participanteId);
         $participante->update(['tip_cor_troca' => $novaCor]);
-        $this->dispatch('notify', message: "A cor da troca de {$participante->pessoa->nom_apelido} agora é " . ucfirst($novaCor) . "!");
+        
+        $corEnum = CorTroca::tryFrom($novaCor);
+        $corLabel = $corEnum ? $corEnum->label() : ucfirst($novaCor);
+        
+        $this->dispatch('notify', message: "A cor da troca de {$participante->pessoa->nom_apelido} agora é {$corLabel}!");
     }
 
     public function excluirParticipante(int $participanteId): void
@@ -40,7 +45,10 @@ new class extends Component {
     {
         $eventoId = $this->evento->idt_evento;
 
-        $participantes = \App\Models\Participante::where('idt_evento', $eventoId)
+        $participantes = \App\Models\Participante::query()
+            ->select('participante.*')
+            ->join('pessoa', 'participante.idt_pessoa', '=', 'pessoa.idt_pessoa')
+            ->where('participante.idt_evento', $eventoId)
             ->with([
                 'pessoa.restricoes',
                 'pessoa.fichas' => function ($query) use ($eventoId) {
@@ -48,6 +56,7 @@ new class extends Component {
                         ->with(['fichaVem', 'fichaSGM']);
                 }
             ])
+            ->orderBy('pessoa.nom_pessoa', 'asc')
             ->get();
 
         $cabecalho = [
@@ -141,7 +150,10 @@ new class extends Component {
     public function with(): array
     {
         return [
-            'participantes' => \App\Models\Participante::where('idt_evento', $this->evento->idt_evento)
+            'participantes' => \App\Models\Participante::query()
+                ->select('participante.*')
+                ->join('pessoa', 'participante.idt_pessoa', '=', 'pessoa.idt_pessoa')
+                ->where('participante.idt_evento', $this->evento->idt_evento)
                 ->with([
                     'pessoa.foto',
                     'pessoa.restricoes',
@@ -151,11 +163,12 @@ new class extends Component {
                     }
                 ])
                 ->when($this->search, function ($query) {
-                    $query->whereHas('pessoa', function ($q) {
-                        $q->where('nom_pessoa', 'like', '%' . $this->search . '%')
-                            ->orWhere('nom_apelido', 'like', '%' . $this->search . '%');
+                    $query->where(function ($q) {
+                        $q->where('pessoa.nom_pessoa', 'like', '%' . $this->search . '%')
+                            ->orWhere('pessoa.nom_apelido', 'like', '%' . $this->search . '%');
                     });
                 })
+                ->orderBy('pessoa.nom_pessoa', 'asc')
                 ->paginate(10),
         ];
     }
@@ -212,9 +225,9 @@ new class extends Component {
                             wire:change="atualizarTroca({{ $p->idt_participante }}, $event.target.value)"
                             size="sm"
                             class="w-32">
-                            @foreach (['azul', 'amarela', 'verde', 'vermelha', 'laranja'] as $cor)
-                                <option value="{{ $cor }}" @selected(strtolower($p->tip_cor_troca) === $cor)>
-                                    {{ ucfirst($cor) }}
+                            @foreach (CorTroca::cases() as $cor)
+                                <option value="{{ $cor->value }}" @selected(strtolower($p->tip_cor_troca) === $cor->value)>
+                                    {{ $cor->label() }}
                                 </option>
                             @endforeach
                         </flux:select>

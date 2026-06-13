@@ -10,6 +10,7 @@ new class extends Component {
     public string $des_produto = '';
     public string $val_preco = '';
     public string $qtd_produto = '0';
+    public bool $ind_favorito = false;
     
     public ?Produto $editingProduct = null;
     public bool $showModal = false;
@@ -21,6 +22,7 @@ new class extends Component {
         'des_produto' => 'nullable|string|max:255',
         'val_preco' => 'required|numeric|min:0',
         'qtd_produto' => 'required|integer|min:0',
+        'ind_favorito' => 'boolean',
     ];
 
     #[Computed]
@@ -33,6 +35,7 @@ new class extends Component {
                       ->orWhere('des_produto', 'like', '%' . $this->search . '%');
                 });
             })
+            ->orderBy('ind_favorito', 'desc')
             ->orderBy('nom_produto', 'asc')
             ->get();
     }
@@ -45,6 +48,7 @@ new class extends Component {
         $this->des_produto = '';
         $this->val_preco = '';
         $this->qtd_produto = '0';
+        $this->ind_favorito = false;
         $this->showModal = true;
     }
 
@@ -56,6 +60,7 @@ new class extends Component {
         $this->des_produto = $produto->des_produto ?? '';
         $this->val_preco = (string) $produto->val_preco;
         $this->qtd_produto = (string) $produto->qtd_produto;
+        $this->ind_favorito = (bool) $produto->ind_favorito;
         $this->showModal = true;
     }
 
@@ -142,7 +147,12 @@ new class extends Component {
                     @foreach($this->produtos as $prod)
                         <flux:table.row :key="$prod->idt_produto">
                             <flux:table.cell class="px-4 py-3 align-middle font-semibold text-zinc-900 dark:text-white">
-                                {{ $prod->nom_produto }}
+                                <div class="flex items-center gap-1.5">
+                                    @if($prod->ind_favorito)
+                                        <flux:icon name="star" variant="solid" class="text-yellow-400 size-4 shrink-0" title="Favorito" />
+                                    @endif
+                                    <span>{{ $prod->nom_produto }}</span>
+                                </div>
                             </flux:table.cell>
                             <flux:table.cell class="px-4 py-3 align-middle text-zinc-500 max-w-xs truncate">
                                 {{ $prod->des_produto ?? '-' }}
@@ -176,8 +186,11 @@ new class extends Component {
             @foreach($this->produtos as $prod)
                 <div class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 shadow-xs space-y-2">
                     <div class="flex justify-between items-start gap-4">
-                        <div class="font-bold text-zinc-950 dark:text-white text-base">
-                            {{ $prod->nom_produto }}
+                        <div class="font-bold text-zinc-950 dark:text-white text-base flex items-center gap-1.5">
+                            @if($prod->ind_favorito)
+                                <flux:icon name="star" variant="solid" class="text-yellow-400 size-4 shrink-0" title="Favorito" />
+                            @endif
+                            <span>{{ $prod->nom_produto }}</span>
                         </div>
                         <div class="flex items-center gap-1">
                             <flux:button variant="ghost" size="sm" icon="pencil-square" wire:click="edit({{ $prod->idt_produto }})"></flux:button>
@@ -221,6 +234,8 @@ new class extends Component {
                         <flux:input wire:model="val_preco" label="Preço de Venda (R$)" type="number" step="0.01" min="0" required />
                         <flux:input wire:model="qtd_produto" label="Quantidade em Estoque" type="number" min="0" required />
                     </div>
+
+                    <flux:switch wire:model="ind_favorito" label="Favorito (Exibir no topo)" />
 
                     <flux:separator />
 

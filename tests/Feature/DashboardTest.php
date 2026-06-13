@@ -6,6 +6,7 @@ use App\Models\Participante;
 use App\Models\Pessoa;
 use App\Models\TipoMovimento;
 use App\Models\Trabalhador;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
