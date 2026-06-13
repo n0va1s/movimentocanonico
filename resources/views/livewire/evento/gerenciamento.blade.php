@@ -74,7 +74,7 @@ new class extends Component {
 
     {{-- Cabeçalho do Evento --}}
     <header class="mb-8 space-y-4">
-        <div>
+        <div class="md:hidden">
             <flux:button href="{{ route('eventos.index') }}" icon="arrow-left" variant="ghost" class="text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white">
                 Voltar para Eventos
             </flux:button>
