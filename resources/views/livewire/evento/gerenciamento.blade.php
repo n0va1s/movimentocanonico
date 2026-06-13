@@ -62,6 +62,16 @@ new class extends Component {
 }; ?>
 
 <section class="w-full">
+    <style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+
     {{-- Cabeçalho do Evento --}}
     <header class="mb-8 space-y-4">
         <div>
@@ -108,32 +118,25 @@ new class extends Component {
         </div>
 
         <flux:separator variant="subtle" />
-        
-        <flux:subheading class="mt-4">Painel de Controle</flux:subheading>
-    </header>
 
-    <div class="flex flex-col md:flex-row gap-8">
-        {{-- Sidebar de Navegação (Desktop - Sempre Visível) --}}
-        <aside class="hidden md:block md:w-64 space-y-2">
-            <nav class="flex flex-col gap-1">
-                <flux:navlist>
-                    @foreach ($this->tabs as $tab => $meta)
-                        <flux:navlist.item
-                            wire:click="setTab('{{ $tab }}')"
-                            wire:loading.attr="disabled"
-                            :variant="$activeTab === '{{ $tab }}' ? 'bullet' : 'ghost'"
-                            icon="{{ $meta['icon'] }}"
-                            class="cursor-pointer"
-                        >
-                            {{ $meta['label'] }}
-                        </flux:navlist.item>
-                    @endforeach
-                </flux:navlist>
+        {{-- Barra de Navegação Horizontal (Navbar/Tabs) - Desktop Only --}}
+        <div class="hidden md:block pt-2">
+            <nav class="flex flex-row items-center gap-1 overflow-x-auto whitespace-nowrap pb-1 no-scrollbar border-b border-zinc-200 dark:border-zinc-700">
+                @foreach ($this->tabs as $tab => $meta)
+                    <button 
+                        type="button"
+                        wire:click="setTab('{{ $tab }}')"
+                        wire:loading.attr="disabled"
+                        class="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-[1px] transition-colors cursor-pointer focus:outline-none {{ $activeTab === $tab ? 'border-blue-600 text-blue-600 dark:text-blue-400 font-semibold' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300' }}"
+                    >
+                        <flux:icon :name="$meta['icon']" class="size-4" />
+                        <span>{{ $meta['label'] }}</span>
+                    </button>
+                @endforeach
             </nav>
-        </aside>
-
-        {{-- Sidebar de Navegação (Mobile - Expansível) --}}
-        <aside x-data="{ isOpen: false }" class="w-full md:hidden space-y-2">
+        </div>
+        {{-- Menu de Navegação Local (Mobile - Expansível) --}}
+        <div x-data="{ isOpen: false }" class="w-full md:hidden space-y-2 pt-2">
             {{-- Botão de Toggle Mobile --}}
             @php
                 $tabMeta = $this->tabs[$activeTab] ?? (array_values($this->tabs)[0] ?? ['icon' => 'chart-bar', 'label' => 'Painel']);
@@ -154,6 +157,7 @@ new class extends Component {
                 x-show="isOpen"
                 x-collapse
                 class="flex flex-col gap-1"
+                style="display: none;"
             >
                 <flux:navlist>
                     @foreach ($this->tabs as $tab => $meta)
@@ -170,10 +174,10 @@ new class extends Component {
                     @endforeach
                 </flux:navlist>
             </nav>
-        </aside>
+        </div>
+    </header>
 
-        <main class="flex-1 bg-white dark:bg-zinc-800 p-6 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm relative">
-    
+    <main class="w-full bg-white dark:bg-zinc-800 p-6 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm relative">
         {{-- Loading Overlay --}}
         <div wire:loading wire:target="setTab" class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm">
             <div class="flex items-center gap-3 text-zinc-500 dark:text-zinc-400">
@@ -202,5 +206,4 @@ new class extends Component {
             </div>
         @endif
     </main>
-    </div>
 </section>
