@@ -170,7 +170,7 @@ class FichaService
         }
 
         return Pessoa::updateOrCreate(
-            ['eml_pessoa' => $ficha->eml_candidato],
+            ['num_cpf_pessoa' => $ficha->num_cpf_candidato],
             $dados
         );
     }

@@ -57,6 +57,93 @@ Route::get('/encerrar-eventos', function () {
     }
 });
 
+Route::get('/corrigir-fichas-duplicadas', function () {
+    try {
+        $result = DB::transaction(function () {
+            $idsPessoasConflito = [172, 255];
+            $output = [];
+
+            foreach ($idsPessoasConflito as $idPessoaOriginal) {
+                $fichas = App\Models\Ficha::where('idt_pessoa', $idPessoaOriginal)
+                    ->where('tip_situacao', 'A')
+                    ->whereNull('deleted_at')
+                    ->get();
+
+                if ($fichas->count() <= 1) {
+                    $output[] = "Pessoa ID {$idPessoaOriginal} não possui duplicidade de fichas no momento.";
+                    continue;
+                }
+
+                $primeiraFicha = $fichas->first();
+                $pessoaOriginal = App\Models\Pessoa::find($idPessoaOriginal);
+                
+                if ($pessoaOriginal) {
+                    $pessoaOriginal->update([
+                        'num_cpf_pessoa' => $primeiraFicha->num_cpf_candidato,
+                        'nom_pessoa' => $primeiraFicha->nom_candidato,
+                        'nom_apelido' => $primeiraFicha->nom_apelido,
+                        'tel_pessoa' => $primeiraFicha->tel_candidato,
+                        'dat_nascimento' => $primeiraFicha->dat_nascimento,
+                        'des_endereco' => $primeiraFicha->des_endereco,
+                        'eml_pessoa' => $primeiraFicha->eml_candidato,
+                        'tam_camiseta' => $primeiraFicha->tam_camiseta,
+                        'tip_genero' => $primeiraFicha->tip_genero,
+                        'ind_toca_violao' => $primeiraFicha->ind_toca_instrumento,
+                        'ind_consentimento' => $primeiraFicha->ind_consentimento,
+                        'ind_restricao' => $primeiraFicha->ind_restricao,
+                    ]);
+                    
+                    App\Models\Participante::firstOrCreate([
+                        'idt_pessoa' => $pessoaOriginal->idt_pessoa,
+                        'idt_evento' => $primeiraFicha->idt_evento
+                    ]);
+                    
+                    $output[] = "Pessoa original ID {$idPessoaOriginal} corrigida para o candidato: {$primeiraFicha->nom_candidato}.";
+                }
+
+                foreach ($fichas->slice(1) as $outraFicha) {
+                    $novaPessoa = App\Models\Pessoa::create([
+                        'num_cpf_pessoa' => $outraFicha->num_cpf_candidato,
+                        'nom_pessoa' => $outraFicha->nom_candidato,
+                        'nom_apelido' => $outraFicha->nom_apelido,
+                        'tel_pessoa' => $outraFicha->tel_candidato,
+                        'dat_nascimento' => $outraFicha->dat_nascimento,
+                        'des_endereco' => $outraFicha->des_endereco,
+                        'eml_pessoa' => $outraFicha->eml_candidato,
+                        'tam_camiseta' => $outraFicha->tam_camiseta,
+                        'tip_genero' => $outraFicha->tip_genero,
+                        'ind_toca_violao' => $outraFicha->ind_toca_instrumento,
+                        'ind_consentimento' => $outraFicha->ind_consentimento,
+                        'ind_restricao' => $outraFicha->ind_restricao,
+                    ]);
+
+                    $outraFicha->update(['idt_pessoa' => $novaPessoa->idt_pessoa]);
+
+                    App\Models\Participante::create([
+                        'idt_pessoa' => $novaPessoa->idt_pessoa,
+                        'idt_evento' => $outraFicha->idt_evento
+                    ]);
+
+                    $output[] = "Criada nova Pessoa ID {$novaPessoa->idt_pessoa} e Participante para o candidato: {$outraFicha->nom_candidato} (Ficha {$outraFicha->idt_ficha}).";
+                }
+            }
+            
+            return $output;
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Executado com sucesso!',
+            'details' => $result
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Erro durante a execução: ' . $e->getMessage()
+        ], 500);
+    }
+});
+
 // ---------------------------------------------------------------------------
 // Públicas
 // ---------------------------------------------------------------------------
