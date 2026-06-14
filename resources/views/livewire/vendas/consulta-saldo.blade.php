@@ -7,16 +7,12 @@ use Livewire\Volt\Component;
 use Livewire\Attributes\Computed;
 
 new class extends Component {
-    public string $cpf = '';
-    public string $dat_nascimento = '';
     public string $idt_evento = '';
     
     public ?array $resultado = null;
     public ?string $erro = null;
 
     protected $rules = [
-        'cpf' => 'required',
-        'dat_nascimento' => 'required|date',
         'idt_evento' => 'required|exists:evento,idt_evento',
     ];
 
@@ -34,16 +30,32 @@ new class extends Component {
         $this->resultado = null;
         $this->erro = null;
 
-        // Limpa formatação do CPF para buscar no banco
-        $cpfLimpo = preg_replace('/\D/', '', $this->cpf);
+        $user = auth()->user();
+        if (!$user) {
+            $this->erro = 'Usuário não autenticado.';
+            return;
+        }
 
-        // Busca a pessoa pelo CPF e Data de Nascimento
+        $pessoaLogada = $user->pessoa;
+        if (!$pessoaLogada) {
+            $this->erro = 'Nenhuma pessoa associada ao seu usuário.';
+            return;
+        }
+
+        // Limpa formatação do CPF para buscar no banco
+        $cpfLimpo = preg_replace('/\D/', '', $pessoaLogada->num_cpf_pessoa ?? '');
+
+        if (empty($cpfLimpo)) {
+            $this->erro = 'CPF não cadastrado para o seu usuário.';
+            return;
+        }
+
+        // Busca a pessoa pelo CPF da pessoa logada
         $pessoa = Pessoa::where('num_cpf_pessoa', $cpfLimpo)
-            ->where('dat_nascimento', $this->dat_nascimento)
             ->first();
 
         if (!$pessoa) {
-            $this->erro = 'Nenhuma pessoa encontrada com o CPF e Data de Nascimento informados.';
+            $this->erro = 'Nenhuma pessoa encontrada com o CPF do usuário logado.';
             return;
         }
 
@@ -67,8 +79,6 @@ new class extends Component {
 
     public function limpar(): void
     {
-        $this->cpf = '';
-        $this->dat_nascimento = '';
         $this->idt_evento = '';
         $this->resultado = null;
         $this->erro = null;
@@ -100,21 +110,6 @@ new class extends Component {
                         <flux:select.option value="" disabled>Nenhum evento ativo no momento</flux:select.option>
                     @endforelse
                 </flux:select>
-
-                <flux:input 
-                    wire:model="cpf" 
-                    label="CPF" 
-                    placeholder="000.000.000-00" 
-                    x-mask="999.999.999-99" 
-                    required 
-                />
-
-                <flux:input 
-                    wire:model="dat_nascimento" 
-                    label="Data de Nascimento" 
-                    type="date" 
-                    required 
-                />
 
                 @if($erro)
                     <div class="text-xs font-semibold text-red-600 dark:text-red-400 p-2.5 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 rounded-xl">

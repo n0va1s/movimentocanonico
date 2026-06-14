@@ -31,6 +31,7 @@ class EventoController extends Controller
     {
         $context = $this->getLogContext($request);
         $pessoa = Auth::user()->pessoa;
+        $tip_evento = $request->input('tip_evento') ?? $request->input('eventTypeFilter');
 
         $eventos = Evento::query()
             ->with(['movimento:idt_movimento,des_sigla'])
@@ -46,6 +47,7 @@ class EventoController extends Controller
             })
             ->when($request->search, fn ($q) => $q->search($request->search))
             ->when($request->idt_movimento, fn ($q) => $q->movimento($request->idt_movimento))
+            ->when($tip_evento, fn ($q) => $q->where('tip_evento', $tip_evento))
             ->orderBy('dat_inicio', 'desc')
             ->paginate(12)
             ->withQueryString();
@@ -57,6 +59,7 @@ class EventoController extends Controller
             'movimentos' => $movimentos,
             'search' => $request->search,
             'idt_movimento' => $request->idt_movimento,
+            'tip_evento' => $tip_evento,
         ]);
     }
 

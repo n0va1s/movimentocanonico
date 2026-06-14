@@ -298,6 +298,19 @@ describe('EventoController — Index', function () {
             ->and($eventos->items()[0]->idt_movimento)->toBe($this->movimento->idt_movimento);
     });
 
+    test('filtra eventos por tipo de evento', function () {
+        $encontro = Evento::factory()->create(['tip_evento' => TipoEvento::ENCONTRO->value]);
+        $desafio = Evento::factory()->create(['tip_evento' => TipoEvento::DESAFIO->value]);
+
+        $response = $this->get(route('eventos.index', ['tip_evento' => TipoEvento::ENCONTRO->value]));
+
+        $response->assertOk();
+        $eventos = $response->viewData('eventos');
+
+        expect($eventos->items())->toHaveCount(1)
+            ->and($eventos->items()[0]->idt_evento)->toBe($encontro->idt_evento);
+    });
+
     test('paginação mantém parâmetros de busca', function () {
         Evento::factory()->count(15)->create(['des_evento' => 'Encontro Teste']);
 

@@ -19,6 +19,9 @@ beforeEach(function () {
     $this->admin = User::factory()->create(['role' => 'admin']);
     $this->user = User::factory()->create(['role' => 'user']);
     
+    // Remover pessoa criada automaticamente pelo boot do User para evitar duplicidade
+    Pessoa::where('idt_usuario', $this->user->id)->delete();
+    
     // Associar pessoa ao usuário comum
     $this->pessoa = Pessoa::factory()->create([
         'idt_usuario' => $this->user->id,
@@ -196,6 +199,7 @@ test('gestor pode cadastrar produtos pelo componente de catalogo', function () {
         ->set('des_produto', 'Cobertura de chocolate')
         ->set('val_preco', '6.50')
         ->set('qtd_produto', '10')
+        ->set('ind_favorito', true)
         ->call('salvar')
         ->assertSee('Bolo de Cenoura');
 
@@ -203,6 +207,7 @@ test('gestor pode cadastrar produtos pelo componente de catalogo', function () {
     expect($produto)->not->toBeNull();
     expect($produto->val_preco)->toEqual(6.50);
     expect($produto->qtd_produto)->toBe(10);
+    expect($produto->ind_favorito)->toBeTrue();
 });
 
 test('gestor pode registrar compra no mercadinho usando o component Volt', function () {
@@ -218,17 +223,79 @@ test('gestor pode registrar compra no mercadinho usando o component Volt', funct
     Volt::test('vendas.index', ['evento' => $this->evento])
         ->call('openCompra', $this->pessoa->idt_pessoa)
         ->call('adicionarAoCarrinho', $produto->idt_produto)
-        ->set('nom_avulso', 'Cafezinho')
-        ->set('val_avulso_preco', '2.50')
-        ->set('qtd_avulso', 2)
         ->call('finalizarCompra')
         ->assertHasNoErrors();
 
     $conta = Conta::where('idt_pessoa', $this->pessoa->idt_pessoa)->first();
-    // Total compra: (1 * 15) + (2 * 2.50) = 20.00
-    // Saldo inicial era 0.00, então deve estar -20.00
-    expect($conta->val_saldo)->toEqual(-20.00);
+    // Total compra: (1 * 15) = 15.00
+    // Saldo inicial era 0.00, então deve estar -15.00
+    expect($conta->val_saldo)->toEqual(-15.00);
     expect($produto->fresh()->qtd_produto)->toBe(4);
+});
+
+test('compra de produto deve falhar se nao houver produto associado', function () {
+    $conta = Conta::create([
+        'idt_pessoa' => $this->pessoa->idt_pessoa,
+        'idt_evento' => $this->evento->idt_evento,
+        'val_saldo' => 0.00,
+        'usu_inclusao' => $this->admin->id
+    ]);
+
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('Compras devem possuir um produto válido associado.');
+
+    Transacao::create([
+        'idt_conta' => $conta->idt_conta,
+        'idt_produto' => null,
+        'tip_transacao' => 'C',
+        'nom_item' => 'Item Avulso Tentativa',
+        'qtd_item' => 1,
+        'val_unitario' => 10.00,
+        'val_transacao' => 10.00,
+        'dat_transacao' => now(),
+        'usu_inclusao' => $this->admin->id
+    ]);
+});
+
+test('gestor pode filtrar compradores por equipe e cor da troca no component Volt', function () {
+    $this->actingAs($this->admin);
+
+    $outraPessoa = Pessoa::factory()->create([
+        'nom_pessoa' => 'Maria Oliveira',
+    ]);
+
+    // Pessoa 1 (José da Silva) vinculada no beforeEach como participante.
+    // Vamos definir a cor da troca do participante principal ($this->pessoa) como Verde ('V')
+    $participante = Participante::where('idt_pessoa', $this->pessoa->idt_pessoa)->first();
+    $participante->update(['tip_cor_troca' => 'V']);
+
+    // Criar uma equipe
+    $equipe = \App\Models\TipoEquipe::factory()->create([
+        'idt_movimento' => $this->movimento->idt_movimento,
+        'des_grupo' => 'Coordenação Geral',
+    ]);
+
+    // Vincular $outraPessoa como trabalhador desse evento na equipe
+    \App\Models\Trabalhador::factory()->create([
+        'idt_evento' => $this->evento->idt_evento,
+        'idt_pessoa' => $outraPessoa->idt_pessoa,
+        'idt_equipe' => $equipe->idt_equipe,
+    ]);
+
+    // Testar os filtros no componente
+    Volt::test('vendas.index', ['evento' => $this->evento])
+        // Inicialmente vê as duas pessoas
+        ->assertSee('José da Silva')
+        ->assertSee('Maria Oliveira')
+        // Filtrar por cor Verde ('V')
+        ->set('filtroCor', 'V')
+        ->assertSee('José da Silva')
+        ->assertDontSee('Maria Oliveira')
+        // Resetar filtro de cor e filtrar por equipe
+        ->set('filtroCor', '')
+        ->set('filtroEquipe', $equipe->idt_equipe)
+        ->assertSee('Maria Oliveira')
+        ->assertDontSee('José da Silva');
 });
 
 test('gestor pode registrar credito e quitar contas pelo componente Volt', function () {
@@ -242,11 +309,21 @@ test('gestor pode registrar credito e quitar contas pelo componente Volt', funct
         'usu_inclusao' => $this->admin->id
     ]);
 
+    $produto = Produto::create([
+        'nom_produto' => 'Produto Teste',
+        'val_preco' => 10.00,
+        'qtd_produto' => 5,
+        'usu_inclusao' => $this->admin->id
+    ]);
+
     // Registra uma compra prévia de R$ 10,00 via transação
     Transacao::create([
         'idt_conta' => $conta->idt_conta,
+        'idt_produto' => $produto->idt_produto,
         'tip_transacao' => 'C',
         'nom_item' => 'Compra Prévia',
+        'qtd_item' => 1,
+        'val_unitario' => 10.00,
         'val_transacao' => 10.00,
         'dat_transacao' => now(),
         'usu_inclusao' => $this->admin->id
@@ -291,18 +368,43 @@ test('qualquer pessoa pode consultar o saldo do mercadinho usando o component Vo
         'usu_inclusao' => $this->admin->id
     ]);
 
-    // O CPF formatado da factory é retornado pelo accessor, mas o CPF limpo no banco é usado na consulta
-    $cpf = $this->pessoa->num_cpf_pessoa; // Cpf formatado
-    $nascimento = $this->pessoa->dat_nascimento->format('Y-m-d');
+    $this->actingAs($this->user);
 
     Volt::test('vendas.consulta-saldo')
-        ->set('cpf', $cpf)
-        ->set('dat_nascimento', $nascimento)
         ->set('idt_evento', (string) $this->evento->idt_evento)
         ->call('consultar')
         ->assertHasNoErrors()
         ->assertSee('José da Silva')
         ->assertSee('-10,00')
         ->assertSee('Livro de Oração');
+});
+
+test('produtos sao ordenados com favoritos no topo no catalogo de compras', function () {
+    $this->actingAs($this->admin);
+
+    // Produto B comum
+    $produtoComum = Produto::create([
+        'nom_produto' => 'Bolo de Cenoura',
+        'val_preco' => 5.00,
+        'qtd_produto' => 5,
+        'ind_favorito' => false,
+        'usu_inclusao' => $this->admin->id
+    ]);
+
+    // Produto A favorito
+    $produtoFavorito = Produto::create([
+        'nom_produto' => 'Cafezinho',
+        'val_preco' => 2.00,
+        'qtd_produto' => 10,
+        'ind_favorito' => true,
+        'usu_inclusao' => $this->admin->id
+    ]);
+
+    $component = Volt::test('vendas.index', ['evento' => $this->evento]);
+    
+    $produtos = $component->get('produtosDisponiveis');
+    
+    // Cafezinho (favorito) deve ser o primeiro da lista de disponíveis
+    expect($produtos->first()->nom_produto)->toEqual('Cafezinho');
 });
 

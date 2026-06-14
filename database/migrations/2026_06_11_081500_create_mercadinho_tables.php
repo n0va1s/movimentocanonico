@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('des_produto', 255)->nullable();
             $table->decimal('val_preco', 10, 2);
             $table->integer('qtd_produto')->default(0); // Estoque
+            $table->boolean('ind_favorito')->default(false);
             $table->foreignId('usu_inclusao')->constrained('users', 'id');
             $table->foreignId('usu_alteracao')->nullable()->constrained('users', 'id');
             $table->timestamps();

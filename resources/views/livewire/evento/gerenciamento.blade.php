@@ -19,6 +19,11 @@ new class extends Component {
             'trabalhadores',
             'voluntarios as voluntarios_count' => fn($q) => $q->whereNull('idt_trabalhador')->distinct('idt_pessoa'),
         ]);
+
+        $abas = array_keys($this->tabs());
+        if (!in_array($this->activeTab, $abas) && !empty($abas)) {
+            $this->activeTab = $abas[0];
+        }
     }
 
     public function setTab(string $tab): void
@@ -40,11 +45,11 @@ new class extends Component {
             'participantes'=> ['icon' => 'user-group',    'label' => 'Participantes'],
             'voluntarios'  => ['icon' => 'hand-raised',   'label' => 'Voluntários',   'encontro_only' => true],
             'trabalhadores'=> ['icon' => 'briefcase',     'label' => 'Trabalhadores', 'encontro_only' => true],
-            'crachas'      => ['icon' => 'identification','label' => 'Crachás'],
+            'crachas'      => ['icon' => 'identification','label' => 'Crachás',        'encontro_only' => true],
             'presenca'     => ['icon' => 'finger-print',  'label' => 'Presença'],
             'quadrante'    => ['icon' => 'table-cells',   'label' => 'Quadrante',     'encontro_only' => true],            
-            'contas'       => ['icon' => 'banknotes',     'label' => 'Prestação de Contas'],
             'mercadinho'   => ['icon' => 'shopping-cart', 'label' => 'Mercadinho'],
+            'contas'       => ['icon' => 'banknotes',     'label' => 'Prestação de Contas'],
         ];
 
         return array_filter($todasAbas, function ($aba, $tab) use ($isEncontro, $evento) {
@@ -57,8 +62,24 @@ new class extends Component {
 }; ?>
 
 <section class="w-full">
+    <style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+
     {{-- Cabeçalho do Evento --}}
-    <header class="mb-8 space-y-2">
+    <header class="mb-8 space-y-4">
+        <div class="md:hidden">
+            <flux:button href="{{ route('eventos.index') }}" icon="arrow-left" variant="ghost" class="text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white">
+                Voltar para Eventos
+            </flux:button>
+        </div>
+
         <div class="flex items-center gap-3">
             <flux:heading size="xl">{{ $evento->des_evento }}</flux:heading>
             
@@ -97,32 +118,62 @@ new class extends Component {
         </div>
 
         <flux:separator variant="subtle" />
-        
-        <flux:subheading class="mt-4">Painel de Controle</flux:subheading>
+
+        {{-- Barra de Navegação Horizontal (Navbar/Tabs) --}}
+        <div class="relative w-full border-b border-zinc-200 dark:border-zinc-700 mt-2">
+            @php
+                $mainKeys = ['resumo', 'participantes', 'presenca',  'mercadinho', 'contas'];
+                $tabs = $this->tabs;
+                
+                $mainTabs = array_filter($tabs, fn($key) => in_array($key, $mainKeys), ARRAY_FILTER_USE_KEY);
+                $moreTabs = array_filter($tabs, fn($key) => !in_array($key, $mainKeys), ARRAY_FILTER_USE_KEY);
+            @endphp
+            <nav class="flex flex-row items-center gap-1 overflow-x-auto whitespace-nowrap no-scrollbar pb-px">
+                @foreach ($mainTabs as $tab => $meta)
+                    <button 
+                        type="button"
+                        wire:click="setTab('{{ $tab }}')"
+                        wire:loading.attr="disabled"
+                        class="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-[1px] transition-colors cursor-pointer focus:outline-none {{ $activeTab === $tab ? 'border-blue-600 text-blue-600 dark:text-blue-400 font-semibold' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300' }}"
+                    >
+                        <flux:icon :name="$meta['icon']" class="size-4" />
+                        <span>{{ $meta['label'] }}</span>
+                    </button>
+                @endforeach
+
+                @if ($this->evento->tip_evento === \App\Enums\TipoEvento::ENCONTRO && !empty($moreTabs))
+                    @php
+                        $isMoreActive = array_key_exists($activeTab, $moreTabs);
+                        $activeMoreLabel = $isMoreActive ? $moreTabs[$activeTab]['label'] : 'Mais opções';
+                        $activeMoreIcon = $isMoreActive ? $moreTabs[$activeTab]['icon'] : 'ellipsis-horizontal';
+                    @endphp
+                    <flux:dropdown>
+                        <button 
+                            type="button"
+                            class="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-[1px] transition-colors cursor-pointer focus:outline-none {{ $isMoreActive ? 'border-blue-600 text-blue-600 dark:text-blue-400 font-semibold' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300' }}"
+                        >
+                            <flux:icon :name="$activeMoreIcon" class="size-4" />
+                            <span>{{ $activeMoreLabel }}</span>
+                            <flux:icon.chevron-down class="size-3 text-zinc-450" />
+                        </button>
+                        <flux:menu>
+                            @foreach ($moreTabs as $tab => $meta)
+                                <flux:menu.item 
+                                    wire:click="setTab('{{ $tab }}')"
+                                    icon="{{ $meta['icon'] }}"
+                                    class="cursor-pointer {{ $activeTab === $tab ? 'bg-zinc-100 dark:bg-zinc-700/50 font-semibold' : '' }}"
+                                >
+                                    {{ $meta['label'] }}
+                                </flux:menu.item>
+                            @endforeach
+                        </flux:menu>
+                    </flux:dropdown>
+                @endif
+            </nav>
+        </div>
     </header>
 
-    <div class="flex flex-col md:flex-row gap-8">
-        {{-- Sidebar de Navegação --}}
-        <aside class="w-full md:w-64 space-y-1">
-            <nav class="flex flex-col gap-1">
-                <flux:navlist>
-                    @foreach ($this->tabs as $tab => $meta)
-                        <flux:navlist.item
-                            wire:click="setTab('{{ $tab }}')"
-                            wire:loading.attr="disabled"
-                            :variant="$activeTab === '{{ $tab }}' ? 'bullet' : 'ghost'"
-                            icon="{{ $meta['icon'] }}"
-                            class="cursor-pointer"
-                        >
-                            {{ $meta['label'] }}
-                        </flux:navlist.item>
-                    @endforeach
-                </flux:navlist>
-            </nav>
-        </aside>
-
-        <main class="flex-1 bg-white dark:bg-zinc-800 p-6 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm relative">
-    
+    <main class="w-full bg-white dark:bg-zinc-800 p-6 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm relative">
         {{-- Loading Overlay --}}
         <div wire:loading wire:target="setTab" class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm">
             <div class="flex items-center gap-3 text-zinc-500 dark:text-zinc-400">
@@ -151,5 +202,4 @@ new class extends Component {
             </div>
         @endif
     </main>
-    </div>
 </section>

@@ -59,6 +59,13 @@ class Transacao extends Model
     {
         parent::boot();
 
+        // Garante que compras possuam um produto válido associado
+        static::saving(function (Transacao $transacao) {
+            if ($transacao->tip_transacao === 'C' && is_null($transacao->idt_produto)) {
+                throw new \InvalidArgumentException('Compras devem possuir um produto válido associado.');
+            }
+        });
+
         // Sempre que uma transação for criada
         static::created(function (Transacao $transacao) {
             $transacao->conta->recalcularSaldo();
