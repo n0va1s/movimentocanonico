@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Ficha;
 use App\Rules\Cpf;
+use App\Rules\Telefone;
 use Illuminate\Validation\Rule;
 
 class FichaEccRequest extends FichaRequest
@@ -62,7 +63,7 @@ class FichaEccRequest extends FichaRequest
             'nom_apelido_conjuge' => 'nullable|string|max:100',
             'tip_genero_conjuge' => 'required|string|max:3',
             'dat_nascimento_conjuge' => 'required|date',
-            'tel_conjuge' => 'nullable|string|max:20',
+            'tel_conjuge' => ['nullable', new Telefone],
             'eml_conjuge' => 'nullable|email|max:255',
             'nom_profissao_conjuge' => 'nullable|string|max:150',
             'ind_catolico_conjuge' => 'nullable|boolean',
@@ -86,7 +87,7 @@ class FichaEccRequest extends FichaRequest
             'filhos.*.nom_filho' => 'nullable|string|max:255',
             'filhos.*.dat_nascimento_filho' => 'nullable|date',
             'filhos.*.eml_filho' => 'nullable|email|max:255',
-            'filhos.*.tel_filho' => 'nullable|string|max:20',
+            'filhos.*.tel_filho' => ['nullable', new Telefone],
         ]);
     }
 

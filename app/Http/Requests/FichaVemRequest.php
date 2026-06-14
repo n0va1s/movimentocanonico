@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\Telefone;
 use Illuminate\Validation\Validator;
 
 class FichaVemRequest extends FichaRequest
@@ -20,15 +21,15 @@ class FichaVemRequest extends FichaRequest
             'des_mora_quem' => 'required|string|max:255',
 
             'nom_pai' => 'nullable|string|max:255',
-            'tel_pai' => 'nullable|string|max:20',
+            'tel_pai' => ['nullable', new Telefone],
             'eml_pai' => 'nullable|email|max:50',
 
             'nom_mae' => 'nullable|string|max:255',
-            'tel_mae' => 'nullable|string|max:20',
+            'tel_mae' => ['nullable', new Telefone],
             'eml_mae' => 'nullable|email|max:50',
 
             'nom_responsavel' => 'nullable|string|max:150',
-            'tel_responsavel' => 'nullable|string|max:15',
+            'tel_responsavel' => ['nullable', new Telefone],
             'eml_responsavel' => 'nullable|email|max:50',
 
             'ind_batizado' => 'required|boolean',

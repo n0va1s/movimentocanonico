@@ -160,7 +160,10 @@ describe('FichaService — Aprovação VEM', function () {
     });
 
     test('aprovar ficha com email já existente atualiza Pessoa existente (updateOrCreate)', function () {
-        $pessoaExistente = Pessoa::factory()->create(['eml_pessoa' => 'candidato@teste.com']);
+        $pessoaExistente = Pessoa::factory()->create([
+            'eml_pessoa' => 'candidato@teste.com',
+            'num_cpf_pessoa' => '12345678901',
+        ]);
         $ficha = fichaVemComCpf($this->evento);
 
         FichaService::atualizarAprovacaoFicha($ficha->idt_ficha);

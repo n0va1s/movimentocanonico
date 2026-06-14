@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Ficha;
 use App\Rules\Cpf;
+use App\Rules\Telefone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -43,7 +44,7 @@ class FichaRequest extends FormRequest
             'nom_candidato' => 'required|string|max:255',
             'nom_apelido' => 'nullable|string|max:255',
             'dat_nascimento' => 'required|date',
-            'tel_candidato' => 'nullable|string|max:20',
+            'tel_candidato' => ['nullable', new Telefone],
             'eml_candidato' => 'required|email|max:255',
             'nom_profissao' => 'nullable|string|max:150',
             'des_endereco' => 'required|string|max:255',

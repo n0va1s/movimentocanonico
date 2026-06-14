@@ -8,6 +8,7 @@ use App\Enums\HabilidadePrincipal;
 use App\Enums\TamanhoCamiseta;
 use App\Models\Pessoa;
 use App\Rules\Cpf;
+use App\Rules\Telefone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
@@ -45,7 +46,7 @@ class PessoaRequest extends FormRequest
             ],
             'nom_pessoa' => ['required', 'string', 'max:255'],
             'nom_apelido' => ['nullable', 'string', 'max:255'],
-            'tel_pessoa' => ['nullable', 'regex:/^\(?\d{2}\)?[\s-]?\d{4,5}-?\d{4}$/'],
+            'tel_pessoa' => ['nullable', new Telefone],
             'dat_nascimento' => ['required', 'date', 'before:today', 'after:1925-01-01'],
             'des_endereco' => ['nullable', 'string', 'min:10', 'max:255'],
             'eml_pessoa' => ['required', 'email', 'max:255'],

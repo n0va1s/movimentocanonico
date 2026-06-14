@@ -147,7 +147,7 @@ class FichaService
     private static function criarPessoaCandidato(Ficha $ficha): Pessoa
     {
         $dados = [
-            'num_cpf_pessoa' => $ficha->num_cpf_candidato,
+            'num_cpf_pessoa' => CpfService::clean($ficha->num_cpf_candidato),
             'nom_pessoa' => $ficha->nom_candidato,
             'nom_apelido' => $ficha->nom_apelido,
             'tel_pessoa' => $ficha->tel_candidato,
@@ -170,7 +170,7 @@ class FichaService
         }
 
         return Pessoa::updateOrCreate(
-            ['num_cpf_pessoa' => $ficha->num_cpf_candidato],
+            ['num_cpf_pessoa' => CpfService::clean($ficha->num_cpf_candidato)],
             $dados
         );
     }
@@ -178,7 +178,7 @@ class FichaService
     private static function criarPessoaConjuge(FichaEcc $fichaEcc): Pessoa
     {
         $dados = [
-            'num_cpf_pessoa' => $fichaEcc->num_cpf_conjuge,
+            'num_cpf_pessoa' => CpfService::clean($fichaEcc->num_cpf_conjuge),
             'nom_pessoa' => $fichaEcc->nom_conjuge,
             'nom_apelido' => $fichaEcc->nom_apelido_conjuge,
             'tel_pessoa' => $fichaEcc->tel_conjuge,
@@ -197,7 +197,7 @@ class FichaService
         }
 
         return Pessoa::updateOrCreate(
-            ['num_cpf_pessoa' => $fichaEcc->num_cpf_conjuge],
+            ['num_cpf_pessoa' => CpfService::clean($fichaEcc->num_cpf_conjuge)],
             $dados
         );
     }
@@ -205,7 +205,7 @@ class FichaService
     private static function criarPessoaFilho(FichaEccFilho $filho): Pessoa
     {
         $dados = [
-            'num_cpf_pessoa' => $filho->num_cpf_filho,
+            'num_cpf_pessoa' => CpfService::clean($filho->num_cpf_filho),
             'nom_pessoa' => $filho->nom_filho,
             'dat_nascimento' => $filho->dat_nascimento_filho,
             'eml_pessoa' => $filho->eml_filho ?? "sem-email-filho-{$filho->num_cpf_filho}@lago.org",
@@ -221,7 +221,7 @@ class FichaService
         }
 
         return Pessoa::updateOrCreate(
-            ['num_cpf_pessoa' => $filho->num_cpf_filho],
+            ['num_cpf_pessoa' => CpfService::clean($filho->num_cpf_filho)],
             $dados
         );
     }

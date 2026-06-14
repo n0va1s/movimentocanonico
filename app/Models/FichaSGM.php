@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use App\Services\PhoneService;
 use App\Enums\EscolaridadeSituacao;
 use App\Enums\Religiao;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -67,5 +69,37 @@ class FichaSGM extends Model
     public function tipoResponsavel()
     {
         return $this->belongsTo(TipoResponsavel::class, 'idt_falar_com', 'idt_responsavel');
+    }
+
+    protected function telMae(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => PhoneService::format($value),
+            set: fn (?string $value) => PhoneService::clean($value),
+        );
+    }
+
+    protected function telPai(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => PhoneService::format($value),
+            set: fn (?string $value) => PhoneService::clean($value),
+        );
+    }
+
+    protected function telFalarCom(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => PhoneService::format($value),
+            set: fn (?string $value) => PhoneService::clean($value),
+        );
+    }
+
+    protected function telConvidou(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => PhoneService::format($value),
+            set: fn (?string $value) => PhoneService::clean($value),
+        );
     }
 }

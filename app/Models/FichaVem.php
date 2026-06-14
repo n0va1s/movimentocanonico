@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use App\Services\PhoneService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -51,5 +53,29 @@ class FichaVem extends Model
     public function tipoResponsavel()
     {
         return $this->belongsTo(TipoResponsavel::class, 'idt_falar_com');
+    }
+
+    protected function telPai(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => PhoneService::format($value),
+            set: fn (?string $value) => PhoneService::clean($value),
+        );
+    }
+
+    protected function telMae(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => PhoneService::format($value),
+            set: fn (?string $value) => PhoneService::clean($value),
+        );
+    }
+
+    protected function telResponsavel(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => PhoneService::format($value),
+            set: fn (?string $value) => PhoneService::clean($value),
+        );
     }
 }

@@ -8,6 +8,7 @@ use App\Enums\HabilidadePrincipal;
 use App\Enums\TamanhoCamiseta;
 use App\Enums\TipoSituacao;
 use App\Services\CpfService;
+use App\Services\PhoneService;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -134,6 +135,14 @@ class Ficha extends Model
         return Attribute::make(
             get: fn (?string $value) => CpfService::format($value),
             set: fn (?string $value) => CpfService::clean($value),
+        );
+    }
+
+    protected function telCandidato(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => PhoneService::format($value),
+            set: fn (?string $value) => PhoneService::clean($value),
         );
     }
 }

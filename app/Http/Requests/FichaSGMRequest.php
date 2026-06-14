@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Enums\Escolaridade;
 use App\Enums\EscolaridadeSituacao;
 use App\Enums\Religiao;
+use App\Rules\Telefone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Validator;
@@ -24,13 +25,13 @@ class FichaSGMRequest extends FormRequest
 
             // Filiação
             'nom_mae' => 'nullable|string|max:255',
-            'tel_mae' => 'nullable|string|max:20',
+            'tel_mae' => ['nullable', new Telefone],
             'eml_mae' => 'nullable|email|max:100',
             'nom_pai' => 'nullable|string|max:255',
-            'tel_pai' => 'nullable|string|max:20',
+            'tel_pai' => ['nullable', new Telefone],
             'eml_pai' => 'nullable|email|max:100',
             'nom_falar_com' => 'nullable|string|max:150',
-            'tel_falar_com' => 'nullable|string|max:20',
+            'tel_falar_com' => ['nullable', new Telefone],
 
             // Dados pessoais SGM
             'des_naturalidade' => 'required|string|max:255',
@@ -52,7 +53,7 @@ class FichaSGMRequest extends FormRequest
 
             // Quem convidou
             'nom_convidou' => 'nullable|string|max:255',
-            'tel_convidou' => 'nullable|string|max:20',
+            'tel_convidou' => ['nullable', new Telefone],
             'end_convidou' => 'nullable|string|max:255',
         ];
     }
