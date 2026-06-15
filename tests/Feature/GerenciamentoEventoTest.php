@@ -563,7 +563,7 @@ describe('Restrições de Saúde — restricoes.blade.php', function () {
         $this->actingAs($this->admin);
     });
 
-    test('exibe as restricoes de saude dos participantes e fichas do evento', function () {
+    test('exibe as restricoes de saude dos participantes e trabalhadores do evento', function () {
         $evento = $this->evento;
         
         $restricao = \App\Models\TipoRestricao::factory()->create(['tip_restricao' => 'ALE', 'des_restricao' => 'Amendoim']);
@@ -574,6 +574,14 @@ describe('Restrições de Saúde — restricoes.blade.php', function () {
             'idt_pessoa' => $pessoa1->idt_pessoa,
             'idt_evento' => $evento->idt_evento,
             'tip_cor_troca' => 'azul',
+        ]);
+
+        $pessoaTrab = \App\Models\Pessoa::factory()->create(['nom_pessoa' => 'José Trabalhador']);
+        $pessoaTrab->restricoes()->attach($restricao->idt_restricao, ['txt_complemento' => 'Leve']);
+        
+        \App\Models\Trabalhador::factory()->create([
+            'idt_pessoa' => $pessoaTrab->idt_pessoa,
+            'idt_evento' => $evento->idt_evento,
         ]);
 
         $ficha = \App\Models\Ficha::factory()->create([
@@ -588,7 +596,30 @@ describe('Restrições de Saúde — restricoes.blade.php', function () {
 
         Volt::test('evento.partials.restricoes', ['evento' => $evento])
             ->assertSee('Maria Alérgica')
+            ->assertSee('José Trabalhador')
             ->assertSee('Amendoim')
-            ->assertSee('Pedro Pendente');
+            ->assertDontSee('Pedro Pendente');
+    });
+});
+
+describe('Gerenciamento de Evento — Abas e Mais Opções', function () {
+    test('exibe "Mais opções" para evento do tipo ENCONTRO', function () {
+        $this->actingAs($this->admin);
+        
+        Volt::test('evento.gerenciamento', ['evento' => $this->evento])
+            ->assertSee('Mais opções');
+    });
+
+    test('não exibe "Mais opções" para evento de outro tipo', function () {
+        $this->actingAs($this->admin);
+        
+        $eventoDesafio = Evento::factory()->create([
+            'idt_movimento' => $this->movimento->idt_movimento,
+            'tip_evento' => TipoEvento::DESAFIO->value,
+            'des_evento' => 'Desafio Teste',
+        ]);
+        
+        Volt::test('evento.gerenciamento', ['evento' => $eventoDesafio])
+            ->assertDontSee('Mais opções');
     });
 });

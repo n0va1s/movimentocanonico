@@ -3,7 +3,6 @@
 use App\Models\Evento;
 use App\Models\Participante;
 use App\Models\Trabalhador;
-use App\Models\Ficha;
 use Livewire\Volt\Component;
 use Livewire\Attributes\Computed;
 
@@ -63,41 +62,6 @@ new class extends Component {
             }
         }
 
-        // 3. Fichas Não Aprovadas com Restrição (Pendente)
-        $fichas = Ficha::where('idt_evento', $eventoSelecionadoId)
-            ->where('tip_situacao', '!=', \App\Enums\TipoSituacao::APROVADA)
-            ->whereHas('fichaSaude')
-            ->with(['fichaSaude.restricao', 'fichaEcc'])
-            ->get();
-
-        foreach ($fichas as $ficha) {
-            // Candidato da Ficha
-            foreach ($ficha->fichaSaude as $fs) {
-                $restricoes[] = (object) [
-                    'nome' => $ficha->nom_candidato . ($ficha->nom_apelido ? " ({$ficha->nom_apelido})" : "") . ' [Pendente]',
-                    'tipo_cadastro' => 'Ficha (Candidato)',
-                    'troca' => '-',
-                    'equipe' => '-',
-                    'tipo_restricao' => $fs->restricao ? $fs->restricao->getTipo() : 'Outra',
-                    'tipo_restricao_cor' => $fs->restricao ? $fs->restricao->getCor() : 'bg-gray-100 text-gray-800 dark:bg-zinc-700 dark:text-gray-200',
-                    'desc_restricao' => ($fs->restricao ? $fs->restricao->des_restricao : '') . ($fs->txt_complemento ? " — " . $fs->txt_complemento : ""),
-                ];
-
-                // Se for ECC, o cônjuge compartilha as mesmas restrições indicadas na ficha de saúde
-                if ($ficha->fichaEcc) {
-                    $restricoes[] = (object) [
-                        'nome' => $ficha->fichaEcc->nom_conjuge . ($ficha->fichaEcc->nom_apelido_conjuge ? " ({$ficha->fichaEcc->nom_apelido_conjuge})" : "") . ' [Pendente (Cônjuge)]',
-                        'tipo_cadastro' => 'Ficha (Cônjuge)',
-                        'troca' => '-',
-                        'equipe' => '-',
-                        'tipo_restricao' => $fs->restricao ? $fs->restricao->getTipo() : 'Outra',
-                        'tipo_restricao_cor' => $fs->restricao ? $fs->restricao->getCor() : 'bg-gray-100 text-gray-800 dark:bg-zinc-700 dark:text-gray-200',
-                        'desc_restricao' => ($fs->restricao ? $fs->restricao->des_restricao : '') . ($fs->txt_complemento ? " — " . $fs->txt_complemento : ""),
-                    ];
-                }
-            }
-        }
-
         return $restricoes;
     }
 }; ?>
@@ -106,7 +70,7 @@ new class extends Component {
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
             <flux:heading size="lg">Restrições de Saúde</flux:heading>
-            <flux:subheading>Visualize as restrições alimentares e médicas dos participantes, trabalhadores e fichas pendentes deste evento.</flux:subheading>
+            <flux:subheading>Visualize as restrições alimentares e médicas dos participantes e trabalhadores deste evento.</flux:subheading>
         </div>
         <div class="print:hidden">
             <flux:button onclick="window.print()" icon="printer" variant="filled">
@@ -164,7 +128,7 @@ new class extends Component {
                 <flux:icon.shield-check class="w-16 h-16 text-green-500 mb-4" />
                 <p class="text-xl font-bold text-zinc-800 dark:text-zinc-200">Nenhuma restrição identificada!</p>
                 <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-2 max-w-md">
-                    Todos os participantes, trabalhadores e fichas pendentes analisados para este evento não possuem nenhuma restrição cadastrada.
+                    Todos os participantes e trabalhadores analisados para este evento não possuem nenhuma restrição cadastrada.
                 </p>
             </div>
         @endif
