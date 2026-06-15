@@ -43,6 +43,7 @@ new class extends Component {
             'resumo'       => ['icon' => 'chart-bar',      'label' => 'Resumo'],
             'fichas'       => ['icon' => 'document-text', 'label' => 'Fichas',        'encontro_only' => true],
             'participantes'=> ['icon' => 'user-group',    'label' => 'Participantes'],
+            'restricoes'   => ['icon' => 'shield-check',  'label' => 'Restrições'],
             'voluntarios'  => ['icon' => 'hand-raised',   'label' => 'Voluntários',   'encontro_only' => true],
             'trabalhadores'=> ['icon' => 'briefcase',     'label' => 'Trabalhadores', 'encontro_only' => true],
             'crachas'      => ['icon' => 'identification','label' => 'Crachás',        'encontro_only' => true],
@@ -122,7 +123,7 @@ new class extends Component {
         {{-- Barra de Navegação Horizontal (Navbar/Tabs) --}}
         <div class="relative w-full border-b border-zinc-200 dark:border-zinc-700 mt-2">
             @php
-                $mainKeys = ['resumo', 'participantes', 'presenca',  'mercadinho', 'contas'];
+                $mainKeys = ['resumo', 'participantes', 'restricoes', 'presenca',  'mercadinho', 'contas'];
                 $tabs = $this->tabs;
                 
                 $mainTabs = array_filter($tabs, fn($key) => in_array($key, $mainKeys), ARRAY_FILTER_USE_KEY);
@@ -195,6 +196,7 @@ new class extends Component {
                 @case('crachas') <livewire:evento.partials.crachas :evento="$evento" /> @break
                 @case('contas') <livewire:evento.partials.contas :evento="$evento" /> @break
                 @case('mercadinho') <livewire:vendas.index :evento="$evento" /> @break
+                @case('restricoes') <livewire:evento.partials.restricoes :evento="$evento" /> @break
             @endswitch
         @else
             <div class="p-4 text-zinc-500 italic">

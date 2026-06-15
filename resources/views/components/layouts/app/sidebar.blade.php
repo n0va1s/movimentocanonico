@@ -41,6 +41,12 @@
                     :current="request()->routeIs('eventos.index')" wire:navigate>
                     {{ __('Eventos') }}
                 </flux:navlist.item>
+                @if (Auth::user() && Auth::user()->hasRole('admin', 'espec', 'coord'))
+                    <flux:navlist.item icon="chat-bubble-left-right" :href="route('mensagens.index')"
+                        :current="request()->routeIs('mensagens.*')" wire:navigate>
+                        {{ __('Mensagens') }}
+                    </flux:navlist.item>
+                @endif
                 <flux:navlist.item icon="user"
                     :href="route('pessoas.edit', ['pessoa' => Auth::user()->pessoa?->idt_pessoa])"
                     :current="request()->routeIs('pessoas.edit')" wire:navigate>

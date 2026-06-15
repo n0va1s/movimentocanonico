@@ -552,3 +552,43 @@ describe('Participantes — participantes.blade.php', function () {
             ->assertOk();
     });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Restrições de Saúde — componente Livewire Volt
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Restrições de Saúde — restricoes.blade.php', function () {
+
+    beforeEach(function () {
+        $this->actingAs($this->admin);
+    });
+
+    test('exibe as restricoes de saude dos participantes e fichas do evento', function () {
+        $evento = $this->evento;
+        
+        $restricao = \App\Models\TipoRestricao::factory()->create(['tip_restricao' => 'ALE', 'des_restricao' => 'Amendoim']);
+        $pessoa1 = \App\Models\Pessoa::factory()->create(['nom_pessoa' => 'Maria Alérgica']);
+        $pessoa1->restricoes()->attach($restricao->idt_restricao, ['txt_complemento' => 'Evitar contato']);
+        
+        \App\Models\Participante::factory()->create([
+            'idt_pessoa' => $pessoa1->idt_pessoa,
+            'idt_evento' => $evento->idt_evento,
+            'tip_cor_troca' => 'azul',
+        ]);
+
+        $ficha = \App\Models\Ficha::factory()->create([
+            'idt_evento' => $evento->idt_evento,
+            'nom_candidato' => 'Pedro Pendente',
+            'tip_situacao' => \App\Enums\TipoSituacao::NOVA,
+        ]);
+        $ficha->fichaSaude()->create([
+            'idt_restricao' => $restricao->idt_restricao,
+            'txt_complemento' => 'Leve',
+        ]);
+
+        Volt::test('evento.partials.restricoes', ['evento' => $evento])
+            ->assertSee('Maria Alérgica')
+            ->assertSee('Amendoim')
+            ->assertSee('Pedro Pendente');
+    });
+});

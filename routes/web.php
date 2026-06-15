@@ -122,6 +122,11 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware(['role:admin,coord,espec'])->group(function () {
         Volt::route('eventos/{evento}/gerenciamento', 'evento.gerenciamento')->name('eventos.gerenciamento');
+
+        // Módulo de Mensagens
+        Volt::route('mensagens', 'mensagens.index')->name('mensagens.index');
+        Volt::route('mensagens/criar', 'mensagens.create')->name('mensagens.create');
+        Volt::route('mensagens/{mensagem}', 'mensagens.show')->name('mensagens.show');
     });
 
     // -----------------------------------------------------------------------
