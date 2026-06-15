@@ -603,14 +603,14 @@ describe('Restrições de Saúde — restricoes.blade.php', function () {
 });
 
 describe('Gerenciamento de Evento — Abas e Mais Opções', function () {
-    test('exibe "Mais opções" para evento do tipo ENCONTRO', function () {
+    test('exibe abas exclusivas para evento do tipo ENCONTRO', function () {
         $this->actingAs($this->admin);
         
         Volt::test('evento.gerenciamento', ['evento' => $this->evento])
-            ->assertSee('Mais opções');
+            ->assertSee("setTab('fichas')", false);
     });
 
-    test('não exibe "Mais opções" para evento de outro tipo', function () {
+    test('não exibe abas exclusivas para evento de outro tipo', function () {
         $this->actingAs($this->admin);
         
         $eventoDesafio = Evento::factory()->create([
@@ -620,6 +620,6 @@ describe('Gerenciamento de Evento — Abas e Mais Opções', function () {
         ]);
         
         Volt::test('evento.gerenciamento', ['evento' => $eventoDesafio])
-            ->assertDontSee('Mais opções');
+            ->assertDontSee("setTab('fichas')", false);
     });
 });

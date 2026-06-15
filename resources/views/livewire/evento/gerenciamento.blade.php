@@ -36,7 +36,7 @@ new class extends Component {
     #[Computed]
     public function tabs(): array
     {
-        $isEncontro = $this->evento->tip_evento === TipoEvento::ENCONTRO;
+        $isEncontro = ($this->evento->tip_evento?->value ?? $this->evento->tip_evento) === 'E';
         $evento     = $this->evento;
 
         $todasAbas = [
@@ -120,57 +120,36 @@ new class extends Component {
 
         <flux:separator variant="subtle" />
 
-        {{-- Barra de Navegação Horizontal (Navbar/Tabs) --}}
-        <div class="relative w-full border-b border-zinc-200 dark:border-zinc-700 mt-2">
+        {{-- Barra de Navegação Horizontal Simplificada com Dropdown (Tab Selector) --}}
+        <div class="relative w-full border-b border-zinc-200 dark:border-zinc-700 mt-2 pb-4 flex items-center justify-between">
             @php
-                $mainKeys = ['resumo', 'participantes', 'restricoes', 'presenca',  'mercadinho', 'contas'];
                 $tabs = $this->tabs;
-                
-                $mainTabs = array_filter($tabs, fn($key) => in_array($key, $mainKeys), ARRAY_FILTER_USE_KEY);
-                $moreTabs = array_filter($tabs, fn($key) => !in_array($key, $mainKeys), ARRAY_FILTER_USE_KEY);
+                $activeTabMeta = $tabs[$activeTab] ?? null;
             @endphp
-            <nav class="flex flex-row items-center gap-1 overflow-x-auto whitespace-nowrap no-scrollbar pb-px">
-                @foreach ($mainTabs as $tab => $meta)
-                    <button 
-                        type="button"
-                        wire:click="setTab('{{ $tab }}')"
-                        wire:loading.attr="disabled"
-                        class="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-[1px] transition-colors cursor-pointer focus:outline-none {{ $activeTab === $tab ? 'border-blue-600 text-blue-600 dark:text-blue-400 font-semibold' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300' }}"
-                    >
-                        <flux:icon :name="$meta['icon']" class="size-4" />
-                        <span>{{ $meta['label'] }}</span>
-                    </button>
-                @endforeach
-
-                @if ($this->evento->tip_evento === \App\Enums\TipoEvento::ENCONTRO && !empty($moreTabs))
-                    @php
-                        $isMoreActive = array_key_exists($activeTab, $moreTabs);
-                        $activeMoreLabel = $isMoreActive ? $moreTabs[$activeTab]['label'] : 'Mais opções';
-                        $activeMoreIcon = $isMoreActive ? $moreTabs[$activeTab]['icon'] : 'ellipsis-horizontal';
-                    @endphp
+            @if ($activeTabMeta)
+                <div class="flex gap-3">
                     <flux:dropdown>
-                        <button 
-                            type="button"
-                            class="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-[1px] transition-colors cursor-pointer focus:outline-none {{ $isMoreActive ? 'border-blue-600 text-blue-600 dark:text-blue-400 font-semibold' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300' }}"
+                        <flux:button 
+                            icon="{{ $activeTabMeta['icon'] }}" 
+                            icon-trailing="chevron-down" 
+                            class="min-w-64 justify-between"
                         >
-                            <flux:icon :name="$activeMoreIcon" class="size-4" />
-                            <span>{{ $activeMoreLabel }}</span>
-                            <flux:icon.chevron-down class="size-3 text-zinc-450" />
-                        </button>
-                        <flux:menu>
-                            @foreach ($moreTabs as $tab => $meta)
+                            {{ $activeTabMeta['label'] }}
+                        </flux:button>
+                        <flux:menu class="w-64">
+                            @foreach ($tabs as $tab => $meta)
                                 <flux:menu.item 
                                     wire:click="setTab('{{ $tab }}')"
                                     icon="{{ $meta['icon'] }}"
-                                    class="cursor-pointer {{ $activeTab === $tab ? 'bg-zinc-100 dark:bg-zinc-700/50 font-semibold' : '' }}"
+                                    class="cursor-pointer {{ $activeTab === $tab ? 'bg-zinc-100 dark:bg-zinc-700/50 font-semibold text-blue-600 dark:text-blue-400' : '' }}"
                                 >
                                     {{ $meta['label'] }}
                                 </flux:menu.item>
                             @endforeach
                         </flux:menu>
                     </flux:dropdown>
-                @endif
-            </nav>
+                </div>
+            @endif
         </div>
     </header>
 
