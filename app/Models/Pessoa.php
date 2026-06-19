@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class Pessoa extends Model
 {
@@ -66,7 +67,7 @@ class Pessoa extends Model
                 return;
             }
 
-            $senha = $pessoa->dat_nascimento->format('Ymd');
+            $senha = Str::password(16);
 
             $user = User::create([
                 'name' => $pessoa->nom_pessoa,

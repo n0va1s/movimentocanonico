@@ -266,9 +266,11 @@ test('ao criar pessoa sem usuario cria usuario automaticamente', function () {
 
     expect($user)->not->toBeNull()
         ->and($user->email)->toBe('teste@teste.com')
-        ->and(Hash::check('19900101', $user->password))->toBeTrue();
+        ->and($user->password)->not->toBeEmpty();
 
-    Mail::assertSent(BoasVindasMail::class);
+    Mail::assertSent(BoasVindasMail::class, function ($mail) {
+        return ! empty($mail->senhaTemporaria) && strlen($mail->senhaTemporaria) >= 16;
+    });
 });
 
 test('nao cria usuario se pessoa ja possui idt_usuario', function () {
