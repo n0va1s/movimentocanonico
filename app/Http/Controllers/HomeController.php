@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ContatoRequest;
 use App\Models\Contato;
 use App\Models\Evento;
 use App\Models\Ficha;
@@ -55,7 +56,7 @@ class HomeController extends Controller
         return view('welcome', compact('proximoseventos', 'movimentos'));
     }
 
-    public function contato(Request $request)
+    public function contato(ContatoRequest $request)
     {
         $start = microtime(true);
         $context = $this->getLogContext(request());
@@ -64,13 +65,7 @@ class HomeController extends Controller
             'contato_movimento' => $request->input('idt_movimento'),
         ]));
 
-        $data = $request->validate([
-            'nom_contato' => 'required|string|max:255',
-            'eml_contato' => 'nullable|email|max:255',
-            'tel_contato' => 'required|string|max:20',
-            'txt_mensagem' => 'required|string|max:1000',
-            'idt_movimento' => 'required|exists:tipo_movimento,idt_movimento',
-        ]);
+        $data = $request->validated();
 
         $contato = Contato::create($data);
 
