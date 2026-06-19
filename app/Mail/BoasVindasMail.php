@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use App\Models\User;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Attachment;
@@ -11,7 +12,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class BoasVindasMail extends Mailable
+class BoasVindasMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
