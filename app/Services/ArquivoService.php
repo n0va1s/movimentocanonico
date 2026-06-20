@@ -56,4 +56,14 @@ class ArquivoService
             [$column => $filePath]
         );
     }
+
+    /**
+     * Exclui um arquivo do disco público se ele existir.
+     */
+    public function excluirArquivo(?string $path): void
+    {
+        if ($path && Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
+        }
+    }
 }

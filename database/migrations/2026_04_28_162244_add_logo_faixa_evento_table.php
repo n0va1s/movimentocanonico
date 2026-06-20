@@ -16,6 +16,7 @@ return new class extends Migration
         });
 
         Schema::table('evento_foto', function (Blueprint $table) {
+            $table->string('med_foto')->nullable()->change();
             $table->string('med_logo')->nullable()->after('med_foto');
         });
 
@@ -33,6 +34,7 @@ return new class extends Migration
         });
 
         Schema::table('evento_foto', function (Blueprint $table) {
+            $table->string('med_foto')->nullable(false)->change();
             $table->dropColumn('med_logo');
         });
     }

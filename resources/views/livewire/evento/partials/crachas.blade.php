@@ -138,13 +138,11 @@ new class extends Component {
                         $corClass = $r->getCor();
                     @endphp
 
-                    <span class="{{ $corClass }} text-[8px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                    <span class="{{ $corClass }} text-xs px-1.5 py-0.5 rounded flex items-center justify-center font-bold" title="{{ $tipoLabel }}: {{ $r->des_restricao }}">
                         @if($tipoEnum)
-                            <span>{{ $tipoEnum->icon() }}</span>
-                            <span>{{ $tipoLabel }}: {{ $r->des_restricao }}</span>
+                            {{ $tipoEnum->icon() }}
                         @else
-                            <span>⚠️</span>
-                            <span>{{ $r->des_restricao }}</span>
+                            ⚠️
                         @endif
                     </span>
                 @endforeach

@@ -274,12 +274,15 @@ class EventoController extends Controller
         ]));
 
         try {
-            // deleta a foto e o evento
-            if ($evento->med_foto) {
-                $this->arquivoService->excluirArquivo($evento->med_foto);
-            }
-            if ($evento->med_logo) {
-                $this->arquivoService->excluirArquivo($evento->med_logo);
+            // deleta a foto e o evento do filesystem
+            $evento->loadMissing('foto');
+            if ($evento->foto) {
+                if ($evento->foto->med_foto) {
+                    $this->arquivoService->excluirArquivo($evento->foto->med_foto);
+                }
+                if ($evento->foto->med_logo) {
+                    $this->arquivoService->excluirArquivo($evento->foto->med_logo);
+                }
             }
 
             $evento->delete();
