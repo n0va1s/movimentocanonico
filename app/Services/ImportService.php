@@ -339,15 +339,15 @@ class ImportService
                     $rowValues = $this->extractRowData($data, $headerMap);
 
                     // Validações básicas da linha
-                    if (empty($rowValues['nome']) || empty($rowValues['email']) || empty($rowValues['data_nascimento']) || empty($rowValues['equipe'])) {
-                        $this->writeLog($logPath, "Linha {$line}: Ignorada devido a campos obrigatórios em branco (Nome/Email/Data Nascimento/Equipe).");
+                    if (empty($rowValues['nome']) || empty($rowValues['data_nascimento']) || empty($rowValues['equipe'])) {
+                        $this->writeLog($logPath, "Linha {$line}: Ignorada devido a campos obrigatórios em branco (Nome/Data Nascimento/Equipe).");
                         $stats['errors']++;
 
                         continue;
                     }
 
                     $cpfClean = $rowValues['cpf'] ? preg_replace('/\D/', '', $rowValues['cpf']) : null;
-                    $emailClean = trim(strtolower($rowValues['email']));
+                    $emailClean = $rowValues['email'] ? trim(strtolower($rowValues['email'])) : null;
                     $dataNascimento = $this->parseBirthDate($rowValues['data_nascimento']);
 
                     if (! $dataNascimento) {
@@ -371,10 +371,11 @@ class ImportService
                     }
 
                     if (! $equipe) {
-                        $this->writeLog($logPath, "Linha {$line}: Equipe '{$nomeEquipe}' não encontrada para o movimento deste evento.");
-                        $stats['errors']++;
-
-                        continue;
+                        $equipe = TipoEquipe::create([
+                            'idt_movimento' => $evento->idt_movimento,
+                            'des_grupo' => $nomeEquipe,
+                        ]);
+                        $this->writeLog($logPath, "Linha {$line}: Equipe '{$nomeEquipe}' criada automaticamente para o movimento deste evento.");
                     }
 
                     // Busca se a pessoa já está cadastrada
@@ -382,8 +383,23 @@ class ImportService
                     if ($cpfClean) {
                         $pessoa = Pessoa::where('num_cpf_pessoa', $cpfClean)->first();
                     }
-                    if (! $pessoa) {
+                    if (! $pessoa && $emailClean) {
                         $pessoa = Pessoa::where('eml_pessoa', $emailClean)->first();
+                    }
+                    if (! $pessoa) {
+                        $pessoa = Pessoa::where('nom_pessoa', trim($rowValues['nome']))
+                            ->where('dat_nascimento', $dataNascimento)
+                            ->first();
+                    }
+
+                    if (! $emailClean) {
+                        if ($pessoa) {
+                            $emailClean = $pessoa->eml_pessoa;
+                        } else {
+                            $slug = \Illuminate\Support\Str::slug(trim($rowValues['nome']), '_');
+                            $birth = str_replace('-', '', $dataNascimento);
+                            $emailClean = "sem_email_{$slug}_{$birth}@movimentocanonico.com.br";
+                        }
                     }
 
                     $dadosPessoa = [

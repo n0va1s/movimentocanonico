@@ -82,11 +82,8 @@ new class extends Component {
             $q->whereHas('trabalhadores', fn($qt) => $qt->where('idt_evento', $eventoId)->where('idt_equipe', $this->filtroEquipe));
         })
         ->when($filtro !== 'todos', function($q) use ($filtro, $eventoId) {
-            $q->whereExists(function($query) use ($eventoId, $filtro) {
-                $query->select(DB::raw(1))
-                      ->from('conta')
-                      ->whereColumn('conta.idt_pessoa', 'pessoa.idt_pessoa')
-                      ->where('conta.idt_evento', $eventoId)
+            $q->whereHas('contas', function($query) use ($eventoId, $filtro) {
+                $query->where('idt_evento', $eventoId)
                       ->when($filtro === 'devedores', fn($query) => $query->where('val_saldo', '<', 0))
                       ->when($filtro === 'credores', fn($query) => $query->where('val_saldo', '>', 0));
             });

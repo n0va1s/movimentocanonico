@@ -189,3 +189,42 @@ test('admin pode importar trabalhadores de planilha CSV, associando-os a equipes
     // Verifica se o log correspondente foi gerado
     expect(file_exists(storage_path('logs/import_trabalhadores.log')))->toBeTrue();
 });
+
+test('admin pode importar trabalhadores com e-mails ausentes e equipes nao cadastradas', function () {
+    $this->actingAs($this->admin);
+
+    // O movimento deste evento é $this->movimento.
+    // Envia um CSV onde:
+    // 1. O trabalhador possui e-mail em branco (Mariana Feitosa Jacobino).
+    // 2. A equipe não existe no banco de dados para este movimento ("Equipe Inexistente").
+    $csvContent = "CPF;Nome;Apelido;Telefone;Email;Data Nascimento;Genero;Tamanho Camiseta;Endereco;Equipe;Coordenador;Primeira Vez;Recomendado;Lideranca;Destaque;Avaliacao;Camiseta Pediu;Camiseta Pagou;Taxa Pagou;Presente\n".
+                  ';Mariana Feitosa Jacobino;;;;24/07/2005;F;;;Equipe Inexistente;Sim;Não;Sim;Sim;Não;Sim;Sim;Sim;Sim;Sim';
+
+    $file = UploadedFile::fake()->createWithContent('trabalhadores_especiais.csv', $csvContent);
+
+    // Antes da importação, a equipe "Equipe Inexistente" não existe
+    expect(TipoEquipe::where('des_grupo', 'Equipe Inexistente')->where('idt_movimento', $this->movimento->idt_movimento)->first())->toBeNull();
+
+    $response = $this->post(route('eventos.importar.trabalhadores'), [
+        'evento_id' => $this->evento->idt_evento,
+        'arquivo_trabalhadores' => $file,
+    ]);
+
+    $response->assertRedirect(route('eventos.importar'));
+    $response->assertSessionHas('success');
+
+    // 1. Verifica se a equipe "Equipe Inexistente" foi criada automaticamente
+    $equipe = TipoEquipe::where('des_grupo', 'Equipe Inexistente')->where('idt_movimento', $this->movimento->idt_movimento)->first();
+    expect($equipe)->not->toBeNull();
+
+    // 2. Verifica se a pessoa foi cadastrada corretamente (com e-mail mock gerado)
+    $pessoa = Pessoa::where('nom_pessoa', 'Mariana Feitosa Jacobino')->first();
+    expect($pessoa)->not->toBeNull()
+        ->and($pessoa->eml_pessoa)->toContain('sem_email_mariana_feitosa_jacobino_20050724')
+        ->and($pessoa->dat_nascimento->format('Y-m-d'))->toBe('2005-07-24');
+
+    // 3. Verifica se o trabalhador foi criado e associado à nova equipe
+    $trabalhador = Trabalhador::where('idt_pessoa', $pessoa->idt_pessoa)->where('idt_evento', $this->evento->idt_evento)->first();
+    expect($trabalhador)->not->toBeNull()
+        ->and($trabalhador->idt_equipe)->toBe($equipe->idt_equipe);
+});

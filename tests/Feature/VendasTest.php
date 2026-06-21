@@ -408,3 +408,48 @@ test('produtos sao ordenados com favoritos no topo no catalogo de compras', func
     expect($produtos->first()->nom_produto)->toEqual('Cafezinho');
 });
 
+test('gestor pode filtrar por saldo devedor e credor', function() {
+    $this->actingAs($this->admin);
+
+    // Pessoa 1: José da Silva (participante), devedor (saldo = -10.00)
+    $contaJose = Conta::create([
+        'idt_pessoa' => $this->pessoa->idt_pessoa,
+        'idt_evento' => $this->evento->idt_evento,
+        'val_saldo' => -10.00,
+        'usu_inclusao' => $this->admin->id
+    ]);
+
+    // Pessoa 2: Maria Oliveira (trabalhador), credora (saldo = 20.00)
+    $maria = Pessoa::factory()->create([
+        'nom_pessoa' => 'Maria Oliveira',
+    ]);
+    \App\Models\Trabalhador::factory()->create([
+        'idt_evento' => $this->evento->idt_evento,
+        'idt_pessoa' => $maria->idt_pessoa,
+        'idt_equipe' => \App\Models\TipoEquipe::factory()->create(['idt_movimento' => $this->movimento->idt_movimento])->idt_equipe,
+    ]);
+    $contaMaria = Conta::create([
+        'idt_pessoa' => $maria->idt_pessoa,
+        'idt_evento' => $this->evento->idt_evento,
+        'val_saldo' => 20.00,
+        'usu_inclusao' => $this->admin->id
+    ]);
+
+    // Testar componente
+    $component = Volt::test('vendas.index', ['evento' => $this->evento]);
+    
+    // Todos
+    $component->assertSee('José da Silva')
+              ->assertSee('Maria Oliveira');
+
+    // Devedores
+    $component->set('filtroSaldo', 'devedores')
+              ->assertSee('José da Silva')
+              ->assertDontSee('Maria Oliveira');
+
+    // Credores
+    $component->set('filtroSaldo', 'credores')
+              ->assertSee('Maria Oliveira')
+              ->assertDontSee('José da Silva');
+});
+

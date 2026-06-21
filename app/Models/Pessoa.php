@@ -115,6 +115,11 @@ class Pessoa extends Model
         return $this->hasMany(Trabalhador::class, 'idt_pessoa');
     }
 
+    public function contas()
+    {
+        return $this->hasMany(Conta::class, 'idt_pessoa', 'idt_pessoa');
+    }
+
     public function voluntarios()
     {
         return $this->hasMany(Voluntario::class, 'idt_pessoa');
@@ -165,14 +170,6 @@ class Pessoa extends Model
 
     public function scopeSearchByName($query, $search)
     {
-        // Verifica se estamos usando MySQL/MariaDB (produção) e não estamos em testes
-        if (! app()->runningUnitTests() && (config('database.default') === 'mysql' || config('database.default') === 'mariadb')) {
-            // Usa o Full-Text Search OTIMIZADO (Exige que você adicione o FTS manualmente no MySQL)
-            return $query->whereFullText(['nom_pessoa', 'nom_apelido'], $search);
-        }
-
-        // Caso contrário (ambiente SQLite de desenvolvimento)
-        // Usamos a sintaxe mais lenta, mas compatível (LIKE "%...%")
         return $query->where(function ($q) use ($search) {
             $q->where('nom_pessoa', 'like', "%{$search}%")
                 ->orWhere('nom_apelido', 'like', "%{$search}%");

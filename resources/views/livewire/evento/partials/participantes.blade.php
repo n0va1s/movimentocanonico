@@ -198,7 +198,7 @@ new class extends Component {
         <flux:table.columns>
             <flux:table.column>Nome</flux:table.column>
             <flux:table.column>Cor da Troca</flux:table.column>
-            <flux:table.column>Restrição</flux:table.column>
+            <flux:table.column>Camiseta</flux:table.column>
             <flux:table.column>Responsável</flux:table.column>
             <flux:table.column align="end">Ações</flux:table.column>
         </flux:table.columns>
@@ -233,24 +233,15 @@ new class extends Component {
                         </flux:select>
                     </flux:table.cell>
 
-                    {{-- Restrição --}}
+                    {{-- Camiseta --}}
                     <flux:table.cell>
-                        <div class="flex flex-wrap gap-1">
-                            @forelse ($p->pessoa->restricoes as $restricao)
-                                @php
-                                    $tipoEnum = \App\Enums\TipoRestricao::tryFrom($restricao->tip_restricao);
-                                    $tipoLabel = $tipoEnum ? $tipoEnum->label() : $restricao->tip_restricao;
-                                    $tipoCor = $restricao->getCor();
-                                    $tooltip = $restricao->pivot->txt_complemento ? " ({$restricao->pivot->txt_complemento})" : "";
-                                @endphp
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium {{ $tipoCor }}" title="{{ $restricao->des_restricao }}{{ $tooltip }}">
-                                    <span>{{ $tipoEnum?->icon() }}</span>
-                                    <span>{{ $tipoLabel }}: {{ $restricao->des_restricao }}</span>
-                                </span>
-                            @empty
-                                <span class="text-xs text-zinc-400">—</span>
-                            @endforelse
-                        </div>
+                        @if ($p->pessoa->tam_camiseta)
+                            <flux:badge size="sm" color="zinc">
+                                {{ $p->pessoa->tam_camiseta->value }}
+                            </flux:badge>
+                        @else
+                            <span class="text-xs text-zinc-400">—</span>
+                        @endif
                     </flux:table.cell>
 
                     {{-- Responsável --}}

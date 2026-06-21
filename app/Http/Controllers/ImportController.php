@@ -54,6 +54,7 @@ class ImportController extends Controller
         ]);
 
         try {
+            set_time_limit(180);
             $evento = Evento::findOrFail($request->evento_id);
 
             if (auth()->user()->isEspec() && (is_null(auth()->user()->idt_movimento) || (int) $evento->idt_movimento !== (int) auth()->user()->idt_movimento)) {
@@ -104,6 +105,7 @@ class ImportController extends Controller
         ]);
 
         try {
+            set_time_limit(180);
             $evento = Evento::findOrFail($request->evento_id);
 
             if (auth()->user()->isEspec() && (is_null(auth()->user()->idt_movimento) || (int) $evento->idt_movimento !== (int) auth()->user()->idt_movimento)) {
