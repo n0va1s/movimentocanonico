@@ -1104,3 +1104,79 @@ describe('EventoController — Espec e Movimentos Adicionais', function () {
         $response->assertSee('Participacao ECC');
     });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Eventos Encerrados e Expiração
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Eventos Encerrados e Expiração', function () {
+
+    test('comando DeletarEventosFinalizados realiza soft-delete corretamente definindo deleted_at como data de término do evento', function () {
+        $eventoAtivo = Evento::factory()->create([
+            'dat_termino' => now()->addDays(2),
+        ]);
+        $eventoExpirado = Evento::factory()->create([
+            'dat_termino' => now()->subDays(2),
+        ]);
+
+        $this->artisan('mov:deletar-eventos-finalizados')
+            ->expectsOutput('1 eventos foram encerrados.')
+            ->assertExitCode(0);
+
+        expect(Evento::find($eventoAtivo->idt_evento))->not->toBeNull()
+            ->and(Evento::find($eventoExpirado->idt_evento))->toBeNull()
+            ->and(Evento::withTrashed()->find($eventoExpirado->idt_evento)->deleted_at->format('Y-m-d'))
+            ->toBe($eventoExpirado->dat_termino->format('Y-m-d'));
+    });
+
+    test('admin e espec podem ver eventos encerrados passando status=encerrados', function () {
+        $eventoAtivo = Evento::factory()->create([
+            'des_evento' => 'Evento Ativo Lindo',
+        ]);
+        $eventoEncerrado = Evento::factory()->create([
+            'des_evento' => 'Evento Encerrado Antigo',
+        ]);
+        // Soft-deleta o evento encerrado
+        $eventoEncerrado->deleted_at = now()->subDays(1);
+        $eventoEncerrado->save();
+
+        // 1. Admin acessando sem status
+        $response = $this->actingAs($this->user)->get(route('eventos.index'));
+        $response->assertOk();
+        $response->assertSee('Evento Ativo Lindo');
+        $response->assertDontSee('Evento Encerrado Antigo');
+
+        // 2. Admin acessando com status=encerrados
+        $response = $this->actingAs($this->user)->get(route('eventos.index', ['status' => 'encerrados']));
+        $response->assertOk();
+        $response->assertDontSee('Evento Ativo Lindo');
+        $response->assertSee('Evento Encerrado Antigo');
+
+        // 3. Espec acessando com status=encerrados
+        $espec = User::factory()->create(['role' => 'espec', 'idt_movimento' => $this->movimento->idt_movimento]);
+        $response = $this->actingAs($espec)->get(route('eventos.index', ['status' => 'encerrados']));
+        $response->assertOk();
+        $response->assertDontSee('Evento Ativo Lindo');
+        $response->assertSee('Evento Encerrado Antigo');
+    });
+
+    test('usuario comum e coordenador nao podem ver eventos encerrados', function () {
+        $eventoEncerrado = Evento::factory()->create([
+            'des_evento' => 'Evento Encerrado Secreto',
+        ]);
+        $eventoEncerrado->deleted_at = now()->subDays(1);
+        $eventoEncerrado->save();
+
+        // 1. Usuário comum tenta acessar com status=encerrados
+        $comum = User::factory()->create(['role' => 'user']);
+        $response = $this->actingAs($comum)->get(route('eventos.index', ['status' => 'encerrados']));
+        $response->assertOk();
+        $response->assertDontSee('Evento Encerrado Secreto');
+
+        // 2. Coordenador tenta acessar com status=encerrados
+        $coord = User::factory()->create(['role' => 'coord']);
+        $response = $this->actingAs($coord)->get(route('eventos.index', ['status' => 'encerrados']));
+        $response->assertOk();
+        $response->assertDontSee('Evento Encerrado Secreto');
+    });
+});

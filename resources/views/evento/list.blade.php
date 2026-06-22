@@ -16,11 +16,30 @@
             @endif
         </header>
 
+        {{-- Abas Ativos / Encerrados para Admin e Espec --}}
+        @if (Auth::user()?->isAdmin() || Auth::user()?->isEspec())
+            <div class="border-b border-gray-200 dark:border-zinc-700 mb-6">
+                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                    <a href="{{ route('eventos.index', array_merge(request()->except('page'), ['status' => 'ativos'])) }}" 
+                       class="border-b-2 py-4 px-1 text-sm font-semibold transition-colors duration-200 flex items-center gap-2 {{ ($status ?? 'ativos') === 'ativos' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200' }}">
+                        <x-heroicon-o-calendar class="w-4 h-4" />
+                        <span>Eventos Ativos</span>
+                    </a>
+                    <a href="{{ route('eventos.index', array_merge(request()->except('page'), ['status' => 'encerrados'])) }}" 
+                       class="border-b-2 py-4 px-1 text-sm font-semibold transition-colors duration-200 flex items-center gap-2 {{ ($status ?? 'ativos') === 'encerrados' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200' }}">
+                        <x-heroicon-o-archive-box class="w-4 h-4" />
+                        <span>Eventos Encerrados</span>
+                    </a>
+                </nav>
+            </div>
+        @endif
+
         {{-- Filtros  --}}
         <nav x-data="{ isFiltersOpen: false }" class="bg-white dark:bg-zinc-800 p-5 rounded-xl border border-gray-200 dark:border-zinc-700 shadow-sm mb-8">
             {{-- Versão Desktop (Sempre Visível) --}}
             <div class="hidden md:block">
                 <form method="GET" action="{{ route('eventos.index') }}" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                    <input type="hidden" name="status" value="{{ $status ?? 'ativos' }}">
                     <div class="md:col-span-4">
                         <flux:input name="search" value="{{ $search }}" icon="magnifying-glass" placeholder="Buscar por descrição ou número..." />
                     </div>
@@ -47,7 +66,7 @@
                     <div class="md:col-span-2 flex gap-2">
                         <flux:button type="submit" variant="filled" color="blue" class="flex-1">Filtrar</flux:button>
                         @if ($search || $idt_movimento || ($tip_evento ?? null))
-                            <flux:button href="{{ route('eventos.index') }}" icon="x-mark" variant="ghost" />
+                            <flux:button href="{{ route('eventos.index', ['status' => $status ?? 'ativos']) }}" icon="x-mark" variant="ghost" />
                         @endif
                     </div>
                 </form>
@@ -73,6 +92,7 @@
                     class="mt-4"
                 >
                     <form method="GET" action="{{ route('eventos.index') }}" class="grid grid-cols-1 gap-4">
+                        <input type="hidden" name="status" value="{{ $status ?? 'ativos' }}">
                         <div>
                             <flux:input name="search" value="{{ $search }}" icon="magnifying-glass" placeholder="Buscar por descrição ou número..." />
                         </div>
@@ -99,7 +119,7 @@
                         <div class="flex gap-2">
                             <flux:button type="submit" variant="filled" color="blue" class="flex-1">Filtrar</flux:button>
                             @if ($search || $idt_movimento || ($tip_evento ?? null))
-                                <flux:button href="{{ route('eventos.index') }}" icon="x-mark" variant="ghost" />
+                                <flux:button href="{{ route('eventos.index', ['status' => $status ?? 'ativos']) }}" icon="x-mark" variant="ghost" />
                             @endif
                         </div>
                     </form>

@@ -35,10 +35,9 @@ class DeletarEventosFinalizados extends Command
             ->get();
 
         foreach ($eventosExpirados as $evento) {
-            // update em vez de delete para usar a data terminino e nao o now()
-            $evento->update([
-                'deleted_at' => $evento->dat_termino,
-            ]);
+            // Atribuição direta para contornar a proteção de mass assignment ($fillable)
+            $evento->deleted_at = $evento->dat_termino;
+            $evento->save();
         }
 
         $this->info($eventosExpirados->count().' eventos foram encerrados.');

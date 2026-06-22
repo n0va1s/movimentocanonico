@@ -33,7 +33,17 @@ class EventoController extends Controller
         $pessoa = Auth::user()->pessoa;
         $tip_evento = $request->input('tip_evento') ?? $request->input('eventTypeFilter');
 
-        $eventos = Evento::query()
+        $status = $request->input('status') ?? 'ativos';
+        $isStaff = Auth::user() && (Auth::user()->isAdmin() || Auth::user()->isEspec());
+
+        if ($status === 'encerrados' && $isStaff) {
+            $query = Evento::onlyTrashed();
+        } else {
+            $status = 'ativos';
+            $query = Evento::query();
+        }
+
+        $eventos = $query
             ->with(['movimento:idt_movimento,des_sigla'])
             ->when($pessoa, function ($q) use ($pessoa) {
                 $q->withExists([
@@ -60,6 +70,7 @@ class EventoController extends Controller
             'search' => $request->search,
             'idt_movimento' => $request->idt_movimento,
             'tip_evento' => $tip_evento,
+            'status' => $status,
         ]);
     }
 
