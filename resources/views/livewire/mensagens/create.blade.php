@@ -91,7 +91,7 @@ new class extends Component {
             'eventoId' => 'required|exists:evento,idt_evento',
             'nom_campanha' => 'required|string|max:150',
             'txt_mensagem' => 'required|string',
-            'tip_destinatario' => 'required|in:P,R',
+            'tip_destinatario' => 'required|in:P,R,T',
         ]);
 
         $destinatarios = $this->obterDestinatarios();
@@ -134,6 +134,32 @@ new class extends Component {
             return [];
         }
 
+        $destinatarios = [];
+
+        if ($this->tip_destinatario === 'T') {
+            $trabalhadores = \App\Models\Trabalhador::where('idt_evento', $this->eventoId)
+                ->with('pessoa')
+                ->get();
+
+            foreach ($trabalhadores as $t) {
+                $pessoa = $t->pessoa;
+                if (!$pessoa) {
+                    continue;
+                }
+
+                $telefone = $pessoa->tel_pessoa;
+                if ($telefone) {
+                    $destinatarios[] = [
+                        'nom_destinatario' => $pessoa->nom_pessoa,
+                        'tel_destinatario' => \App\Services\PhoneService::clean($telefone),
+                        'nom_responsavel' => null,
+                    ];
+                }
+            }
+
+            return $destinatarios;
+        }
+
         $participantes = \App\Models\Participante::where('idt_evento', $this->eventoId)
             ->with([
                 'pessoa.fichas' => function ($query) {
@@ -142,8 +168,6 @@ new class extends Component {
                 }
             ])
             ->get();
-
-        $destinatarios = [];
 
         foreach ($participantes as $p) {
             $pessoa = $p->pessoa;
@@ -242,9 +266,10 @@ new class extends Component {
                 </flux:select>
 
                 {{-- Target --}}
-                <flux:radio.group wire:model.live="tip_destinatario" label="Público-Alvo" variant="cards" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <flux:radio.group wire:model.live="tip_destinatario" label="Público-Alvo" variant="cards" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <flux:radio value="P" label="Participantes" description="Envia diretamente aos contatos dos confirmados no evento." />
                     <flux:radio value="R" label="Responsáveis" description="Envia para os pais, contatos de emergência ou cônjuges obtidos nas fichas." />
+                    <flux:radio value="T" label="Trabalhadores" description="Envia diretamente aos contatos dos trabalhadores do evento." />
                 </flux:radio.group>
 
                 {{-- Título da Campanha --}}

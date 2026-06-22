@@ -163,8 +163,10 @@ new class extends Component {
                     Público-alvo:
                     @if ($mensagem->tip_destinatario === 'P')
                         <strong class="text-blue-600 dark:text-blue-400">Participantes</strong>
-                    @else
+                    @elseif ($mensagem->tip_destinatario === 'R')
                         <strong class="text-purple-600 dark:text-purple-400">Responsáveis</strong>
+                    @elseif ($mensagem->tip_destinatario === 'T')
+                        <strong class="text-orange-600 dark:text-orange-400">Trabalhadores</strong>
                     @endif
                 </div>
                 <div>

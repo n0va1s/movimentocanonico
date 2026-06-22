@@ -176,6 +176,76 @@ describe('Componente Volt mensagens.create', function () {
             'ind_enviado' => false,
         ]);
     });
+
+    test('estimativa conta destinatários válidos para trabalhadores', function () {
+        // Criar trabalhadores para teste
+        $pessoaTrab1 = Pessoa::factory()->create([
+            'nom_pessoa' => 'Clara Santos',
+            'tel_pessoa' => '61999991111',
+        ]);
+        \App\Models\Trabalhador::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'idt_pessoa' => $pessoaTrab1->idt_pessoa,
+        ]);
+
+        $pessoaTrab2 = Pessoa::factory()->create([
+            'nom_pessoa' => 'Diego Lima',
+            'tel_pessoa' => '61888882222',
+        ]);
+        \App\Models\Trabalhador::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'idt_pessoa' => $pessoaTrab2->idt_pessoa,
+        ]);
+
+        Volt::test('mensagens.create')
+            ->set('eventoId', $this->evento->idt_evento)
+            ->set('tip_destinatario', 'T')
+            ->assertSet('destinatariosEstimados', [
+                [
+                    'nom_destinatario' => 'Clara Santos',
+                    'tel_destinatario' => '61999991111',
+                    'nom_responsavel' => null,
+                ],
+                [
+                    'nom_destinatario' => 'Diego Lima',
+                    'tel_destinatario' => '61888882222',
+                    'nom_responsavel' => null,
+                ]
+            ]);
+    });
+
+    test('criarCampanha persiste trabalhadores como destinatarios', function () {
+        // Criar trabalhadores para teste
+        $pessoaTrab = Pessoa::factory()->create([
+            'nom_pessoa' => 'Elisa Costa',
+            'tel_pessoa' => '61999993333',
+        ]);
+        \App\Models\Trabalhador::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'idt_pessoa' => $pessoaTrab->idt_pessoa,
+        ]);
+
+        Volt::test('mensagens.create')
+            ->set('eventoId', $this->evento->idt_evento)
+            ->set('nom_campanha', 'Aviso aos Trabalhadores')
+            ->set('txt_mensagem', 'Olá {nome}, obrigado por trabalhar no {evento}.')
+            ->set('tip_destinatario', 'T')
+            ->call('criarCampanha')
+            ->assertHasNoErrors()
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('mensagem', [
+            'nom_campanha' => 'Aviso aos Trabalhadores',
+            'tip_destinatario' => 'T',
+            'qtd_impactados' => 1,
+        ]);
+
+        $this->assertDatabaseHas('mensagem_envio', [
+            'nom_destinatario' => 'Elisa Costa',
+            'tel_destinatario' => '61999993333',
+            'ind_enviado' => false,
+        ]);
+    });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

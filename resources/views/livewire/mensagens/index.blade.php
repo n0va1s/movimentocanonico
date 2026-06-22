@@ -40,9 +40,9 @@ new class extends Component {
         <div>
             <flux:heading size="xl" class="flex items-center gap-2">
                 <flux:icon.chat-bubble-left-right class="size-6 text-zinc-500" />
-                Auditoria de Mensagens
+                Mensagens
             </flux:heading>
-            <flux:subheading>Monitore mensagens enviadas, taxas de impacto e histórico de disparos.</flux:subheading>
+            <flux:subheading>Mensagens enviadas, taxas de impacto e histórico de disparos para pessoas dos eventos  .</flux:subheading>
         </div>
 
         <flux:button :href="route('mensagens.create')" icon="plus" variant="primary" wire:navigate>
@@ -103,8 +103,10 @@ new class extends Component {
                         <flux:table.cell>
                             @if ($msg->tip_destinatario === 'P')
                                 <flux:badge color="blue" size="sm" class="font-medium">Participantes</flux:badge>
-                            @else
+                            @elseif ($msg->tip_destinatario === 'R')
                                 <flux:badge color="purple" size="sm" class="font-medium">Responsáveis</flux:badge>
+                            @elseif ($msg->tip_destinatario === 'T')
+                                <flux:badge color="orange" size="sm" class="font-medium">Trabalhadores</flux:badge>
                             @endif
                         </flux:table.cell>
 
