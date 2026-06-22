@@ -10,8 +10,14 @@ new class extends Component {
 
     public function mount(Evento $evento): void {
         $this->evento = $evento;
-        $this->evento->loadMissing('foto');
     }
+
+    #[Computed]
+    public function logoUrl(): ?string {
+        $this->evento->loadMissing('logo');
+        return $this->evento->logo?->med_logo ? asset('storage/' . $this->evento->logo->med_logo) : null;
+    }
+
 
     #[Computed]
     public function pessoas(): array {
@@ -84,8 +90,8 @@ new class extends Component {
 
             {{-- Lateral: Imagem --}}
            <div class="shrink-0 bg-zinc-50 border-r" style="width: 2.2cm; border-color: {{ $pessoa['grupo_cor'] }}44;">
-                @if($evento->foto?->med_logo)
-                    <img src="{{ asset('storage/' . $evento->foto->med_logo) }}"
+                @if($this->logoUrl)
+                    <img src="{{ $this->logoUrl }}"
                         class="w-full h-full object-cover object-top grayscale opacity-80"
                         alt="{{ $evento->des_evento }}" />
                 @else

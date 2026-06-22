@@ -135,6 +135,19 @@ new class extends Component {
         ];
     }
 
+    #[Computed]
+    public function relatorioVendas()
+    {
+        $eventoId = $this->evento->idt_evento;
+
+        return Transacao::whereHas('conta', fn($q) => $q->where('idt_evento', $eventoId))
+            ->where('tip_transacao', 'C')
+            ->select('idt_produto', 'nom_item', DB::raw('SUM(qtd_item) as total_qtd'), DB::raw('SUM(val_transacao) as total_valor'))
+            ->groupBy('idt_produto', 'nom_item')
+            ->orderBy('total_qtd', 'desc')
+            ->get();
+    }
+
     public function getConta(int $idt_pessoa): Conta
     {
         return Conta::firstOrCreate(
@@ -303,13 +316,98 @@ new class extends Component {
         >
             Produtos e Estoque
         </button>
+        <button 
+            wire:click="$set('activeSubTab', 'relatorio')" 
+            class="px-4 py-2 font-semibold text-sm border-b-2 {{ $activeSubTab === 'relatorio' ? 'border-blue-600 text-blue-600' : 'border-transparent text-zinc-500 hover:text-zinc-700' }}"
+        >
+            Relatório de Vendas
+        </button>
     </div>
 
     @if($activeSubTab === 'catalogo')
         {{-- Tela do Catálogo --}}
         <livewire:vendas.produtos />
+    @elseif($activeSubTab === 'relatorio')
+        {{-- Relatório de Vendas --}}
+        <div class="space-y-6 px-4 sm:px-6 md:px-0">
+            <div class="bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 p-4 sm:p-6 space-y-4">
+                <div>
+                    <flux:heading size="lg">Relatório de Vendas</flux:heading>
+                    <flux:subheading>Produtos ordenados pela quantidade de vendas realizadas.</flux:subheading>
+                </div>
+
+                {{-- Tabela do Relatório (Desktop) --}}
+                <div class="hidden md:block border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden bg-white dark:bg-zinc-800">
+                    @if($this->relatorioVendas->isEmpty())
+                        <div class="p-8 text-center text-zinc-500 italic">
+                            Nenhuma venda realizada neste evento.
+                        </div>
+                    @else
+                        <flux:table class="vendas-table">
+                            <flux:table.columns>
+                                <flux:table.column class="px-4 py-3 align-middle">Produto</flux:table.column>
+                                <flux:table.column class="px-4 py-3 align-middle">Vendas</flux:table.column>
+                                <flux:table.column class="px-4 py-3 align-middle">Total</flux:table.column>
+                            </flux:table.columns>
+
+                            <flux:table.rows>
+                                @foreach($this->relatorioVendas as $item)
+                                    <flux:table.row :key="$item->idt_produto">
+                                        <flux:table.cell class="px-4 py-3 align-middle">
+                                            <span class="font-semibold text-zinc-950 dark:text-white">
+                                                {{ $item->nom_item }}
+                                            </span>
+                                        </flux:table.cell>
+                                        <flux:table.cell class="px-4 py-3 align-middle">
+                                            <span class="font-bold text-sm text-zinc-900 dark:text-white">
+                                                {{ $item->total_qtd }}
+                                            </span>
+                                        </flux:table.cell>
+                                        <flux:table.cell class="px-4 py-3 align-middle">
+                                            <span class="font-bold text-sm text-zinc-900 dark:text-white">
+                                                R$ {{ number_format($item->total_valor, 2, ',', '.') }}
+                                            </span>
+                                        </flux:table.cell>
+                                    </flux:table.row>
+                                @endforeach
+                            </flux:table.rows>
+                        </flux:table>
+                    @endif
+                </div>
+
+                {{-- Lista do Relatório (Mobile) --}}
+                <div class="md:hidden">
+                    @if($this->relatorioVendas->isEmpty())
+                        <div class="p-8 text-center text-zinc-500 italic border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800">
+                            Nenhuma venda realizada neste evento.
+                        </div>
+                    @else
+                        <div class="space-y-3">
+                            @foreach($this->relatorioVendas as $item)
+                                <div class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 shadow-xs">
+                                    <div class="font-semibold text-zinc-950 dark:text-white mb-2">
+                                        {{ $item->nom_item }}
+                                    </div>
+                                    <div class="flex justify-between items-center text-sm">
+                                        <span class="text-zinc-500 dark:text-zinc-400">Vendas:</span>
+                                        <span class="font-bold text-zinc-900 dark:text-white">{{ $item->total_qtd }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center text-sm mt-1">
+                                        <span class="text-zinc-500 dark:text-zinc-400">Total:</span>
+                                        <span class="font-bold text-zinc-900 dark:text-white">
+                                            R$ {{ number_format($item->total_valor, 2, ',', '.') }}
+                                        </span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
     @else
         {{-- Tela Principal de Operação --}}
+
         <div class="space-y-6 px-4 sm:px-6 md:px-0">
             {{-- Cards Resumo Financeiro --}}
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">

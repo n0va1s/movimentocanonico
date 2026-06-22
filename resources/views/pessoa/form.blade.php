@@ -154,7 +154,7 @@
                             @foreach(\App\Enums\TamanhoCamiseta::cases() as $tamanho)
                                 <option value="{{ $tamanho->value }}"
                                     {{ old('tam_camiseta', $pessoa->tam_camiseta?->value) == $tamanho->value ? 'selected' : '' }}>
-                                    {{ $tamanho->label() }}
+                                    {{ $tamanho->value }}
                                 </option>
                             @endforeach
                         </select>

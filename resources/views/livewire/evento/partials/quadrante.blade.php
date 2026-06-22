@@ -85,9 +85,9 @@ new class extends Component {
 
         {{-- Foto oficial do evento --}}
         <div class="shrink-0">
-            @if($evento->foto?->url_foto)
+            @if($evento->foto?->med_foto)
                 <img
-                    src="{{ asset('storage/' . $evento->foto->url_foto) }}"
+                    src="{{ asset('storage/' . $evento->foto->med_foto) }}"
                     alt="Foto oficial do evento"
                     class="w-32 h-32 object-cover rounded-xl border border-zinc-300 dark:border-zinc-600 shadow-sm print:w-24 print:h-24"
                 />

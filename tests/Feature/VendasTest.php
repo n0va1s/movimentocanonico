@@ -453,3 +453,74 @@ test('gestor pode filtrar por saldo devedor e credor', function() {
               ->assertDontSee('José da Silva');
 });
 
+test('gestor pode visualizar relatorio de vendas ordenado por quantidade', function() {
+    $this->actingAs($this->admin);
+
+    $conta = Conta::create([
+        'idt_pessoa' => $this->pessoa->idt_pessoa,
+        'idt_evento' => $this->evento->idt_evento,
+        'val_saldo' => 0.00,
+        'usu_inclusao' => $this->admin->id
+    ]);
+
+    $paoDeQueijo = Produto::create([
+        'nom_produto' => 'Pão de Queijo',
+        'val_preco' => 5.00,
+        'qtd_produto' => 20,
+        'usu_inclusao' => $this->admin->id
+    ]);
+
+    $cafezinho = Produto::create([
+        'nom_produto' => 'Cafezinho',
+        'val_preco' => 2.00,
+        'qtd_produto' => 50,
+        'usu_inclusao' => $this->admin->id
+    ]);
+
+    // Comprar 2 Pães de Queijo
+    Transacao::create([
+        'idt_conta' => $conta->idt_conta,
+        'idt_produto' => $paoDeQueijo->idt_produto,
+        'tip_transacao' => 'C',
+        'nom_item' => $paoDeQueijo->nom_produto,
+        'qtd_item' => 2,
+        'val_unitario' => 5.00,
+        'val_transacao' => 10.00,
+        'dat_transacao' => now(),
+        'usu_inclusao' => $this->admin->id
+    ]);
+
+    // Comprar 5 Cafezinhos (Cafezinho deve ficar em primeiro no relatório)
+    Transacao::create([
+        'idt_conta' => $conta->idt_conta,
+        'idt_produto' => $cafezinho->idt_produto,
+        'tip_transacao' => 'C',
+        'nom_item' => $cafezinho->nom_produto,
+        'qtd_item' => 5,
+        'val_unitario' => 2.00,
+        'val_transacao' => 10.00,
+        'dat_transacao' => now(),
+        'usu_inclusao' => $this->admin->id
+    ]);
+
+    $component = Volt::test('vendas.index', ['evento' => $this->evento]);
+    
+    $relatorio = $component->get('relatorioVendas');
+
+    expect($relatorio)->toHaveCount(2);
+    expect($relatorio[0]->nom_item)->toEqual('Cafezinho');
+    expect($relatorio[0]->total_qtd)->toEqual(5);
+    expect($relatorio[0]->total_valor)->toEqual(10.00);
+
+    expect($relatorio[1]->nom_item)->toEqual('Pão de Queijo');
+    expect($relatorio[1]->total_qtd)->toEqual(2);
+    expect($relatorio[1]->total_valor)->toEqual(10.00);
+
+    // E ver se a aba Relatório de Vendas renderiza os dados
+    $component->set('activeSubTab', 'relatorio')
+              ->assertSee('Relatório de Vendas')
+              ->assertSee('Cafezinho')
+              ->assertSee('Pão de Queijo');
+});
+
+
