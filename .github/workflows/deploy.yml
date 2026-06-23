@@ -133,9 +133,6 @@ jobs:
           password: ${{ secrets.FTP_PASS }}
           protocol: ftps          # FTPS (TLS explícito) — nunca FTP puro
           port: 21
-          local-dir: ./public/
-          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          local-dir: ./public/build/
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}/public/build/
           timeout: 120000
-          exclude: |
-            storage
-            storage/**      
