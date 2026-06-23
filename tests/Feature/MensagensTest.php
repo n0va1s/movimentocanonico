@@ -197,21 +197,25 @@ describe('Componente Volt mensagens.create', function () {
             'idt_pessoa' => $pessoaTrab2->idt_pessoa,
         ]);
 
-        Volt::test('mensagens.create')
+        $component = Volt::test('mensagens.create')
             ->set('eventoId', $this->evento->idt_evento)
-            ->set('tip_destinatario', 'T')
-            ->assertSet('destinatariosEstimados', [
-                [
-                    'nom_destinatario' => 'Clara Santos',
-                    'tel_destinatario' => '61999991111',
-                    'nom_responsavel' => null,
-                ],
-                [
-                    'nom_destinatario' => 'Diego Lima',
-                    'tel_destinatario' => '61888882222',
-                    'nom_responsavel' => null,
-                ]
-            ]);
+            ->set('tip_destinatario', 'T');
+
+        $destinatarios = $component->get('destinatariosEstimados');
+        usort($destinatarios, fn($a, $b) => strcmp($a['nom_destinatario'], $b['nom_destinatario']));
+
+        expect($destinatarios)->toBe([
+            [
+                'nom_destinatario' => 'Clara Santos',
+                'tel_destinatario' => '61999991111',
+                'nom_responsavel' => null,
+            ],
+            [
+                'nom_destinatario' => 'Diego Lima',
+                'tel_destinatario' => '61888882222',
+                'nom_responsavel' => null,
+            ]
+        ]);
     });
 
     test('criarCampanha persiste trabalhadores como destinatarios', function () {

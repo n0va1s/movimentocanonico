@@ -49,7 +49,7 @@ class AppServiceProvider extends ServiceProvider
                 return ! is_null($user->idt_movimento) && (int) $evento->idt_movimento === (int) $user->idt_movimento;
             }
 
-            return $user->trabalhaNoEvento($evento->idt_evento);
+            return false;
         });
 
         // Abas do gerenciamento — coord e espec só têm acesso se estiverem trabalhando no evento

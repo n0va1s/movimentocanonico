@@ -72,7 +72,7 @@
             </section>
 
             {{-- Lado Direito: Consulta de Saldo do Mercadinho --}}
-            <livewire:vendas.consulta-saldo />
+            <livewire:mercadinho.consulta-saldo />
         </div>
     </div>
 </x-layouts.app>

@@ -188,10 +188,15 @@ class FichaSGMController extends Controller
             ]);
         }
 
+        $visitadores = \App\Models\Pessoa::whereHas('usuario', function ($q) {
+            $q->where('role', \App\Models\User::ROLE_VISITACAO);
+        })->orderBy('nom_pessoa', 'asc')->get();
+
         return view('ficha.formSGM', array_merge($this->fichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,
             'eventos' => Evento::where('idt_movimento', TipoMovimento::SGM)->get(),
             'movimentopadrao' => TipoMovimento::SGM,
+            'visitadores' => $visitadores,
         ]));
     }
 
@@ -203,10 +208,15 @@ class FichaSGMController extends Controller
 
         $ficha = Ficha::with(['fichaSGM', 'fichaSaude', 'foto'])->findOrFail($id);
 
+        $visitadores = \App\Models\Pessoa::whereHas('usuario', function ($q) {
+            $q->where('role', \App\Models\User::ROLE_VISITACAO);
+        })->orderBy('nom_pessoa', 'asc')->get();
+
         return view('ficha.formSGM', array_merge($this->fichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,
             'eventos' => Evento::where('idt_movimento', TipoMovimento::SGM)->get(),
             'movimentopadrao' => TipoMovimento::SGM,
+            'visitadores' => $visitadores,
         ]));
     }
 
@@ -332,7 +342,7 @@ class FichaSGMController extends Controller
     public function updateSituacao(Request $request, $id)
     {
         $request->validate([
-            'tip_situacao' => 'required|string|in:N,S,E,R,P,C,A',
+            'tip_situacao' => 'required|string|in:N,S,E,R,P,C,A,F,W,V',
         ]);
 
         $novaSituacao = TipoSituacao::from($request->input('tip_situacao'));

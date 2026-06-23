@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\TipoEquipe;
+use App\Models\TipoMovimento;
 use Illuminate\Http\Request;
 
 class TipoEquipeController extends Controller
 {
     protected array $regras = [
         'des_grupo' => 'required|string|max:255',
+        'idt_movimento' => 'required|exists:tipo_movimento,idt_movimento',
     ];
 
     /**
@@ -26,8 +28,11 @@ class TipoEquipeController extends Controller
      */
     public function create()
     {
+        $movimentos = TipoMovimento::orderBy('nom_movimento')->get();
+
         return view('configuracoes.TipoEquipeForm', [
             'equipe' => new TipoEquipe,
+            'movimentos' => $movimentos,
         ]);
     }
 
@@ -59,8 +64,9 @@ class TipoEquipeController extends Controller
     public function edit(string $id)
     {
         $equipe = TipoEquipe::findOrFail($id);
+        $movimentos = TipoMovimento::orderBy('nom_movimento')->get();
 
-        return view('configuracoes.TipoEquipeForm', compact('equipe'));
+        return view('configuracoes.TipoEquipeForm', compact('equipe', 'movimentos'));
     }
 
     /**

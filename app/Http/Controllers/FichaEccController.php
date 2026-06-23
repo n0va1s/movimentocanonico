@@ -218,12 +218,17 @@ class FichaEccController extends Controller
             ]);
         }
 
+        $visitadores = \App\Models\Pessoa::whereHas('usuario', function ($q) {
+            $q->where('role', \App\Models\User::ROLE_VISITACAO);
+        })->orderBy('nom_pessoa', 'asc')->get();
+
         return view('ficha.formECC', array_merge(
             $this->fichaService::dadosFixosFicha($ficha),
             [
                 'ficha' => $ficha,
                 'eventos' => Evento::where('idt_movimento', TipoMovimento::ECC)->get(),
                 'movimentopadrao' => TipoMovimento::ECC,
+                'visitadores' => $visitadores,
             ]
         ));
     }
@@ -237,12 +242,17 @@ class FichaEccController extends Controller
 
         $ficha = Ficha::with(['fichaEcc.filhos', 'fichaSaude', 'foto'])->findOrFail($id);
 
+        $visitadores = \App\Models\Pessoa::whereHas('usuario', function ($q) {
+            $q->where('role', \App\Models\User::ROLE_VISITACAO);
+        })->orderBy('nom_pessoa', 'asc')->get();
+
         return view('ficha.formECC', array_merge(
             $this->fichaService::dadosFixosFicha($ficha),
             [
                 'ficha' => $ficha,
                 'eventos' => Evento::where('idt_movimento', TipoMovimento::ECC)->get(),
                 'movimentopadrao' => TipoMovimento::ECC,
+                'visitadores' => $visitadores,
             ]
         ));
     }
@@ -415,7 +425,7 @@ class FichaEccController extends Controller
     public function updateSituacao(Request $request, $id)
     {
         $request->validate([
-            'tip_situacao' => 'required|string|in:N,S,E,R,P,C,A',
+            'tip_situacao' => 'required|string|in:N,S,E,R,P,C,A,F,W,V',
         ]);
 
         $novaSituacao = TipoSituacao::from($request->input('tip_situacao'));

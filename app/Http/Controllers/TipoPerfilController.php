@@ -66,7 +66,7 @@ class TipoPerfilController extends Controller
 
         $request->validate([
             'role' => 'required|array',
-            'role.*' => 'in:admin,coord,user,espec',
+            'role.*' => 'in:admin,coord,user,espec,visit,sales',
             'movimento' => 'nullable|array',
             'movimento.*' => 'nullable|exists:tipo_movimento,idt_movimento',
         ]);

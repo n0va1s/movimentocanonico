@@ -239,3 +239,25 @@ test('admin acessa gerenciamento de evento', function () {
         ->get("/eventos/{$evento->idt_evento}/gerenciamento")
         ->assertStatus(200);
 });
+
+test('admin acessa gerenciamento de evento inativo/deletado', function () {
+    createMovimentos();
+    $evento = createEvento();
+    $evento->delete();
+    $this->actingAs(userComRole('admin'))
+        ->get("/eventos/{$evento->idt_evento}/gerenciamento")
+        ->assertStatus(200);
+});
+
+test('espec acessa gerenciamento de evento inativo/deletado do seu movimento', function () {
+    createMovimentos();
+    $evento = createEvento();
+    $evento->delete();
+    $user = User::factory()->create([
+        'role' => 'espec',
+        'idt_movimento' => $evento->idt_movimento
+    ]);
+    $this->actingAs($user)
+        ->get("/eventos/{$evento->idt_evento}/gerenciamento")
+        ->assertStatus(200);
+});

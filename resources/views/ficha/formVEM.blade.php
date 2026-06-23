@@ -173,6 +173,12 @@
                                         <x-heroicon-o-x-circle class="w-4 h-4" />
                                     @elseif($situacao->value === 'A')
                                         <x-heroicon-o-sparkles class="w-4 h-4" />
+                                    @elseif($situacao->value === 'F')
+                                        <x-heroicon-o-phone class="w-4 h-4" />
+                                    @elseif($situacao->value === 'W')
+                                        <x-heroicon-o-clock class="w-4 h-4" />
+                                    @elseif($situacao->value === 'V')
+                                        <x-heroicon-o-check-circle class="w-4 h-4" />
                                     @endif
                                     {{ $situacao->label() }}
                                 </button>
@@ -180,6 +186,32 @@
                         @endif
                     @endforeach
                 </div>
+                @if(Auth::user()?->hasRole('admin', 'espec'))
+                    <div class="mt-4 border-t border-gray-100 dark:border-zinc-700 pt-4">
+                        <form method="POST" action="{{ route('fichas.designar-visitador', $ficha->idt_ficha) }}">
+                            @csrf
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                <label for="idt_pessoa_visitacao" class="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Responsável pela Visitação:</label>
+                                <div class="flex items-center gap-2 w-full sm:w-auto">
+                                    <select name="idt_pessoa_visitacao" id="idt_pessoa_visitacao" 
+                                        class="text-xs rounded-md border border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 text-gray-900 dark:text-gray-100 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="">Sem responsável designado</option>
+                                        @if(isset($visitadores))
+                                            @foreach($visitadores as $v)
+                                                <option value="{{ $v->idt_pessoa }}" @selected($ficha->idt_pessoa_visitacao === $v->idt_pessoa)>
+                                                    {{ $v->nom_pessoa }}
+                                                </option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                    <button type="submit" class="px-3 py-1.5 bg-blue-600 text-white rounded-md text-xs font-semibold hover:bg-blue-700">
+                                        Designar
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                @endif
             </div>
         @endif
 

@@ -47,6 +47,7 @@ class Ficha extends Model
         'usu_inclusao',
         'usu_alteracao',
         'txt_observacao',
+        'idt_pessoa_visitacao',
     ];
 
     protected $casts = [
@@ -60,6 +61,7 @@ class Ficha extends Model
         'tip_habilidade' => HabilidadePrincipal::class,
         'tam_camiseta' => TamanhoCamiseta::class,
         'tip_genero' => Genero::class,
+        'idt_pessoa_visitacao' => 'integer',
     ];
 
     protected static function booted()
@@ -118,6 +120,11 @@ class Ficha extends Model
         return $this->hasOne(FichaFoto::class, 'idt_ficha');
     }
 
+    public function visitador()
+    {
+        return $this->belongsTo(Pessoa::class, 'idt_pessoa_visitacao', 'idt_pessoa');
+    }
+
     public function getDataNascimentoFormatada()
     {
         return $this->dat_nascimento
@@ -144,5 +151,83 @@ class Ficha extends Model
             get: fn (?string $value) => PhoneService::format($value),
             set: fn (?string $value) => PhoneService::clean($value),
         );
+    }
+
+    public function getEditRoute(): string
+    {
+        $movimentoId = (int) ($this->evento?->idt_movimento);
+        return match ($movimentoId) {
+            TipoMovimento::ECC => route('ecc.edit', $this->idt_ficha),
+            TipoMovimento::VEM => route('vem.edit', $this->idt_ficha),
+            TipoMovimento::SGM => route('sgm.edit', $this->idt_ficha),
+            default => '#',
+        };
+    }
+
+    public function getResponsavelInfoAttribute(): array
+    {
+        if ($this->fichaVem) {
+            if (!empty($this->fichaVem->nom_responsavel)) {
+                return [
+                    'nome' => $this->fichaVem->nom_responsavel,
+                    'telefone' => $this->fichaVem->tel_responsavel ?: 'Não informado',
+                    'tipo' => 'Responsável'
+                ];
+            }
+            if (!empty($this->fichaVem->nom_mae)) {
+                return [
+                    'nome' => $this->fichaVem->nom_mae,
+                    'telefone' => $this->fichaVem->tel_mae ?: 'Não informado',
+                    'tipo' => 'Mãe'
+                ];
+            }
+            if (!empty($this->fichaVem->nom_pai)) {
+                return [
+                    'nome' => $this->fichaVem->nom_pai,
+                    'telefone' => $this->fichaVem->tel_pai ?: 'Não informado',
+                    'tipo' => 'Pai'
+                ];
+            }
+        }
+
+        if ($this->fichaSGM) {
+            if (!empty($this->fichaSGM->nom_falar_com)) {
+                return [
+                    'nome' => $this->fichaSGM->nom_falar_com,
+                    'telefone' => $this->fichaSGM->tel_falar_com ?: 'Não informado',
+                    'tipo' => 'Responsável'
+                ];
+            }
+            if (!empty($this->fichaSGM->nom_mae)) {
+                return [
+                    'nome' => $this->fichaSGM->nom_mae,
+                    'telefone' => $this->fichaSGM->tel_mae ?: 'Não informado',
+                    'tipo' => 'Mãe'
+                ];
+            }
+            if (!empty($this->fichaSGM->nom_pai)) {
+                return [
+                    'nome' => $this->fichaSGM->nom_pai,
+                    'telefone' => $this->fichaSGM->tel_pai ?: 'Não informado',
+                    'tipo' => 'Pai'
+                ];
+            }
+        }
+
+        if ($this->fichaEcc) {
+            if (!empty($this->fichaEcc->nom_conjuge)) {
+                return [
+                    'nome' => $this->fichaEcc->nom_conjuge,
+                    'telefone' => $this->fichaEcc->tel_conjuge ?: 'Não informado',
+                    'tipo' => 'Cônjuge'
+                ];
+            }
+        }
+
+        return [
+            'nome' => 'Não informado',
+            'telefone' => 'Não informado',
+            'tipo' => 'Responsável'
+        ];
     }
 }

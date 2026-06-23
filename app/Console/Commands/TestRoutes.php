@@ -58,13 +58,13 @@ class TestRoutes extends Command
         // Admin + coord
         '/trabalhadores' => ['guest' => 302, 'user' => 403, 'coord' => 200, 'espec' => 403, 'admin' => 200],
 
-        // Admin + coord + espec (ID fictício → 404 aceitável para autenticados)
-        '/eventos/1/gerenciamento' => ['guest' => 302, 'user' => 403, 'coord' => [200, 404], 'espec' => [200, 404], 'admin' => [200, 404]],
+        // Admin + espec (ID fictício → 404 aceitável para autenticados)
+        '/eventos/1/gerenciamento' => ['guest' => 302, 'user' => 403, 'coord' => 403, 'espec' => [200, 404], 'admin' => [200, 404]],
 
         // Recursos — todos autenticados têm acesso à listagem
         '/eventos' => ['guest' => 302, 'user' => 200, 'coord' => 200, 'espec' => 200, 'admin' => 200],
         '/eventos/1' => ['guest' => 302, 'user' => [200, 404], 'coord' => [200, 404], 'espec' => [200, 404], 'admin' => [200, 404]],
-        '/pessoas' => ['guest' => 302, 'user' => 200, 'coord' => 200, 'espec' => 200, 'admin' => 200],
+        '/pessoas' => ['guest' => 302, 'user' => 403, 'coord' => 403, 'espec' => 403, 'admin' => 200],
         '/pessoas/1' => ['guest' => 302, 'user' => [200, 404], 'coord' => [200, 404], 'espec' => [200, 404], 'admin' => [200, 404]],
         '/fichas/vem' => ['guest' => 302, 'user' => 200, 'coord' => 200, 'espec' => 200, 'admin' => 200],
         '/fichas/vem/1' => ['guest' => 302, 'user' => [200, 404], 'coord' => [200, 404], 'espec' => [200, 404], 'admin' => [200, 404]],
@@ -224,7 +224,11 @@ class TestRoutes extends Command
     {
         $this->info('Removendo usuários temporários...');
         foreach (['user', 'coord', 'espec', 'admin'] as $role) {
-            $this->usuarios[$role]?->forceDelete();
+            try {
+                $this->usuarios[$role]?->forceDelete();
+            } catch (\Throwable $e) {
+                $this->line("  ⚠️ Não foi possível deletar o usuário {$role}: " . $e->getMessage());
+            }
         }
     }
 

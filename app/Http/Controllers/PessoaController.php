@@ -52,47 +52,6 @@ class PessoaController extends Controller
         return view('pessoa.show', compact('pessoa'));
     }
 
-    public function index(Request $request): View
-    {
-        $start = microtime(true);
-        $context = $this->getLogContext($request);
-
-        $search = $request->get('search');
-
-        Log::info('Requisição de listagem de pessoas iniciada', array_merge($context, [
-            'search_term' => $search,
-        ]));
-
-        $pessoas = Pessoa::select(
-            'idt_pessoa',
-            'idt_usuario',
-            'idt_parceiro',
-            'nom_pessoa',
-            'nom_apelido',
-            'tel_pessoa',
-            'eml_pessoa',
-            'tip_estado_civil',
-            'tip_habilidade',
-            'created_at'
-        )
-            ->with([
-                'foto:idt_pessoa,med_foto',
-            ])
-            ->when($search, function ($query, $search) {
-                return $query->searchByName($search);
-            })
-            ->orderBy('nom_pessoa')
-            ->paginate(10)
-            ->withQueryString();
-
-        $duration = round((microtime(true) - $start) * 1000, 2);
-        Log::notice('Listagem de pessoas concluída com sucesso', array_merge($context, [
-            'total_pessoas' => $pessoas->total(),
-            'duration_ms' => $duration,
-        ]));
-
-        return view('pessoa.list', compact('pessoas', 'search'));
-    }
 
     public function create(): View
     {

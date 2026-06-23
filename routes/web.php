@@ -90,7 +90,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/termo-sgm', fn () => view('termos.termoSGM'))->name('termo.sgm');
     Route::get('/termo-vem', fn () => view('termos.termoVEM'))->name('termo.vem');
 
-    Route::get('/minha-equipe', [TrabalhadorController::class, 'minhaEquipe'])->name('trabalhadores.minha-equipe');
+    Route::middleware(['role:admin,coord,espec,sales'])->group(function () {
+        Route::get('/minha-equipe', [TrabalhadorController::class, 'minhaEquipe'])->name('trabalhadores.minha-equipe');
+    });
     Route::get('/trabalhadores/create', [TrabalhadorController::class, 'create'])->name('trabalhadores.create');
     Route::post('/trabalhadores', [TrabalhadorController::class, 'store'])->name('trabalhadores.store');
 
@@ -120,9 +122,13 @@ Route::middleware(['auth'])->group(function () {
     // Gerenciamento de evento: admin + coord + espec
     // -----------------------------------------------------------------------
 
-    Route::middleware(['role:admin,coord,espec'])->group(function () {
-        Volt::route('eventos/{evento}/gerenciamento', 'evento.gerenciamento')->name('eventos.gerenciamento');
+    Route::middleware(['role:admin,espec'])->group(function () {
+        Volt::route('eventos/{evento}/gerenciamento', 'evento.gerenciamento')
+            ->name('eventos.gerenciamento')
+            ->withTrashed();
+    });
 
+    Route::middleware(['role:admin,coord,espec'])->group(function () {
         // Módulo de Mensagens
         Volt::route('mensagens', 'mensagens.index')->name('mensagens.index');
         Volt::route('mensagens/criar', 'mensagens.create')->name('mensagens.create');
@@ -161,7 +167,7 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/eventos/{evento}', [EventoController::class, 'destroy'])->name('eventos.destroy');
 
         // Pessoas — listagem, busca e CRUD
-        Route::get('/pessoas', [PessoaController::class, 'index'])->name('pessoas.index');
+        Volt::route('/pessoas', 'pessoas.index')->name('pessoas.index');
         Route::get('/pessoas/create', [PessoaController::class, 'create'])->name('pessoas.create');
         Route::post('/pessoas', [PessoaController::class, 'store'])->name('pessoas.store');
         Route::delete('/pessoas/{pessoa}', [PessoaController::class, 'destroy'])->name('pessoas.destroy');
@@ -171,7 +177,7 @@ Route::middleware(['auth'])->group(function () {
 
     });
 
-    Route::middleware(['role:admin,espec'])->group(function () {
+    Route::middleware(['role:admin,espec,visit'])->group(function () {
 
         Route::middleware(['espec.movimento:2'])->group(function () {
             // Fichas VEM — listagem, aprovação e CRUD
@@ -211,6 +217,29 @@ Route::middleware(['auth'])->group(function () {
             Route::patch('/fichas/sgm/{sgm}', [FichaSGMController::class, 'update']);
             Route::delete('/fichas/sgm/{sgm}', [FichaSGMController::class, 'destroy'])->name('sgm.destroy');
         });
+    });
+
+    Route::middleware(['role:admin,espec'])->group(function () {
+        Route::post('/fichas/{id}/designar-visitador', function (\Illuminate\Http\Request $request, $id) {
+            $request->validate([
+                'idt_pessoa_visitacao' => 'nullable|exists:pessoa,idt_pessoa',
+            ]);
+
+            $ficha = \App\Models\Ficha::findOrFail($id);
+            $ficha->update([
+                'idt_pessoa_visitacao' => $request->input('idt_pessoa_visitacao') ?: null,
+            ]);
+
+            return redirect()->back()->with('success', 'Responsável pela visitação designado com sucesso!');
+        })->name('fichas.designar-visitador');
+    });
+
+    Route::middleware(['role:admin,visit'])->group(function () {
+        Volt::route('/minhas-fichas', 'minhas-fichas.index')->name('minhas-fichas.index');
+    });
+
+    Route::middleware(['role:admin,sales'])->group(function () {
+        Volt::route('/mercadinho/{evento?}', 'mercadinho.index')->name('mercadinho.index');
     });
 
     Route::middleware(['role:admin'])->group(function () {

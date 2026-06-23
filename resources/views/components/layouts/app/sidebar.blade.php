@@ -52,20 +52,25 @@
                     :current="request()->routeIs('pessoas.edit')" wire:navigate>
                     {{ __('Meus Dados') }}
                 </flux:navlist.item>
-                @if (Auth::user() && Auth::user()->isCoordenador())
+                @if (Auth::user() && Auth::user()->hasRole('admin', 'visit'))
+                    <flux:navlist.item icon="document-text" :href="route('minhas-fichas.index')"
+                        :current="request()->routeIs('minhas-fichas.index')" wire:navigate>
+                        {{ __('Minhas Fichas') }}
+                    </flux:navlist.item>
+                @endif
+                @if (Auth::user() && Auth::user()->hasRole('admin', 'sales'))
+                    <flux:navlist.item icon="shopping-cart" :href="route('mercadinho.index')"
+                        :current="request()->routeIs('mercadinho.index*')" wire:navigate>
+                        {{ __('Mercadinho') }}
+                    </flux:navlist.item>
+                @endif
+                @if (Auth::user() && Auth::user()->hasRole('admin', 'coord', 'espec', 'sales'))
                     <flux:navlist.item icon="user-group" :href="route('trabalhadores.minha-equipe')"
                         :current="request()->routeIs('trabalhadores.minha-equipe')" wire:navigate>
                         {{ __('Minha Equipe') }}
                     </flux:navlist.item>
                 @endif
 
-                @if (Auth::user() && Auth::user()->isAdmin())
-                    <flux:navlist.item icon="user" :href="route('pessoas.index')"
-                        :current="request()->routeIs('pessoas.index')" wire:navigate>
-                        {{ __('Pessoas') }}
-                    </flux:navlist.item>
-
-                @endif
             </flux:navlist.group>
         </flux:navlist>
         <flux:spacer />

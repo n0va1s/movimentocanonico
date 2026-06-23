@@ -25,6 +25,10 @@ class User extends Authenticatable
 
     const ROLE_ESPEC = 'espec';
 
+    const ROLE_VISITACAO = 'visit';
+
+    const ROLE_SALES = 'sales';
+
     public function isAdmin(): bool
     {
         $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
@@ -44,6 +48,20 @@ class User extends Authenticatable
         $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
 
         return strtolower($roleValue) === self::ROLE_ESPEC;
+    }
+
+    public function isVisitacao(): bool
+    {
+        $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
+
+        return strtolower($roleValue) === self::ROLE_VISITACAO;
+    }
+
+    public function isSales(): bool
+    {
+        $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
+
+        return strtolower($roleValue) === self::ROLE_SALES;
     }
 
     public function hasRole(string ...$roles): bool

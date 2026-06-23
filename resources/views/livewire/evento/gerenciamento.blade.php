@@ -49,7 +49,6 @@ new class extends Component {
             'crachas'      => ['icon' => 'identification','label' => 'Crachás',        'encontro_only' => true],
             'presenca'     => ['icon' => 'finger-print',  'label' => 'Presença'],
             'quadrante'    => ['icon' => 'table-cells',   'label' => 'Quadrante',     'encontro_only' => true],            
-            'mercadinho'   => ['icon' => 'shopping-cart', 'label' => 'Mercadinho'],
             'contas'       => ['icon' => 'banknotes',     'label' => 'Prestação de Contas'],
         ];
 
@@ -174,7 +173,6 @@ new class extends Component {
                 @case('quadrante') <livewire:evento.partials.quadrante :evento="$evento" /> @break
                 @case('crachas') <livewire:evento.partials.crachas :evento="$evento" /> @break
                 @case('contas') <livewire:evento.partials.contas :evento="$evento" /> @break
-                @case('mercadinho') <livewire:vendas.index :evento="$evento" /> @break
                 @case('restricoes') <livewire:evento.partials.restricoes :evento="$evento" /> @break
             @endswitch
         @else

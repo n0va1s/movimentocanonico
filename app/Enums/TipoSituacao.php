@@ -6,6 +6,9 @@ enum TipoSituacao: string
 {
     case NOVA = 'N'; // criada pelos pais ou pelo candidato
     case SELECIONADA = 'S'; // selecionada por atender aos requisitos
+    case CONTATO = 'F'; // Contato feito com os responsaveis
+    case AGUARDANDO = 'W'; // Aguardando resposta dos responsáveis
+    case VISITADA = 'V'; // Visita concluída pode seguir
     case ENVIADA = 'E'; // enviada por email para confirmacao por um dos pais
     case RECEBIDA = 'R'; // documentacao recebida
     case PAGA = 'P'; // confirmada com pagamento
@@ -17,6 +20,9 @@ enum TipoSituacao: string
         return match ($this) {
             self::NOVA => 'Nova',
             self::SELECIONADA => 'Selecionada',
+            self::CONTATO => 'Contato',
+            self::AGUARDANDO => 'Aguardando',
+            self::VISITADA => 'Visitada',
             self::ENVIADA => 'Enviada',
             self::RECEBIDA => 'Recebida',
             self::PAGA => 'Paga',
@@ -30,11 +36,14 @@ enum TipoSituacao: string
         return match ($this) {
             self::NOVA => ['bg' => 'bg-slate-500', 'text' => 'text-slate-500', 'hover' => 'hover:bg-slate-600 hover:border-slate-600', 'border' => 'border-slate-500', 'light' => 'bg-slate-50 dark:bg-slate-900/20 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700'],
             self::SELECIONADA => ['bg' => 'bg-indigo-500', 'text' => 'text-indigo-500', 'hover' => 'hover:bg-indigo-600 hover:border-indigo-600', 'border' => 'border-indigo-500', 'light' => 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-700'],
+            self::CONTATO => ['bg' => 'bg-cyan-500', 'text' => 'text-cyan-500', 'hover' => 'hover:bg-cyan-600 hover:border-cyan-600', 'border' => 'border-cyan-500', 'light' => 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700'],
+            self::AGUARDANDO => ['bg' => 'bg-purple-500', 'text' => 'text-purple-500', 'hover' => 'hover:bg-purple-600 hover:border-purple-600', 'border' => 'border-purple-500', 'light' => 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700'],
+            self::VISITADA => ['bg' => 'bg-orange-500', 'text' => 'text-orange-500', 'hover' => 'hover:bg-orange-600 hover:border-orange-600', 'border' => 'border-orange-500', 'light' => 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700'],
             self::ENVIADA => ['bg' => 'bg-blue-500', 'text' => 'text-blue-500', 'hover' => 'hover:bg-blue-600 hover:border-blue-600', 'border' => 'border-blue-500', 'light' => 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700'],
             self::RECEBIDA => ['bg' => 'bg-teal-500', 'text' => 'text-teal-500', 'hover' => 'hover:bg-teal-600 hover:border-teal-600', 'border' => 'border-teal-500', 'light' => 'bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 border-teal-300 dark:border-teal-700'],
             self::PAGA => ['bg' => 'bg-emerald-500', 'text' => 'text-emerald-500', 'hover' => 'hover:bg-emerald-600 hover:border-emerald-600', 'border' => 'border-emerald-500', 'light' => 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'],
             self::CANCELADA => ['bg' => 'bg-rose-500', 'text' => 'text-rose-500', 'hover' => 'hover:bg-rose-600 hover:border-rose-600', 'border' => 'border-rose-500', 'light' => 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700'],
-            self::APROVADA => ['bg' => 'bg-amber-500', 'text' => 'text-amber-500', 'hover' => 'hover:bg-amber-600 hover:border-amber-600', 'border' => 'border-amber-500', 'light' => 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700'],
+            self::APROVADA => ['bg' => 'bg-amber-500', 'text' => 'text-amber-500', 'hover' => 'hover:bg-amber-600 hover:border-amber-600', 'border' => 'border-amber-500', 'light' => 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700'],        
         };
     }
 }

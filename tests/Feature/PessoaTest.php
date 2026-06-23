@@ -46,9 +46,7 @@ test('a pagina de listagem esta acessivel e mostra pessoas', function () {
 
     $response = get(route('pessoas.index'));
 
-    $response->assertStatus(200)
-        ->assertViewIs('pessoa.list')
-        ->assertViewHas('pessoas');
+    $response->assertStatus(200);
 
     foreach ($pessoas as $pessoa) {
         $response->assertSee($pessoa->nom_pessoa);

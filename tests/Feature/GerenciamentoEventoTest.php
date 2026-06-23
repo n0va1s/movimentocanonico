@@ -622,4 +622,11 @@ describe('Gerenciamento de Evento — Abas e Mais Opções', function () {
         Volt::test('evento.gerenciamento', ['evento' => $eventoDesafio])
             ->assertDontSee("setTab('fichas')", false);
     });
+
+    test('não exibe aba do mercadinho', function () {
+        $this->actingAs($this->admin);
+        
+        Volt::test('evento.gerenciamento', ['evento' => $this->evento])
+            ->assertDontSee("setTab('mercadinho')", false);
+    });
 });

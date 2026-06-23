@@ -375,10 +375,14 @@ class TrabalhadorController extends Controller
         }
 
         // Busca o registro de coordenação mais recente da pessoa logada
-        $coordenacao = Trabalhador::with('evento', 'equipe')
-            ->where('idt_pessoa', $pessoa->idt_pessoa)
-            ->where('ind_coordenador', true)
-            ->orderByDesc('idt_evento')
+        $coordenacaoQuery = Trabalhador::with('evento', 'equipe')
+            ->where('idt_pessoa', $pessoa->idt_pessoa);
+
+        if (!Auth::user()->hasRole('sales')) {
+            $coordenacaoQuery->where('ind_coordenador', true);
+        }
+
+        $coordenacao = $coordenacaoQuery->orderByDesc('idt_evento')
             ->first();
 
         $membros = collect();
