@@ -219,7 +219,7 @@ class FichaEccController extends Controller
 
         $visitadores = \App\Models\Pessoa::whereHas('usuario', function ($q) {
             $q->where('role', \App\Models\User::ROLE_VISITACAO);
-        })->orderBy('nom_pessoa', 'asc')->get();
+        })->with('parceiro')->orderBy('nom_pessoa', 'asc')->get();
 
         return view('ficha.formECC', array_merge(
             $this->fichaService::dadosFixosFicha($ficha),
@@ -243,7 +243,7 @@ class FichaEccController extends Controller
 
         $visitadores = \App\Models\Pessoa::whereHas('usuario', function ($q) {
             $q->where('role', \App\Models\User::ROLE_VISITACAO);
-        })->orderBy('nom_pessoa', 'asc')->get();
+        })->with('parceiro')->orderBy('nom_pessoa', 'asc')->get();
 
         return view('ficha.formECC', array_merge(
             $this->fichaService::dadosFixosFicha($ficha),

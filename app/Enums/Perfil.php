@@ -65,6 +65,7 @@ enum Perfil: string
             'crachas' => [self::ADMIN->value, self::COORD->value, self::ESPEC->value],
             'quadrante' => [self::ADMIN->value, self::COORD->value, self::ESPEC->value],
             'fichas' => [self::ADMIN->value, self::ESPEC->value],
+            'designacao' => [self::ADMIN->value, self::ESPEC->value],
             'voluntarios' => [self::ADMIN->value, self::ESPEC->value],
             'contas' => [self::ADMIN->value, self::ESPEC->value],
             'restricoes' => [self::ADMIN->value, self::COORD->value, self::ESPEC->value],
