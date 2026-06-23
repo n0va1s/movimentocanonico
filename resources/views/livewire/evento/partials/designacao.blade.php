@@ -9,6 +9,7 @@ new class extends Component {
 
     public Evento $evento;
     public string $search = '';
+    public string $visitadorFiltro = '';
 
     public function mount(Evento $evento): void
     {
@@ -16,6 +17,11 @@ new class extends Component {
     }
 
     public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedVisitadorFiltro(): void
     {
         $this->resetPage();
     }
@@ -68,16 +74,41 @@ new class extends Component {
 
     public function with(): array
     {
-        $visitadores = \App\Models\Pessoa::whereHas('usuario', function ($q) {
+        $visitadoresRaw = \App\Models\Pessoa::whereHas('usuario', function ($q) {
             $q->where('role', \App\Models\User::ROLE_VISITACAO);
         })
         ->with('parceiro')
         ->orderBy('nom_pessoa', 'asc')
         ->get();
 
+        // De-duplicar casais
+        $processed = [];
+        $visitadores = $visitadoresRaw->reject(function ($v) use (&$processed) {
+            if (in_array($v->idt_pessoa, $processed)) {
+                return true;
+            }
+            if ($v->idt_parceiro) {
+                $processed[] = $v->idt_parceiro;
+            }
+            return false;
+        });
+
         $fichasQuery = \App\Models\Ficha::where('idt_evento', $this->evento->idt_evento)
             ->where('tip_situacao', \App\Enums\TipoSituacao::SELECIONADA)
             ->with(['evento'])
+            ->when($this->visitadorFiltro, function ($query) {
+                if ($this->visitadorFiltro === 'sem') {
+                    return $query->whereNull('idt_pessoa_visitacao');
+                }
+
+                $visitadorId = (int) $this->visitadorFiltro;
+                $v = \App\Models\Pessoa::find($visitadorId);
+                if ($v && $v->idt_parceiro) {
+                    return $query->whereIn('idt_pessoa_visitacao', [$visitadorId, $v->idt_parceiro]);
+                }
+
+                return $query->where('idt_pessoa_visitacao', $visitadorId);
+            })
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('nom_candidato', 'like', '%' . $this->search . '%')
@@ -93,15 +124,31 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-4">
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-            <flux:heading size="lg">Designação de Visitas</flux:heading>
-            <flux:subheading>Atribua os visitadores responsáveis para as fichas com o status <strong>Selecionada</strong>.</flux:subheading>
+    <div>
+        <flux:heading size="lg">Designação de Visitas</flux:heading>
+        <flux:subheading>Atribua os visitadores responsáveis para as fichas com o status <strong>Selecionada</strong>.</flux:subheading>
+    </div>
+
+    {{-- Filtros e Busca --}}
+    <div class="flex flex-col sm:flex-row gap-4 bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 items-center justify-between">
+        <div class="w-full sm:w-72">
+            <flux:select wire:model.live="visitadorFiltro" placeholder="Filtrar por Visitador" size="sm">
+                <option value="">Todos os Visitadores</option>
+                <option value="sem">Sem responsável designado</option>
+                @foreach ($visitadores as $v)
+                    @php
+                        $nomeLabel = $v->nom_pessoa;
+                        if ($v->parceiro) {
+                            $nomeLabel .= ' & ' . $v->parceiro->nom_pessoa;
+                        }
+                    @endphp
+                    <option value="{{ $v->idt_pessoa }}">{{ $nomeLabel }}</option>
+                @endforeach
+            </flux:select>
         </div>
 
-        <div class="w-full md:w-auto">
-            <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="Buscar selecionado..."
-                class="w-full md:max-w-xs" />
+        <div class="w-full sm:w-72">
+            <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="Buscar candidato..." size="sm" />
         </div>
     </div>
 
@@ -152,7 +199,7 @@ new class extends Component {
                                         $nomeLabel .= ' — ' . $v->des_endereco;
                                     }
                                 @endphp
-                                <option value="{{ $v->idt_pessoa }}" @selected($ficha->idt_pessoa_visitacao == $v->idt_pessoa)>
+                                <option value="{{ $v->idt_pessoa }}" @selected($ficha->idt_pessoa_visitacao == $v->idt_pessoa || ($v->idt_parceiro && $ficha->idt_pessoa_visitacao == $v->idt_parceiro))>
                                     {{ $nomeLabel }}
                                 </option>
                             @endforeach
