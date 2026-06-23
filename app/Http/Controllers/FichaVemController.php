@@ -220,9 +220,20 @@ class FichaVemController extends Controller
             ]);
         }
 
-        $visitadores = \App\Models\Pessoa::whereHas('usuario', function ($q) {
+        $visitadoresRaw = \App\Models\Pessoa::whereHas('usuario', function ($q) {
             $q->where('role', \App\Models\User::ROLE_VISITACAO);
         })->with('parceiro')->orderBy('nom_pessoa', 'asc')->get();
+
+        $processed = [];
+        $visitadores = $visitadoresRaw->reject(function ($v) use (&$processed) {
+            if (in_array($v->idt_pessoa, $processed)) {
+                return true;
+            }
+            if ($v->idt_parceiro) {
+                $processed[] = $v->idt_parceiro;
+            }
+            return false;
+        });
 
         return view('ficha.formVEM', array_merge($this->fichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,
@@ -242,9 +253,20 @@ class FichaVemController extends Controller
 
         $ficha = Ficha::with(['fichaVem', 'fichaSaude', 'foto'])->find($id);
 
-        $visitadores = \App\Models\Pessoa::whereHas('usuario', function ($q) {
+        $visitadoresRaw = \App\Models\Pessoa::whereHas('usuario', function ($q) {
             $q->where('role', \App\Models\User::ROLE_VISITACAO);
         })->with('parceiro')->orderBy('nom_pessoa', 'asc')->get();
+
+        $processed = [];
+        $visitadores = $visitadoresRaw->reject(function ($v) use (&$processed) {
+            if (in_array($v->idt_pessoa, $processed)) {
+                return true;
+            }
+            if ($v->idt_parceiro) {
+                $processed[] = $v->idt_parceiro;
+            }
+            return false;
+        });
 
         return view('ficha.formVEM', array_merge($this->fichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,

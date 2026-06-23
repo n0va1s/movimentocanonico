@@ -257,7 +257,7 @@
                                                         $nomeLabel .= ' — ' . $v->des_endereco;
                                                     }
                                                 @endphp
-                                                <option value="{{ $v->idt_pessoa }}" @selected($ficha->idt_pessoa_visitacao === $v->idt_pessoa)>
+                                                <option value="{{ $v->idt_pessoa }}" @selected($ficha->idt_pessoa_visitacao == $v->idt_pessoa || ($v->idt_parceiro && $ficha->idt_pessoa_visitacao == $v->idt_parceiro))>
                                                     {{ $nomeLabel }}
                                                 </option>
                                             @endforeach
