@@ -947,6 +947,57 @@ describe('EventoService — Timeline', function () {
         $types = collect($events)->pluck('type')->all();
         expect($types)->toContain('Participante')->toContain('Trabalhador');
     });
+
+    test('retorna eventos inativos/deletados com pontos corretos na timeline', function () {
+        $eventoAtivo = Evento::factory()->create([
+            'des_evento' => 'Evento Ativo',
+            'dat_inicio' => '2024-03-10',
+            'tip_evento' => 'E',
+        ]);
+        
+        $eventoInativo = Evento::factory()->create([
+            'des_evento' => 'Evento Inativo',
+            'dat_inicio' => '2024-05-15',
+            'tip_evento' => 'D',
+        ]);
+        $eventoInativo->delete(); // Soft-deleta o evento para torná-lo inativo
+        
+        $equipe = TipoEquipe::firstOrCreate([
+            'des_grupo' => 'Coordenação Geral',
+            'idt_movimento' => $this->movimento->idt_movimento,
+        ]);
+        Trabalhador::factory()->create([
+            'idt_pessoa' => $this->pessoa->idt_pessoa,
+            'idt_evento' => $eventoAtivo->idt_evento,
+            'idt_equipe' => $equipe->idt_equipe,
+            'ind_coordenador' => true,
+        ]);
+
+        Participante::factory()->create([
+            'idt_pessoa' => $this->pessoa->idt_pessoa,
+            'idt_evento' => $eventoInativo->idt_evento,
+        ]);
+
+        $timeline = $this->eventoService->getEventosTimeline($this->pessoa);
+        
+        expect($timeline)->toHaveCount(1)
+            ->and($timeline[0]['year'])->toBe(2024);
+            
+        $events = $timeline[0]['events'];
+        expect($events)->toHaveCount(2);
+        
+        // O mais recente primeiro (eventoInativo de 2024-05-15)
+        expect($events[0]['event']->idt_evento)->toBe($eventoInativo->idt_evento)
+            ->and($events[0]['type'])->toBe('Participante')
+            ->and($events[0]['pontos'])->toBe(3) // Tipo D (Desafio) = 3 pontos
+            ->and($events[0]['event']->trashed())->toBeTrue();
+            
+        // EventoAtivo de 2024-03-10
+        expect($events[1]['event']->idt_evento)->toBe($eventoAtivo->idt_evento)
+            ->and($events[1]['type'])->toBe('Trabalhador')
+            ->and($events[1]['pontos'])->toBe(4) // Trabalhador Coordenador = 4 pontos
+            ->and($events[1]['event']->trashed())->toBeFalse();
+    });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

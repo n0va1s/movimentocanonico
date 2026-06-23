@@ -35,20 +35,17 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6 w-full max-w-7xl mx-auto p-4 md:p-8">
-    {{-- Header --}}
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    {{-- Cabeçalho --}}
+    <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-            <flux:heading size="xl" class="flex items-center gap-2">
-                <flux:icon.chat-bubble-left-right class="size-6 text-zinc-500" />
-                Mensagens
-            </flux:heading>
-            <flux:subheading>Mensagens enviadas, taxas de impacto e histórico de disparos para pessoas dos eventos  .</flux:subheading>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Mensagens</h1>
+            <p class="text-gray-600 mt-1 dark:text-gray-400">Mensagens enviadas, taxas de impacto e histórico de disparos para pessoas dos eventos.</p>
         </div>
 
-        <flux:button :href="route('mensagens.create')" icon="plus" variant="primary" wire:navigate>
+        <flux:button :href="route('mensagens.create')" icon="plus" variant="primary" color="green" wire:navigate>
             Nova Mensagem / Campanha
         </flux:button>
-    </div>
+    </header>
 
     {{-- Filtros --}}
     <div class="flex flex-col md:flex-row gap-4 items-center justify-between bg-zinc-50 dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700">

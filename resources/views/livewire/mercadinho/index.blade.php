@@ -346,7 +346,14 @@ new class extends Component {
     }
 }; ?>
 
-<div class="space-y-6">
+<div class="space-y-6 w-full max-w-7xl mx-auto p-4 md:p-8">
+    {{-- Cabeçalho --}}
+    <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Mercadinho</h1>
+            <p class="text-gray-600 mt-1 dark:text-gray-400">Gerencie produtos, estoque e as contas dos participantes e trabalhadores do evento.</p>
+        </div>
+    </header>
     <style>
         /* Estilo para descolar tabelas das paredes do container no desktop */
         .vendas-table [data-flux-column]:first-child,
@@ -369,7 +376,7 @@ new class extends Component {
                 </flux:subheading>
             </div>
             <flux:button variant="ghost" size="sm" icon="arrow-left" wire:click="alterarEvento">
-                Alterar Evento
+                Voltar
             </flux:button>
         </div>
 
@@ -1063,55 +1070,49 @@ new class extends Component {
         @endif
     @else
         {{-- TELA DE SELEÇÃO DO EVENTO --}}
-        <div class="max-w-4xl mx-auto space-y-6 py-6 px-4">
-            <div class="text-center space-y-2">
-                <flux:heading size="xl" class="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-extrabold">Operar Mercadinho</flux:heading>
-                <flux:subheading>Selecione um evento ativo para iniciar a operação de vendas.</flux:subheading>
-            </div>
-
+        <div class="max-w-7xl mx-auto space-y-6 py-6 px-4">
             @if($this->eventosAtivos->isEmpty())
                 <div class="p-8 text-center bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-sm italic text-zinc-500">
                     Nenhum evento ativo cadastrado no momento.
                 </div>
             @else
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     @foreach($this->eventosAtivos as $evt)
-                        @php
-                            $color = match(strtoupper($evt->movimento->des_sigla)) {
-                                'VEM'      => 'blue',
-                                'ECC'      => 'green',
-                                'SEGUE-ME' => 'orange',
-                                default    => 'zinc',
-                            };
-                        @endphp
-                        <div 
+                        <article 
                             wire:click="selectEvento({{ $evt->idt_evento }})"
-                            class="group relative bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:border-blue-500 hover:ring-1 hover:ring-blue-500 rounded-2xl p-5 shadow-sm hover:shadow-md cursor-pointer transition-all duration-200 flex flex-col justify-between"
+                            class="group flex flex-col bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 shadow-sm overflow-hidden hover:shadow-md hover:border-blue-500 hover:ring-1 hover:ring-blue-500 cursor-pointer transition-all duration-300"
                         >
-                            <div class="space-y-3">
-                                <div class="flex justify-between items-start gap-2">
-                                    <flux:heading size="lg" class="group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                        {{ $evt->des_evento }}
-                                    </flux:heading>
-                                    <flux:badge :color="$color" size="sm" class="uppercase font-bold shrink-0">
-                                        {{ $evt->movimento->des_sigla }}
-                                    </flux:badge>
-                                </div>
-                                
-                                <div class="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
-                                    <flux:icon name="calendar" class="size-4" />
-                                    <span>
-                                        {{ $evt->dat_inicio->format('d/m/Y') }} a {{ $evt->dat_termino->format('d/m/Y') }}
-                                    </span>
+                            <div class="px-5 pt-5 flex justify-between items-start">
+                                <span class="px-2 py-1 bg-gray-100 dark:bg-zinc-700 rounded text-[10px] font-black uppercase text-gray-400">
+                                    Nº {{ $evt->num_evento }}
+                                </span>
+                                <x-badge-movimento :sigla="$evt->movimento->des_sigla" />
+                            </div>
+
+                            <div class="p-5 flex-grow">
+                                <h2 class="text-lg font-bold text-gray-800 dark:text-white mb-3 line-clamp-2 min-h-[3rem] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                    {{ $evt->des_evento }}
+                                </h2>
+
+                                <div class="space-y-3">
+                                    <div class="flex items-center text-gray-600 dark:text-gray-300 text-sm">
+                                        <x-heroicon-o-calendar class="w-4 h-4 mr-2 text-blue-500" />
+                                        <span>{{ $evt->getDataInicioFormatada() }} a {{ $evt->getDataTerminoFormatada() }}</span>
+                                    </div>
+
+                                    <div class="flex items-center text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">
+                                        <x-heroicon-o-tag class="w-4 h-4 mr-2 shrink-0" />
+                                        <span class="flex-1">{{ $evt->tip_evento->label() }}</span>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="mt-4 flex justify-end">
-                                <span class="text-xs font-semibold text-blue-600 dark:text-blue-400 group-hover:underline flex items-center gap-1">
-                                    Selecionar Evento <flux:icon name="chevron-right" class="size-3" />
-                                </span>
-                            </div>
-                        </div>
+                            <footer class="p-4 bg-gray-50 dark:bg-zinc-800/50 border-t border-gray-100 dark:border-zinc-700 mt-auto">
+                                <flux:button variant="filled" color="blue" class="w-full pointer-events-none group-hover:bg-blue-700 dark:group-hover:bg-blue-600 transition-colors">
+                                    Selecionar Evento
+                                </flux:button>
+                            </footer>
+                        </article>
                     @endforeach
                 </div>
             @endif

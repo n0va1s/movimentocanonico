@@ -17,17 +17,22 @@ class EventoService
      */
     public function getEventosTimeline(Pessoa $pessoa): array
     {
-        $relacoesBase = ['evento.movimento:idt_movimento,des_sigla'];
-
         $trabalhos = Trabalhador::where('idt_pessoa', $pessoa->idt_pessoa)
-            ->whereHas('evento')
-            ->with(array_merge($relacoesBase, ['equipe:idt_equipe,des_grupo']))
+            ->whereHas('evento', fn ($q) => $q->withTrashed())
+            ->with([
+                'evento' => fn ($q) => $q->withTrashed(),
+                'evento.movimento:idt_movimento,des_sigla',
+                'equipe:idt_equipe,des_grupo'
+            ])
             ->get()
             ->map(fn ($t) => $this->formataTimeline($t, 'Trabalhador'));
 
         $participacoes = Participante::where('idt_pessoa', $pessoa->idt_pessoa)
-            ->whereHas('evento')
-            ->with($relacoesBase)
+            ->whereHas('evento', fn ($q) => $q->withTrashed())
+            ->with([
+                'evento' => fn ($q) => $q->withTrashed(),
+                'evento.movimento:idt_movimento,des_sigla'
+            ])
             ->get()
             ->map(fn ($p) => $this->formataTimeline($p, 'Participante'));
 
@@ -61,7 +66,16 @@ class EventoService
                     'equipe' => $model->equipe->des_grupo ?? null,
                     'coordenador' => $model->ind_coordenador ?? false,
                 ],
+                'pontos' => 0,
             ];
+        }
+
+        $pontos = 0;
+        if ($type === 'Trabalhador') {
+            $pontos = $model->ind_coordenador ? 4 : 2;
+        } elseif ($type === 'Participante') {
+            $tipEvento = $model->evento->tip_evento;
+            $pontos = (($tipEvento instanceof \App\Enums\TipoEvento ? $tipEvento->value : $tipEvento) === 'D') ? 3 : 1;
         }
 
         return [
@@ -72,6 +86,7 @@ class EventoService
                 'equipe' => $model->equipe->des_grupo ?? null,
                 'coordenador' => $model->ind_coordenador ?? false,
             ],
+            'pontos' => $pontos,
         ];
     }
 

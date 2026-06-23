@@ -4,6 +4,7 @@ use App\Models\Ficha;
 use App\Models\Pessoa;
 use App\Models\User;
 use App\Models\TipoMovimento;
+use App\Models\Evento;
 use App\Enums\TipoSituacao;
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
@@ -11,6 +12,7 @@ use Livewire\WithPagination;
 new class extends Component {
     use WithPagination;
 
+    public ?int $eventoId = null;
     public string $situacao = '';
 
     public function mount(): void
@@ -18,6 +20,30 @@ new class extends Component {
         if (!auth()->check() || !auth()->user()->hasRole('admin', 'visit')) {
             abort(403, 'Acesso não autorizado.');
         }
+
+        $user = auth()->user();
+        $movimentoId = $user->idt_movimento;
+        $hoje = now()->startOfDay();
+
+        $primeiroEventoAtivo = Evento::where(function ($q) use ($hoje) {
+                $q->where('dat_inicio', '>=', $hoje)
+                    ->orWhere('dat_termino', '>=', $hoje)
+                    ->orWhereNull('dat_termino');
+            })
+            ->when($movimentoId, function ($q) use ($movimentoId) {
+                $q->where('idt_movimento', $movimentoId);
+            })
+            ->orderBy('dat_inicio', 'asc')
+            ->first();
+
+        if ($primeiroEventoAtivo) {
+            $this->eventoId = $primeiroEventoAtivo->idt_evento;
+        }
+    }
+
+    public function updatedEventoId(): void
+    {
+        $this->resetPage();
     }
 
     public function updatedSituacao(): void
@@ -40,12 +66,35 @@ new class extends Component {
     {
         $user = auth()->user();
         $movimentoId = $user->idt_movimento;
+        $pessoaId = $user->pessoa?->idt_pessoa;
+        $hoje = now()->startOfDay();
 
-        $fichasQuery = Ficha::with(['fichaVem', 'fichaEcc', 'fichaSGM', 'evento'])
-            ->when($movimentoId, function ($query) use ($movimentoId) {
-                $query->whereHas('evento', function ($q) use ($movimentoId) {
-                    $q->where('idt_movimento', $movimentoId);
-                });
+        // Get all active events for the filter
+        $eventosAtivos = Evento::where(function ($q) use ($hoje) {
+                $q->where('dat_inicio', '>=', $hoje)
+                    ->orWhere('dat_termino', '>=', $hoje)
+                    ->orWhereNull('dat_termino');
+            })
+            ->when($movimentoId, function ($q) use ($movimentoId) {
+                $q->where('idt_movimento', $movimentoId);
+            })
+            ->orderBy('dat_inicio', 'asc')
+            ->get();
+
+        $fichasQuery = Ficha::with(['fichaVem', 'fichaEcc', 'fichaSGM', 'evento']);
+
+        // A ficha só pode aparecer para a pessoa logada se for o visitador designado
+        if (!$pessoaId) {
+            $fichasQuery->whereRaw('1 = 0');
+        } else {
+            $fichasQuery->where('idt_pessoa_visitacao', $pessoaId);
+        }
+
+        $fichasQuery
+            ->when($this->eventoId, function ($query) {
+                $query->where('idt_evento', $this->eventoId);
+            }, function ($query) {
+                $query->whereRaw('1 = 0');
             })
             ->when($this->situacao, function ($query) {
                 $query->where('tip_situacao', $this->situacao);
@@ -57,41 +106,44 @@ new class extends Component {
                 ]);
             });
 
-        if ($user->isVisitacao() && !$user->isAdmin()) {
-            $pessoaId = $user->pessoa?->idt_pessoa;
-            $fichasQuery->where('idt_pessoa_visitacao', $pessoaId);
-        }
-
         return [
             'fichas' => $fichasQuery->orderBy('created_at', 'desc')->paginate(12),
+            'eventosAtivos' => $eventosAtivos,
         ];
     }
 }; ?>
 
 <div class="space-y-6 w-full max-w-7xl mx-auto p-4 md:p-8">
-    {{-- Header --}}
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    {{-- Cabeçalho --}}
+    <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-            <flux:heading size="xl" class="flex items-center gap-2">
-                <flux:icon.document-text class="size-6 text-zinc-500" />
-                Minhas Fichas (Visitação)
-            </flux:heading>
-            <flux:subheading>Gerencie o contato e acompanhamento dos candidatos designados para visitas e ligações.</flux:subheading>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Minhas Fichas</h1>
+            <p class="text-gray-600 mt-1 dark:text-gray-400">Essas sãos as fichas sob sua responsabilidade como Visitação</p>
         </div>
-    </div>
+    </header>
 
     {{-- Alerts --}}
     <x-session-alert />
 
     {{-- Filtros --}}
-    <div class="flex flex-col sm:flex-row gap-4 bg-zinc-50 dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 items-center justify-between">
-        <div class="w-full sm:w-72">
-            <flux:select wire:model.live="situacao" placeholder="Todas as Situações">
-                <flux:select.option value="">Todas as Situações</flux:select.option>
-                @foreach ([App\Enums\TipoSituacao::SELECIONADA, App\Enums\TipoSituacao::CONTATO, App\Enums\TipoSituacao::AGUARDANDO] as $sit)
-                    <flux:select.option value="{{ $sit->value }}">{{ $sit->label() }}</flux:select.option>
-                @endforeach
-            </flux:select>
+    <div class="flex flex-col sm:flex-row gap-4 bg-zinc-50 dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 items-center justify-between w-full">
+        <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+            <div class="w-full sm:w-72">
+                <flux:select wire:model.live="eventoId" placeholder="Selecione um Evento Ativo">
+                    <flux:select.option value="">Selecione um Evento Ativo</flux:select.option>
+                    @foreach ($eventosAtivos as $ev)
+                        <flux:select.option value="{{ $ev->idt_evento }}">{{ $ev->des_evento }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+            </div>
+            <div class="w-full sm:w-72">
+                <flux:select wire:model.live="situacao" placeholder="Todas as Situações">
+                    <flux:select.option value="">Todas as Situações</flux:select.option>
+                    @foreach ([App\Enums\TipoSituacao::SELECIONADA, App\Enums\TipoSituacao::CONTATO, App\Enums\TipoSituacao::AGUARDANDO] as $sit)
+                        <flux:select.option value="{{ $sit->value }}">{{ $sit->label() }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+            </div>
         </div>
     </div>
 
@@ -199,9 +251,19 @@ new class extends Component {
     @else
         <div class="flex flex-col items-center justify-center text-center p-12 bg-white dark:bg-zinc-800 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-600 shadow-sm">
             <flux:icon.document-text class="w-12 h-12 text-zinc-400 dark:text-zinc-500 mb-4" />
-            <flux:heading size="lg" class="text-zinc-700 dark:text-zinc-300">Nenhuma ficha encontrada</flux:heading>
+            <flux:heading size="lg" class="text-zinc-700 dark:text-zinc-300">
+                @if (!$eventoId)
+                    Selecione um Evento Ativo
+                @else
+                    Nenhuma ficha encontrada
+                @endif
+            </flux:heading>
             <flux:subheading class="mt-1">
-                Não existem fichas designadas para a sua conta ou compatíveis com os filtros selecionados.
+                @if (!$eventoId)
+                    Selecione um dos eventos ativos no filtro acima para visualizar suas fichas designadas.
+                @else
+                    Não existem fichas designadas para a sua conta ou compatíveis com os filtros selecionados.
+                @endif
             </flux:subheading>
         </div>
     @endif

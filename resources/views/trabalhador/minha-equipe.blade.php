@@ -10,16 +10,18 @@
         </flux:breadcrumbs>
 
         {{-- CABEÇALHO --}}
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Minha Equipe</h1>
-            @if ($evento && $equipe)
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    {{ $evento->des_evento }}
-                    &mdash;
-                    <span class="font-semibold text-gray-800 dark:text-gray-200">{{ $equipe->des_grupo }}</span>
-                </p>
-            @endif
-        </div>
+        <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Minha Equipe</h1>
+                @if ($evento && $equipe)
+                    <p class="text-gray-600 mt-1 dark:text-gray-400">
+                        {{ $evento->des_evento }}
+                        &mdash;
+                        <span class="font-semibold text-gray-800 dark:text-gray-200">{{ $equipe->des_grupo }}</span>
+                    </p>
+                @endif
+            </div>
+        </header>
 
         @if (! $coordenacao)
             {{-- Estado vazio: usuário não é coordenador em nenhum evento --}}

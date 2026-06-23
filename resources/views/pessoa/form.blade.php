@@ -4,7 +4,7 @@
             <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">
                 {{ $pessoa->exists ? 'Editar Pessoa' : 'Nova Pessoa' }}</h1>
             <p class="text-gray-700 mt-1 dark:text-gray-400">
-                {{ $pessoa->exists ? 'Edite os dados da pessoa' : 'Cadastre uma nova pessoa com dados básicos e restrições de saúde' }}
+                {{ $pessoa->exists ? 'Esses dados serão utilizados no próximo encontro' : 'Cadastre uma nova pessoa' }}
             </p>
         </div>
 

@@ -18,7 +18,11 @@ beforeEach(function () {
         ['idt_movimento' => 3, 'nom_movimento' => 'Encontro de Jovens com Cristo', 'des_sigla' => 'Segue-Me', 'dat_inicio' => '1990-12-31', 'created_at' => now(), 'updated_at' => now()],
     ]);
 
-    $this->eventoVem = Evento::factory()->create(['idt_movimento' => 2]);
+    $this->eventoVem = Evento::factory()->create([
+        'idt_movimento' => 2,
+        'dat_inicio' => now()->addDays(1)->format('Y-m-d'),
+        'dat_termino' => now()->addDays(4)->format('Y-m-d'),
+    ]);
 });
 
 describe('Minhas Fichas Access Authorization', function () {
@@ -98,7 +102,11 @@ describe('Minhas Fichas Scoping and Filtering', function () {
         ]);
 
         // Ficha from different movement (ECC)
-        $eventoEcc = Evento::factory()->create(['idt_movimento' => 1]);
+        $eventoEcc = Evento::factory()->create([
+            'idt_movimento' => 1,
+            'dat_inicio' => now()->addDays(1)->format('Y-m-d'),
+            'dat_termino' => now()->addDays(4)->format('Y-m-d'),
+        ]);
         $eccFicha = Ficha::factory()->create([
             'idt_evento' => $eventoEcc->idt_evento,
             'idt_pessoa_visitacao' => $visitorPessoa->idt_pessoa,
@@ -137,29 +145,72 @@ describe('Minhas Fichas Scoping and Filtering', function () {
             ->assertDontSee('Visitada Candidate');
     });
 
-    test('admin sees all fichas of all movements', function () {
+    test('admin only sees fichas where they are the designated visitor', function () {
         $adminUser = User::factory()->create(['role' => 'admin']);
+        $adminPessoa = $adminUser->pessoa;
+
         $visitorUser = User::factory()->create(['role' => 'visit', 'idt_movimento' => 2]);
         $visitorPessoa = $visitorUser->pessoa;
 
+        // Ficha assigned to Admin
         $ficha1 = Ficha::factory()->create([
             'idt_evento' => $this->eventoVem->idt_evento,
-            'idt_pessoa_visitacao' => $visitorPessoa->idt_pessoa,
-            'nom_candidato' => 'Ficha One',
+            'idt_pessoa_visitacao' => $adminPessoa->idt_pessoa,
+            'nom_candidato' => 'Ficha for Admin',
             'tip_situacao' => TipoSituacao::SELECIONADA
         ]);
 
+        // Ficha assigned to visitor
         $ficha2 = Ficha::factory()->create([
             'idt_evento' => $this->eventoVem->idt_evento,
-            'idt_pessoa_visitacao' => null,
-            'nom_candidato' => 'Ficha Two',
+            'idt_pessoa_visitacao' => $visitorPessoa->idt_pessoa,
+            'nom_candidato' => 'Ficha for Visitor',
             'tip_situacao' => TipoSituacao::SELECIONADA
         ]);
 
         $this->actingAs($adminUser);
         Volt::test('minhas-fichas.index')
-            ->assertSee('Ficha One')
-            ->assertSee('Ficha Two');
+            ->assertSee('Ficha for Admin')
+            ->assertDontSee('Ficha for Visitor');
+    });
+
+    test('visitor can filter fichas by active event', function () {
+        $visitorUser = User::factory()->create(['role' => 'visit', 'idt_movimento' => 2]);
+        $visitorPessoa = $visitorUser->pessoa;
+
+        // Create a second active event for movement 2
+        $anotherEvent = Evento::factory()->create([
+            'idt_movimento' => 2,
+            'dat_inicio' => now()->addDays(5)->format('Y-m-d'),
+            'dat_termino' => now()->addDays(8)->format('Y-m-d'),
+        ]);
+
+        // Ficha in first event (eventoVem)
+        $ficha1 = Ficha::factory()->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'idt_pessoa_visitacao' => $visitorPessoa->idt_pessoa,
+            'nom_candidato' => 'Candidate in Event One',
+            'tip_situacao' => TipoSituacao::SELECIONADA
+        ]);
+
+        // Ficha in second event (anotherEvent)
+        $ficha2 = Ficha::factory()->create([
+            'idt_evento' => $anotherEvent->idt_evento,
+            'idt_pessoa_visitacao' => $visitorPessoa->idt_pessoa,
+            'nom_candidato' => 'Candidate in Event Two',
+            'tip_situacao' => TipoSituacao::SELECIONADA
+        ]);
+
+        $this->actingAs($visitorUser);
+
+        // By default, the first active event (eventoVem) is selected
+        Volt::test('minhas-fichas.index')
+            ->assertSee('Candidate in Event One')
+            ->assertDontSee('Candidate in Event Two')
+            // Change the filter to the second event
+            ->set('eventoId', $anotherEvent->idt_evento)
+            ->assertSee('Candidate in Event Two')
+            ->assertDontSee('Candidate in Event One');
     });
 });
 

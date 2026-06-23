@@ -1,12 +1,12 @@
-<x-layouts.app title="Gerenciar Eventos">
+<x-layouts.app title="Evento">
     <section class="p-6 w-full max-w-7xl mx-auto">
         <x-session-alert />
 
         {{-- Cabeçalho --}}
         <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Gerenciar Eventos</h1>
-                <p class="text-gray-600 mt-1 dark:text-gray-400">Visualize e participe dos próximos encontros e desafios.</p>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Eventos</h1>
+                <p class="text-gray-600 mt-1 dark:text-gray-400">Visualize os próximos encontros, pós-encontros e desafios.</p>
             </div>
 
             @if (Auth::user()->isAdmin())
