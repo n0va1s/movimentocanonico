@@ -244,12 +244,21 @@
                                 <label for="idt_pessoa_visitacao" class="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Responsável pela Visitação:</label>
                                 <div class="flex items-center gap-2 w-full sm:w-auto">
                                     <select name="idt_pessoa_visitacao" id="idt_pessoa_visitacao" 
-                                        class="text-xs rounded-md border border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 text-gray-900 dark:text-gray-100 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        class="text-xs rounded-md border border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 text-gray-900 dark:text-gray-100 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:max-w-md">
                                         <option value="">Sem responsável designado</option>
                                         @if(isset($visitadores))
                                             @foreach($visitadores as $v)
+                                                @php
+                                                    $nomeLabel = $v->nom_pessoa;
+                                                    if ($v->parceiro) {
+                                                        $nomeLabel .= ' & ' . $v->parceiro->nom_pessoa;
+                                                    }
+                                                    if ($v->des_endereco) {
+                                                        $nomeLabel .= ' — ' . $v->des_endereco;
+                                                    }
+                                                @endphp
                                                 <option value="{{ $v->idt_pessoa }}" @selected($ficha->idt_pessoa_visitacao === $v->idt_pessoa)>
-                                                    {{ $v->nom_pessoa }}
+                                                    {{ $nomeLabel }}
                                                 </option>
                                             @endforeach
                                         @endif
