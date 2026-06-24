@@ -66,7 +66,9 @@ new class extends Component {
     {
         $user = auth()->user();
         $movimentoId = $user->idt_movimento;
-        $pessoaId = $user->pessoa?->idt_pessoa;
+        $pessoa = $user->pessoa;
+        $pessoaId = $pessoa?->idt_pessoa;
+        $parceiroId = $pessoa?->idt_parceiro;
         $hoje = now()->startOfDay();
 
         // Get all active events for the filter
@@ -81,13 +83,20 @@ new class extends Component {
             ->orderBy('dat_inicio', 'asc')
             ->get();
 
-        $fichasQuery = Ficha::with(['fichaVem', 'fichaEcc', 'fichaSGM', 'evento']);
+        $fichasQuery = Ficha::with(['fichaVem', 'fichaEcc', 'fichaSGM', 'evento', 'visitador', 'visitador.parceiro']);
 
-        // A ficha só pode aparecer para a pessoa logada se for o visitador designado
-        if (!$pessoaId) {
-            $fichasQuery->whereRaw('1 = 0');
-        } else {
-            $fichasQuery->where('idt_pessoa_visitacao', $pessoaId);
+        // A ficha só pode aparecer para a pessoa logada se for o visitador designado (ou seu parceiro/cônjuge),
+        // exceto se for administrador (admin), caso em que vê todas as fichas de visitação do evento.
+        if (!$user->isAdmin()) {
+            if (!$pessoaId) {
+                $fichasQuery->whereRaw('1 = 0');
+            } else {
+                if ($parceiroId) {
+                    $fichasQuery->whereIn('idt_pessoa_visitacao', [$pessoaId, $parceiroId]);
+                } else {
+                    $fichasQuery->where('idt_pessoa_visitacao', $pessoaId);
+                }
+            }
         }
 
         $fichasQuery
@@ -179,6 +188,26 @@ new class extends Component {
                             <flux:icon.map-pin class="size-4 shrink-0 text-zinc-400 mt-0.5" />
                             <span>{{ $ficha->des_endereco ?? 'Endereço não informado' }}</span>
                         </div>
+
+                        {{-- Visitador Designado --}}
+                        @if ($ficha->visitador)
+                            @php
+                                $v = $ficha->visitador;
+                                $nomeLabel = $v->nom_pessoa;
+                                if ($v->parceiro) {
+                                    $nomeLabel .= ' & ' . $v->parceiro->nom_pessoa;
+                                }
+                            @endphp
+                            <div class="flex items-start gap-2 text-zinc-600 dark:text-zinc-400 text-xs mt-3">
+                                <flux:icon.user-circle class="size-4 shrink-0 text-zinc-400 mt-0.5" />
+                                <span>Designado: <strong class="text-zinc-800 dark:text-zinc-200 font-semibold">{{ $nomeLabel }}</strong></span>
+                            </div>
+                        @else
+                            <div class="flex items-start gap-2 text-zinc-500 dark:text-zinc-500 text-xs mt-3">
+                                <flux:icon.user-circle class="size-4 shrink-0 text-zinc-400 mt-0.5" />
+                                <span class="italic text-zinc-400 dark:text-zinc-500">Sem responsável designado</span>
+                            </div>
+                        @endif
 
                         {{-- Contacts Box --}}
                         @php
