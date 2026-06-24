@@ -94,7 +94,13 @@ new class extends Component {
         });
 
         $fichasQuery = \App\Models\Ficha::where('idt_evento', $this->evento->idt_evento)
-            ->where('tip_situacao', \App\Enums\TipoSituacao::SELECIONADA)
+            ->whereIn('tip_situacao', [
+                \App\Enums\TipoSituacao::SELECIONADA,
+                \App\Enums\TipoSituacao::CONTATO,
+                \App\Enums\TipoSituacao::AGUARDANDO,
+                \App\Enums\TipoSituacao::VISITADA,
+                \App\Enums\TipoSituacao::CANCELADA,
+            ])
             ->with(['evento'])
             ->when($this->visitadorFiltro, function ($query) {
                 if ($this->visitadorFiltro === 'sem') {
@@ -125,8 +131,8 @@ new class extends Component {
 
 <div class="space-y-4">
     <div>
-        <flux:heading size="lg">Designação de Visitas</flux:heading>
-        <flux:subheading>Atribua os visitadores responsáveis para as fichas com o status <strong>Selecionada</strong>.</flux:subheading>
+        <flux:heading size="lg">Designação e Acompanhamento de Visitas</flux:heading>
+        <flux:subheading>Atribua os visitadores e acompanhe a situação do contato das fichas selecionadas para o evento.</flux:subheading>
     </div>
 
     {{-- Filtros e Busca --}}
@@ -157,6 +163,7 @@ new class extends Component {
             <flux:table.column>Candidato</flux:table.column>
             <flux:table.column>Endereço do Candidato</flux:table.column>
             <flux:table.column>Responsável pela Visitação (Casal / Visitador)</flux:table.column>
+            <flux:table.column>Situação</flux:table.column>
             <flux:table.column align="end">Ações</flux:table.column>
         </flux:table.columns>
 
@@ -207,6 +214,16 @@ new class extends Component {
                     </div>
                 </flux:table.cell>
 
+                {{-- Situação --}}
+                <flux:table.cell>
+                    @php
+                        $style = $ficha->tip_situacao->badge();
+                    @endphp
+                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-2xs font-bold {{ $style['light'] }} border">
+                        {{ $ficha->tip_situacao->label() }}
+                    </span>
+                </flux:table.cell>
+
                 {{-- Ações --}}
                 <flux:table.cell align="end">
                     <div class="flex justify-end gap-2">
@@ -233,10 +250,10 @@ new class extends Component {
             </flux:table.row>
             @empty
             <flux:table.row>
-                <flux:table.cell colspan="4" class="text-center py-12">
+                <flux:table.cell colspan="5" class="text-center py-12">
                     <div class="flex flex-col items-center">
                         <x-heroicon-o-document-magnifying-glass class="w-12 h-12 text-zinc-300 mb-2" />
-                        <flux:text>Nenhuma ficha selecionada aguardando designação.</flux:text>
+                        <flux:text>Nenhuma ficha de visitação encontrada.</flux:text>
                     </div>
                 </flux:table.cell>
             </flux:table.row>
