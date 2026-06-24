@@ -123,6 +123,28 @@ describe('Minhas Fichas Scoping and Filtering', function () {
             ->assertDontSee('ECC Candidate');
     });
 
+    test('visitor can see fichas assigned to their spouse/partner', function () {
+        $visitorUserA = User::factory()->create(['role' => 'visit', 'idt_movimento' => 2]);
+        $visitorPessoaA = $visitorUserA->pessoa;
+
+        $visitorUserB = User::factory()->create(['role' => 'visit', 'idt_movimento' => 2]);
+        $visitorPessoaB = $visitorUserB->pessoa;
+
+        $visitorPessoaA->update(['idt_parceiro' => $visitorPessoaB->idt_pessoa]);
+        $visitorPessoaB->update(['idt_parceiro' => $visitorPessoaA->idt_pessoa]);
+
+        $ficha = Ficha::factory()->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'idt_pessoa_visitacao' => $visitorPessoaB->idt_pessoa,
+            'nom_candidato' => 'Spouse Assigned Candidate',
+            'tip_situacao' => TipoSituacao::SELECIONADA
+        ]);
+
+        $this->actingAs($visitorUserA);
+        Volt::test('minhas-fichas.index')
+            ->assertSee('Spouse Assigned Candidate');
+    });
+
     test('ficha disappears from the visitor list when marked as VISITADA', function () {
         $visitorUser = User::factory()->create(['role' => 'visit', 'idt_movimento' => 2]);
         $visitorPessoa = $visitorUser->pessoa;
@@ -145,7 +167,7 @@ describe('Minhas Fichas Scoping and Filtering', function () {
             ->assertDontSee('Visitada Candidate');
     });
 
-    test('admin only sees fichas where they are the designated visitor', function () {
+    test('admin sees all event fichas under minhas-fichas', function () {
         $adminUser = User::factory()->create(['role' => 'admin']);
         $adminPessoa = $adminUser->pessoa;
 
@@ -171,7 +193,7 @@ describe('Minhas Fichas Scoping and Filtering', function () {
         $this->actingAs($adminUser);
         Volt::test('minhas-fichas.index')
             ->assertSee('Ficha for Admin')
-            ->assertDontSee('Ficha for Visitor');
+            ->assertSee('Ficha for Visitor');
     });
 
     test('visitor can filter fichas by active event', function () {
