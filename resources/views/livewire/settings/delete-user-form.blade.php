@@ -24,13 +24,13 @@ new class extends Component {
 
 <section class="mt-10 space-y-6">
     <div class="relative mb-5">
-        <flux:heading>{{ __('Deletar conta') }}</flux:heading>
-        <flux:subheading>{{ __('Deletar sua conta e todos os seus recursos') }}</flux:subheading>
+        <flux:heading>{{ __('Excluir sua conta') }}</flux:heading>
+        <flux:subheading>{{ __('Excluir sua conta e todos os seus recursos') }}</flux:subheading>
     </div>
 
     <flux:modal.trigger name="confirm-user-deletion">
         <flux:button variant="danger" x-data="" x-on:click.prevent="$dispatch('open-modal', 'confirm-user-deletion')">
-            {{ __('Deletar conta') }}
+            {{ __('Excluir sua conta') }}
         </flux:button>
     </flux:modal.trigger>
 
@@ -40,7 +40,7 @@ new class extends Component {
                 <flux:heading size="lg">{{ __('Tem certeza que deseja deletar sua conta?') }}</flux:heading>
 
                 <flux:subheading>
-                    {{ __('Uma vez que sua conta for deletada, todos os seus recursos e dados serão permanentemente deletados. Por favor, insira sua senha para confirmar que deseja deletar sua conta permanentemente.') }}
+                    {{ __('Uma vez que sua conta for excluída, todos os seus recursos e dados serão permanentemente deletados. Por favor, insira sua senha para confirmar que deseja deletar sua conta permanentemente.') }}
                 </flux:subheading>
             </div>
 
@@ -51,7 +51,7 @@ new class extends Component {
                     <flux:button variant="filled">{{ __('Cancelar') }}</flux:button>
                 </flux:modal.close>
 
-                <flux:button variant="danger" type="submit">{{ __('Deletar conta') }}</flux:button>
+                <flux:button variant="danger" type="submit">{{ __('Excluir conta') }}</flux:button>
             </div>
         </form>
     </flux:modal>

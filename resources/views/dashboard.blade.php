@@ -7,6 +7,7 @@
             <p class="text-gray-600 dark:text-gray-400 mt-1">Essa é a força da sua comunidade</p>
         </div>
 
+
         {{-- Grid de Estatísticas (Totalizadores) --}}
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <a href="{{ route('eventos.index') }}">
@@ -70,39 +71,8 @@
                 </div>
             </section>
 
-            {{-- Lado Direito: Fichas Recentes --}}
-            <section
-                class="bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-gray-200 dark:border-zinc-700 overflow-hidden">
-                <header
-                    class="px-6 py-4 border-b border-gray-100 dark:border-zinc-700 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-800/50">
-                    <h2 class="font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                        <x-heroicon-s-sparkles class="w-5 h-5 text-yellow-500" />
-                        Inscrições Recentes
-                    </h2>
-                </header>
-
-                <div class="p-6">
-                    <div class="space-y-4">
-                        @forelse ($fichasrecentes as $ficha)
-                            <div
-                                class="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors border border-transparent hover:border-gray-100 dark:hover:border-zinc-600">
-                                <div
-                                    class="w-10 h-10 rounded-full bg-gray-100 dark:bg-zinc-900 flex items-center justify-center text-gray-500 font-bold text-xs uppercase">
-                                    {{ substr($ficha->nom_candidato, 0, 2) }}
-                                </div>
-                                <div class="flex-1">
-                                    <p class="text-sm font-bold text-gray-900 dark:text-white">
-                                        {{ $ficha->nom_candidato }}</p>
-                                    <p class="text-xs text-gray-500">Inscrito em: {{ $ficha->evento?->des_evento ?? 'Evento não encontrado' }}</p>
-                                </div>
-                                <x-badge-movimento :sigla="$ficha->evento->movimento?->des_sigla ?? 'Sem Sigla' " />
-                            </div>
-                        @empty
-                            <p class="text-center py-8 text-sm text-gray-500">Nenhuma ficha recente.</p>
-                        @endforelse
-                    </div>
-                </div>
-            </section>
+            {{-- Lado Direito: Consulta de Saldo do Mercadinho --}}
+            <livewire:mercadinho.consulta-saldo />
         </div>
     </div>
 </x-layouts.app>

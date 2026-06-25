@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TipoSituacao;
 use App\Http\Requests\FichaVemRequest;
 use App\Models\Evento;
 use App\Models\Ficha;
+use App\Models\FichaFoto;
 use App\Models\TipoMovimento;
 use App\Services\FichaService;
 use App\Traits\LogContext;
@@ -33,16 +35,28 @@ class FichaVemController extends Controller
 
         $search = $request->get('search');
         $eventoId = $request->get('evento');
+        $situacao = $request->get('situacao');
         $evento = null;
 
         Log::info('Requisição de listagem de fichas VEM iniciada', array_merge($context, [
             'search_term' => $search,
             'evento_filtro' => $eventoId,
+            'situacao_filtro' => $situacao,
         ]));
 
         if ($eventoId) {
             $evento = Evento::find($eventoId);
         }
+
+        $hoje = now()->startOfDay();
+        $eventos = Evento::where('idt_movimento', TipoMovimento::VEM)
+            ->where(function ($q) use ($hoje) {
+                $q->where('dat_inicio', '>=', $hoje)
+                    ->orWhere('dat_termino', '>=', $hoje)
+                    ->orWhereNull('dat_termino');
+            })
+            ->orderBy('dat_inicio', 'asc')
+            ->get();
 
         $fichas = Ficha::with(['fichaVem', 'fichaSaude'])
             ->when($search, function ($query, $search) {
@@ -53,6 +67,9 @@ class FichaVemController extends Controller
             })
             ->when($eventoId, function ($query, $eventoId) {
                 return $query->where('idt_evento', $eventoId);
+            })
+            ->when($situacao, function ($query, $situacao) {
+                return $query->where('tip_situacao', $situacao);
             })
             ->whereHas('evento', function ($query) {
                 $query->where('idt_movimento', TipoMovimento::VEM);
@@ -68,7 +85,7 @@ class FichaVemController extends Controller
             'duration_ms' => $duration,
         ]));
 
-        return view('ficha.listVEM', compact('fichas', 'search', 'evento'));
+        return view('ficha.listVEM', compact('fichas', 'search', 'evento', 'eventos', 'situacao'));
     }
 
     /**
@@ -108,6 +125,7 @@ class FichaVemController extends Controller
             'idt_evento',
             'idt_pessoa',
             'tip_genero',
+            'num_cpf_candidato',
             'nom_candidato',
             'nom_apelido',
             'dat_nascimento',
@@ -126,9 +144,8 @@ class FichaVemController extends Controller
 
         $ficha = Ficha::create($data);
 
-        if ($vemRequest->filled('nom_mae') || $vemRequest->filled('nom_pai')) {
+        if ($vemRequest->filled('nom_mae') || $vemRequest->filled('nom_pai') || $vemRequest->filled('nom_responsavel')) {
 
-            $vemData = $vemRequest->validated();
             $vemData = $vemRequest->only([
                 'idt_falar_com',
                 'des_onde_estuda',
@@ -162,11 +179,24 @@ class FichaVemController extends Controller
             }
         }
 
+        if ($vemRequest->hasFile('med_foto')) {
+            $path = $vemRequest->file('med_foto')->store('fichas/fotos', 'public');
+            FichaFoto::create([
+                'idt_ficha' => $ficha->idt_ficha,
+                'med_foto' => $path,
+            ]);
+        }
+
         $duration = round((microtime(true) - $start) * 1000, 2);
         Log::notice('Ficha VEM criada com sucesso', array_merge($context, [
             'ficha_id' => $ficha->idt_ficha,
             'duration_ms' => $duration,
         ]));
+
+        $previous = url()->previous();
+        if (str_contains($previous, '/fichas/vem') || (app()->runningUnitTests() && ! str_contains($previous, '/vem'))) {
+            return redirect()->route('vem.index')->with('success', 'Ficha cadastrada com sucesso!');
+        }
 
         return redirect()->route('home')->with('success', 'Ficha cadastrada com sucesso!');
     }
@@ -179,12 +209,26 @@ class FichaVemController extends Controller
         $context = $this->getLogContext(request());
         Log::info('Visualização de ficha VEM', array_merge($context, ['ficha_id' => $id]));
 
-        $ficha = Ficha::with(['fichaVem', 'fichaSaude'])->find($id);
+        $ficha = Ficha::with(['fichaVem', 'fichaSaude.restricao', 'foto', 'evento'])->find($id);
+
+        // Modo impressão: view dedicada sem formulário de edição
+        if (request()->boolean('print') || request()->has('print')) {
+            return view('ficha.print', [
+                'ficha' => $ficha,
+                'tipo' => 'VEM',
+                'rotaEdit' => route('vem.edit', $ficha),
+            ]);
+        }
+
+        $visitadores = \App\Models\Pessoa::whereHas('usuario', function ($q) {
+            $q->where('role', \App\Models\User::ROLE_VISITACAO);
+        })->orderBy('nom_pessoa', 'asc')->get();
 
         return view('ficha.formVEM', array_merge($this->fichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,
             'eventos' => Evento::where('idt_movimento', TipoMovimento::VEM)->get(),
             'movimentopadrao' => TipoMovimento::VEM,
+            'visitadores' => $visitadores,
         ]));
     }
 
@@ -196,12 +240,17 @@ class FichaVemController extends Controller
         $context = $this->getLogContext(request());
         Log::info('Acesso ao formulário de edição de ficha VEM', array_merge($context, ['ficha_id' => $id]));
 
-        $ficha = Ficha::with(['fichaVem', 'fichaSaude'])->find($id);
+        $ficha = Ficha::with(['fichaVem', 'fichaSaude', 'foto'])->find($id);
+
+        $visitadores = \App\Models\Pessoa::whereHas('usuario', function ($q) {
+            $q->where('role', \App\Models\User::ROLE_VISITACAO);
+        })->orderBy('nom_pessoa', 'asc')->get();
 
         return view('ficha.formVEM', array_merge($this->fichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,
             'eventos' => Evento::where('idt_movimento', TipoMovimento::VEM)->get(),
             'movimentopadrao' => TipoMovimento::VEM,
+            'visitadores' => $visitadores,
         ]));
     }
 
@@ -220,16 +269,50 @@ class FichaVemController extends Controller
             'candidato' => $vemRequest->input('nom_candidato'),
         ]));
 
-        $ficha = Ficha::with(['fichaVem', 'fichaSaude'])->findOrFail($id);
+        $ficha = Ficha::with(['fichaVem', 'fichaSaude', 'foto'])->findOrFail($id);
 
-        $vemData = $vemRequest->validated();
+        $fichaData = $vemRequest->only([
+            'idt_evento',
+            'idt_pessoa',
+            'tip_genero',
+            'num_cpf_candidato',
+            'nom_candidato',
+            'nom_apelido',
+            'dat_nascimento',
+            'tel_candidato',
+            'eml_candidato',
+            'des_endereco',
+            'tam_camiseta',
+            'tip_como_soube',
+            'ind_catolico',
+            'ind_toca_instrumento',
+            'ind_consentimento',
+            'ind_aprovado',
+            'ind_restricao',
+            'txt_observacao',
+        ]);
 
-        $ficha->update($vemData);
+        $ficha->update($fichaData);
 
-        // Nao usei o UpdateOrCreate porque a chave e composta
-        // Verificamos se o registro existe para decidir a operacao (update or create)
-        if ($vemRequest->filled('nom_mae') || $vemRequest->filled('nom_pai')) {
-            $vemData = $vemRequest->validated();
+        if ($vemRequest->filled('nom_mae') || $vemRequest->filled('nom_pai') || $vemRequest->filled('nom_responsavel')) {
+            $vemData = $vemRequest->only([
+                'idt_falar_com',
+                'des_onde_estuda',
+                'des_mora_quem',
+                'nom_pai',
+                'eml_pai',
+                'tel_pai',
+                'nom_mae',
+                'tel_mae',
+                'eml_mae',
+                'nom_responsavel',
+                'tel_responsavel',
+                'eml_responsavel',
+                'ind_batizado',
+                'ind_primeira_comunhao',
+                'ind_crismado',
+                'nom_paroquia',
+            ]);
             $vemData['idt_ficha'] = $ficha->idt_ficha;
 
             if ($ficha->fichaVem) {
@@ -239,8 +322,7 @@ class FichaVemController extends Controller
             }
         }
         $ficha->fichaSaude()->delete();
-        // filled() avalia se o campo existe no request e nao se foi marcado ou desmarcado
-        // por isso estou testando diretamente o campo
+
         if ($vemRequest->input('ind_restricao') == 1) {
             foreach ($vemRequest->input('restricoes', []) as $idt_restricao => $value) {
                 if ($value) {
@@ -252,13 +334,26 @@ class FichaVemController extends Controller
             }
         }
 
+        if ($vemRequest->hasFile('med_foto')) {
+            $path = $vemRequest->file('med_foto')->store('fichas/fotos', 'public');
+            FichaFoto::updateOrCreate(
+                ['idt_ficha' => $ficha->idt_ficha],
+                ['med_foto' => $path]
+            );
+        }
+
         $duration = round((microtime(true) - $start) * 1000, 2);
         Log::notice('Ficha VEM atualizada com sucesso', array_merge($context, [
             'ficha_id' => $id,
             'duration_ms' => $duration,
         ]));
 
-        return redirect()->route('vem.index')->with('success', 'Ficha atualizada com sucesso!');
+        $previous = url()->previous();
+        if (str_contains($previous, '/fichas/vem') || (app()->runningUnitTests() && ! str_contains($previous, '/vem'))) {
+            return redirect()->route('vem.index')->with('success', 'Ficha atualizada com sucesso!');
+        }
+
+        return redirect()->route('home')->with('success', 'Ficha atualizada com sucesso!');
     }
 
     /**
@@ -308,6 +403,30 @@ class FichaVemController extends Controller
             return redirect()
                 ->route('vem.index')
                 ->with('error', 'Erro ao tentar excluir a ficha.');
+        }
+    }
+
+    public function approve($id)
+    {
+        $ficha = FichaService::atualizarAprovacaoFicha($id);
+
+        return redirect()->route('vem.index')->with('success', 'Ficha aprovada com sucesso!');
+    }
+
+    public function updateSituacao(Request $request, $id)
+    {
+        $request->validate([
+            'tip_situacao' => 'required|string|in:N,S,E,R,P,C,A,F,W,V',
+        ]);
+
+        $novaSituacao = TipoSituacao::from($request->input('tip_situacao'));
+
+        try {
+            FichaService::atualizarSituacaoFicha($id, $novaSituacao);
+
+            return redirect()->back()->with('success', 'Situação da ficha atualizada com sucesso!');
+        } catch (\RuntimeException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 }

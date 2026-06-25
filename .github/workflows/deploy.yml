@@ -4,89 +4,135 @@ on:
   push:
     branches: ["main"]
 
+# Cancela runs anteriores ainda em andamento para o mesmo branch,
+# evitando deploys sobrepostos.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build-and-test:
+  # ─────────────────────────────────────────────
+  # 1. Lint & Qualidade
+  # ─────────────────────────────────────────────
+  lint:
     name: Lint e Qualidade
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.4"
+          php-version: "8.3"
           extensions: mbstring, xml, ctype, iconv, sqlite3
-      - name: Install Dependencies
-        run: composer install --optimize-autoloader
-      - name: Run Lint (Pint)
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Instalar dependências
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Lint (Pint)
         run: vendor/bin/pint --test
 
-  deploy:
-    name: Deploy para Hostinger
+  # ─────────────────────────────────────────────
+  # 2. Testes
+  # ─────────────────────────────────────────────
+  test:
+    name: Testes (Pest)
     runs-on: ubuntu-latest
-    needs: build-and-test
-    if: github.ref == 'refs/heads/main'
-
+    needs: lint
     steps:
-      - name: Checkout do código
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Configurar PHP
+      - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.4"
-          extensions: mbstring, xml, ctype, iconv, mysql, zip
+          php-version: "8.3"
+          extensions: mbstring, xml, ctype, iconv, sqlite3
+          coverage: none
 
-      - name: Instalar Dependências PHP (Produção)
-        run: composer install --no-dev --optimize-autoloader --no-interaction
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
 
-      - name: Otimização do Laravel (Pre-build Cache)
-        run: |
-          php artisan config:cache
-          php artisan route:cache
-          php artisan view:cache
+      - name: Instalar dependências
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
-      - name: Instalar Node.js e Build Assets (Vite + PWA)
+      - name: Copiar .env de teste
+        run: cp .env.example .env
+
+      - name: Gerar chave da aplicação
+        run: php artisan key:generate
+
+      - name: Executar testes
+        run: php artisan test --parallel
+
+  # ─────────────────────────────────────────────
+  # 3. Build de Assets
+  # ─────────────────────────────────────────────
+  build:
+    name: Build de Assets (Vite)
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
 
-      - name: Build Assets
-        run: |
-          npm install
-          rm -rf public/build
-          npm run build
+      - name: Instalar dependências Node
+        run: npm ci
 
-      - name: Sync FTP para Hostinger
+      - name: Build assets
+        run: npm run build
+
+      # Persiste o diretório public/build entre jobs
+      - name: Upload artefato de build
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-build
+          path: public/build
+          retention-days: 1
+
+  # ─────────────────────────────────────────────
+  # 4. Deploy para Hostinger via FTPS
+  # ─────────────────────────────────────────────
+  deploy:
+    name: Deploy para Hostinger (Apenas Pasta Pública)
+    runs-on: ubuntu-latest
+    needs: [test, build]
+    environment: production
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Baixar artefato de build
+        uses: actions/download-artifact@v4
+        with:
+          name: public-build
+          path: public/build
+
+      - name: Deploy via FTPS para Hostinger
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
-          password: ${{ secrets.PASS }}
-          local-dir: ./
-          server-dir: ./movimento/
-          timeout: 900000
-          protocol: ftp
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/docs/**
-            **/tests/**
-            storage/app/**
-            storage/framework/sessions/**
-            storage/framework/cache/**
-            storage/logs/**
-            .env*
-            .editorconfig
-            .gitattributes
-            .gitignore
-            analyze-coverage
-            coverage
-            phpunit
-            README.md
-            package.json
-            package-lock.json
-            vite.config.js
-            composer.*
-            storage/debugbar/**
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASS }}
+          protocol: ftps          # FTPS (TLS explícito) — nunca FTP puro
+          port: 21
+          local-dir: ./public/build/
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}/public/build/
+          timeout: 120000

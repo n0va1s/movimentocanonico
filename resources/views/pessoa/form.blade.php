@@ -4,7 +4,7 @@
             <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">
                 {{ $pessoa->exists ? 'Editar Pessoa' : 'Nova Pessoa' }}</h1>
             <p class="text-gray-700 mt-1 dark:text-gray-400">
-                {{ $pessoa->exists ? 'Edite os dados da pessoa' : 'Cadastre uma nova pessoa com dados básicos e restrições de saúde' }}
+                {{ $pessoa->exists ? 'Esses dados serão utilizados no próximo encontro' : 'Cadastre uma nova pessoa' }}
             </p>
         </div>
 
@@ -20,51 +20,6 @@
 
         <div class="mb-6 bg-white dark:bg-zinc-800 rounded-md shadow p-6">
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Foto para o Carômetro
-                </label>
-
-                <div class="flex flex-col items-center justify-center mb-6">
-                    <label for="med_foto" class="cursor-pointer group relative flex flex-col items-center">
-                        <div class="w-32 h-32 rounded-full border-2 border-dashed
-                            @error('med_foto') border-red-500 bg-red-50/10 @else border-gray-300 dark:border-zinc-600 bg-gray-50 dark:bg-zinc-800/50 @enderror
-                            flex flex-col items-center justify-center overflow-hidden shadow transition hover:shadow-md hover:border-gray-400 dark:hover:border-zinc-500">
-
-                            @if ($pessoa->exists && $pessoa->foto && $pessoa->foto->med_foto)
-                                <img src="{{ asset('storage/' . $pessoa->foto->med_foto) }}"
-                                    alt="Foto de {{ $pessoa->nom_pessoa }}"
-                                    class="w-full h-full object-cover">
-                            @else
-                                <div class="flex flex-col items-center justify-center p-4 text-center">
-                                    <x-heroicon-o-photo class="w-8 h-8 text-gray-400 dark:text-zinc-500" />
-                                    <span class="mt-1 text-[10px] font-medium text-gray-500 dark:text-zinc-400 leading-tight">
-                                        Clique para selecionar
-                                    </span>
-                                </div>
-                            @endif
-
-                            <input type="file" id="med_foto" name="med_foto" accept="image/*" class="sr-only"
-                                onchange="document.getElementById('nome-arquivo').textContent = this.files[0] ? this.files[0].name : 'Nenhum arquivo escolhido'">
-                        </div>
-                    </label>
-
-                    <span id="nome-arquivo" class="mt-2 text-xs text-gray-500 dark:text-zinc-400 text-center truncate max-w-[128px]">
-                        @if ($pessoa->exists && $pessoa->foto && $pessoa->foto->med_foto)
-                            Imagem atual
-                        @else
-                            Nenhum arquivo escolhido
-                        @endif
-                    </span>
-                </div>
-
-                @error('med_foto')
-                    <div class="flex justify-center -mt-4 mb-6">
-                        <p class="text-sm text-red-600">{{ $message }}</p>
-                    </div>
-                @enderror
-            </div>
-
             <h2 class="text-xl font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-gray-100">
                 <x-heroicon-o-user-plus class="text-blue-600 w-6 h-6" /> Dados da Pessoa
             </h2>
@@ -77,7 +32,59 @@
                     @method('PUT')
                 @endif
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                        
+                    {{-- Foto --}}
+                    <div class="flex flex-col items-center gap-3" x-data="{ photoPreview: '{{ $pessoa->foto?->med_foto ? Storage::url($pessoa->foto->med_foto) : '' }}' }">
+                        <div
+                            class="w-28 h-28 rounded-full bg-gray-100 dark:bg-zinc-700 border-2 border-gray-300 dark:border-zinc-600 flex items-center justify-center overflow-hidden">
+                            <template x-if="photoPreview">
+                                <img :src="photoPreview" alt="Foto do participante"
+                                    class="w-full h-full object-cover" />
+                            </template>
+                            <template x-if="!photoPreview">
+                                <x-heroicon-o-user class="w-14 h-14 text-gray-400 dark:text-gray-500"
+                                    aria-hidden="true" />
+                            </template>
+                        </div>
+                        <div>
+                            <label for="med_foto"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 text-center">
+                                Foto
+                            </label>
+                            <input type="file" name="med_foto" id="med_foto" accept="image/*"
+                                @change="
+                                    const file = $event.target.files[0];
+                                    if (file) {
+                                        photoPreview = URL.createObjectURL(file);
+                                    } else {
+                                        photoPreview = '{{ $pessoa->foto?->med_foto ? Storage::url($pessoa->foto->med_foto) : '' }}';
+                                    }
+                                "
+                                class="block text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-300" />
+                            @error('med_foto')
+                                <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    {{-- CPF --}}
+                    <div>
+                        <label for="num_cpf_pessoa"
+                            class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
+                            CPF <span class="text-red-600" aria-hidden="true">*</span><span class="sr-only">(obrigatório)</span>
+                        </label>
+                        <input type="text" name="num_cpf_pessoa" id="num_cpf_pessoa"
+                            required maxlength="14" autocomplete="off"
+                            value="{{ old('num_cpf_pessoa', $pessoa->num_cpf_pessoa) }}"
+                            @blur="buscarPorCpf()"
+                            placeholder="000.000.000-00" aria-required="true"
+                            class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('num_cpf_pessoa') border-red-500 @enderror" />
+                        @error('num_cpf_pessoa')
+                            <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <div>
                         <label for="nom_pessoa" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Nome <span class="text-red-600">*</span>
@@ -147,7 +154,7 @@
                             @foreach(\App\Enums\TamanhoCamiseta::cases() as $tamanho)
                                 <option value="{{ $tamanho->value }}"
                                     {{ old('tam_camiseta', $pessoa->tam_camiseta?->value) == $tamanho->value ? 'selected' : '' }}>
-                                    {{ $tamanho->label() }}
+                                    {{ $tamanho->value }}
                                 </option>
                             @endforeach
                         </select>
@@ -206,26 +213,33 @@
                         </div>
                     </div>
 
-                    {{-- Foto e Habilidade --}}
-                    <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
-                        <div>
-                            <label for="tip_habilidade" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Habilidade Principal</label>
-                            <select id="tip_habilidade" name="tip_habilidade" class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 @error('tip_habilidade') border-red-500 @enderror">
-                                <option value="">Selecione uma habilidade</option>
-                                @foreach(\App\Enums\HabilidadePrincipal::cases() as $habilidade)
-                                    <option value="{{ $habilidade->value }}"
-                                        {{ old('tip_habilidade', $pessoa->tip_habilidade instanceof \BackedEnum ? $pessoa->tip_habilidade->value : $pessoa->tip_habilidade) == $habilidade->value ? 'selected' : '' }}>
-                                        {{ $habilidade->label() }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('tip_habilidade')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                            <p id="dat_termino_help" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                São habilidades que precisamos no momento
-                            </p>
-                        </div>
+                    {{-- Habilidade e Profissão --}}
+                    <div>
+                        <label for="tip_habilidade" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Habilidade Principal</label>
+                        <select id="tip_habilidade" name="tip_habilidade" class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 @error('tip_habilidade') border-red-500 @enderror">
+                            <option value="">Selecione uma habilidade</option>
+                            @foreach(\App\Enums\HabilidadePrincipal::cases() as $habilidade)
+                                <option value="{{ $habilidade->value }}"
+                                    {{ old('tip_habilidade', $pessoa->tip_habilidade instanceof \BackedEnum ? $pessoa->tip_habilidade->value : $pessoa->tip_habilidade) == $habilidade->value ? 'selected' : '' }}>
+                                    {{ $habilidade->label() }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('tip_habilidade')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                        <p id="dat_termino_help" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            São habilidades que precisamos no momento
+                        </p>
+                    </div>
+                    <div>
+                        <label for="nom_profissao" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">Profissão</label>
+                        <input type="text" id="nom_profissao" name="nom_profissao" value="{{ old('nom_profissao', $pessoa->nom_profissao) }}"
+                            class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 
+                            @error('nom_profissao') border-red-500 @enderror"/>
+                        @error('nom_profissao')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
                 </div>
 
@@ -238,7 +252,6 @@
                         <div class="flex items-center pt-0.5">
                             <input type="hidden" name="ind_restricao" value="0">
                             <input type="checkbox" name="ind_restricao" value="1" x-model="mostrarRestricoes"
-                                x-bind:disabled="bloqueado"
                                 {{ old('ind_restricao', $pessoa->ind_restricao) ? 'checked' : '' }}
                                 class="w-5 h-5 rounded border-amber-400 text-amber-500 focus:ring-amber-400">
                         </div>

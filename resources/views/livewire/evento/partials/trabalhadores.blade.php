@@ -2,8 +2,11 @@
 
 use App\Models\Evento;
 use Livewire\Volt\Component;
+use Livewire\WithPagination;
 
 new class extends Component {
+    use WithPagination;
+
     public Evento $evento;
     public string $search = '';
 
@@ -80,16 +83,18 @@ new class extends Component {
             // Apenas trabalhadores PENDENTES de avaliação aparecem aqui.
             // Os já avaliados (ind_avaliacao = true) vão para a aba Quadrante.
             'trabalhadores' => \App\Models\Trabalhador::query()
-                ->where('idt_evento', $this->evento->idt_evento)
-                ->whereHas('pessoa')
-                ->where('ind_avaliacao', false)
+                ->select('trabalhador.*')
+                ->join('pessoa', 'trabalhador.idt_pessoa', '=', 'pessoa.idt_pessoa')
+                ->where('trabalhador.idt_evento', $this->evento->idt_evento)
+                ->where('trabalhador.ind_avaliacao', false)
                 ->with(['pessoa', 'equipe'])
                 ->when($this->search, function ($query) {
-                    $query->whereHas('pessoa', function ($q) {
-                        $q->where('nom_pessoa', 'like', '%' . $this->search . '%')
-                            ->orWhere('nom_apelido', 'like', '%' . $this->search . '%');
+                    $query->where(function ($q) {
+                        $q->where('pessoa.nom_pessoa', 'like', '%' . $this->search . '%')
+                            ->orWhere('pessoa.nom_apelido', 'like', '%' . $this->search . '%');
                     });
                 })
+                ->orderBy('pessoa.nom_pessoa', 'asc')
                 ->paginate(10),
         ];
     }
@@ -192,7 +197,7 @@ new class extends Component {
     </flux:table>
 
     <div class="mt-4">
-        {{ $trabalhadores->links() }}
+        {{ $trabalhadores->links(data: ['scrollTo' => false]) }}
     </div>
 
     {{-- Modal de Avaliação --}}

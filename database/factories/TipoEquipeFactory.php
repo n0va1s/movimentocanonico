@@ -44,11 +44,17 @@ class TipoEquipeFactory extends Factory
             ['des_grupo' => 'Sala', 'idt_movimento' => $movimentos['Segue-Me']->idt_movimento],
             ['des_grupo' => 'Ligação', 'idt_movimento' => $movimentos['Segue-Me']->idt_movimento],
             ['des_grupo' => 'Alimentação', 'idt_movimento' => $movimentos['Segue-Me']->idt_movimento],
-            ['des_grupo' => 'Equipe ECC A', 'idt_movimento' => $movimentos['ECC']->idt_movimento],
-            ['des_grupo' => 'Equipe ECC B', 'idt_movimento' => $movimentos['ECC']->idt_movimento],
-            ['des_grupo' => 'Equipe ECC C', 'idt_movimento' => $movimentos['ECC']->idt_movimento],
-            ['des_grupo' => 'Equipe ECC D', 'idt_movimento' => $movimentos['ECC']->idt_movimento],
-            ['des_grupo' => 'Equipe ECC E', 'idt_movimento' => $movimentos['ECC']->idt_movimento],
+            ['des_grupo' => 'Sala', 'idt_movimento' => $movimentos['ECC']->idt_movimento],
+            ['des_grupo' => 'Liturgia/Vigília', 'idt_movimento' => $movimentos['ECC']->idt_movimento],
+            ['des_grupo' => 'Círculos', 'idt_movimento' => $movimentos['ECC']->idt_movimento],
+            ['des_grupo' => 'Café e Minimercado', 'idt_movimento' => $movimentos['ECC']->idt_movimento],
+            ['des_grupo' => 'Cozinha', 'idt_movimento' => $movimentos['ECC']->idt_movimento],
+            ['des_grupo' => 'Ordem/Limpeza', 'idt_movimento' => $movimentos['ECC']->idt_movimento],
+            ['des_grupo' => 'Visitação', 'idt_movimento' => $movimentos['ECC']->idt_movimento],
+            ['des_grupo' => 'Externa', 'idt_movimento' => $movimentos['ECC']->idt_movimento],
+            ['des_grupo' => 'Secretaria', 'idt_movimento' => $movimentos['ECC']->idt_movimento],
+            ['des_grupo' => 'Compras', 'idt_movimento' => $movimentos['ECC']->idt_movimento],
+            ['des_grupo' => 'Palestras', 'idt_movimento' => $movimentos['ECC']->idt_movimento],
         ];
     }
 

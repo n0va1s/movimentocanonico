@@ -9,17 +9,18 @@ use App\Http\Controllers\FichaEccController;
 use App\Http\Controllers\FichaSGMController;
 use App\Http\Controllers\FichaVemController;
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\ParticipanteController;
+use App\Http\Controllers\ImportController;
 use App\Http\Controllers\PessoaController;
 use App\Http\Controllers\TipoEquipeController;
-use App\Http\Controllers\TipoMovimentoController;
 use App\Http\Controllers\TipoPerfilController;
-use App\Http\Controllers\TipoResponsavelController;
-use App\Http\Controllers\TipoRestricaoController;
 use App\Http\Controllers\TrabalhadorController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
+
+// ---------------------------------------------------------------------------
+// Utilitários (sem auth)
+// ---------------------------------------------------------------------------
 
 Route::get('/limpar-tudo', function () {
     Artisan::call('config:clear');
@@ -37,162 +38,221 @@ Route::get('/otimizar-tudo', function () {
 });
 
 Route::get('/storage-link', function () {
-    Artisan::call('storage:link');
-    return 'Link simbólico criado com sucesso!';
+    try {
+        Artisan::call('storage:link');
+
+        return 'Link simbólico criado com sucesso!';
+    } catch (Exception $e) {
+        return 'Erro ao criar o link: '.$e->getMessage();
+    }
 });
 
-Route::get(
-    '/',
-    [HomeController::class, 'index']
-)->name('home');
+Route::get('/encerrar-eventos', function () {
+    try {
+        Artisan::call('mov:deletar-eventos-finalizados');
 
-Route::post(
-    '/',
-    [HomeController::class, 'contato']
-)->name('home.contato');
+        return 'Eventos finalizados encerrados com sucesso!';
+    } catch (Exception $e) {
+        return 'Erro ao encerrar eventos: '.$e->getMessage();
+    }
+});
 
-// Area Administrativa
+
+// ---------------------------------------------------------------------------
+// Públicas
+// ---------------------------------------------------------------------------
+
+Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::post('/', [HomeController::class, 'contato'])->name('home.contato');
+
+// ---------------------------------------------------------------------------
+// Área autenticada — todos os perfis
+// ---------------------------------------------------------------------------
+
 Route::middleware(['auth'])->group(function () {
 
-    Route::get('/vem', [HomeController::class, 'fichaVem'])
-        ->name('home.ficha.vem');
-    Route::get('/ecc', [HomeController::class, 'fichaEcc'])
-        ->name('home.ficha.ecc');
-    Route::get('/sgm', [HomeController::class, 'fichaSgm'])
-        ->name('home.ficha.sgm');
+    Route::get('/vem', [HomeController::class, 'fichaVem'])->name('home.ficha.vem');
+    Route::get('/ecc', [HomeController::class, 'fichaEcc'])->name('home.ficha.ecc');
+    Route::get('/sgm', [HomeController::class, 'fichaSgm'])->name('home.ficha.sgm');
+
+    // Submissão de fichas por candidatos (todos perfis autenticados)
+    Route::post('/fichas/vem', [FichaVemController::class, 'store'])->name('vem.store');
+    Route::post('/fichas/ecc', [FichaEccController::class, 'store'])->name('ecc.store');
+    Route::post('/fichas/sgm', [FichaSGMController::class, 'store'])->name('sgm.store');
 
     Route::redirect('settings', 'settings/profile');
 
-    Route::get(
-        '/timeline',
-        [EventoController::class, 'timeline']
-    )->name('timeline.index');
+    Route::get('/timeline', [EventoController::class, 'timeline'])->name('timeline.index');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::get(
-        '/dashboard',
-        [DashboardController::class, 'index']
-    )->name('dashboard');
+    Route::get('pessoas/{cpf}/busca', [PessoaController::class, 'buscaPorCpf'])->name('pessoas.busca');
 
-    Route::get(
-        '/contatos',
-        [ContatoController::class, 'index']
-    )->name('contatos.index');
-    Route::delete(
-        '/contatos/{id}',
-        [ContatoController::class, 'destroy']
-    )->name('contatos.destroy');
+    Route::get('/termo-sgm', fn () => view('termos.termoSGM'))->name('termo.sgm');
+    Route::get('/termo-vem', fn () => view('termos.termoVEM'))->name('termo.vem');
 
-    Route::get(
-        '/participantes',
-        [ParticipanteController::class, 'index']
-    )->name('participantes.index');
+    Route::middleware(['role:admin,coord,espec,sales'])->group(function () {
+        Route::get('/minha-equipe', [TrabalhadorController::class, 'minhaEquipe'])->name('trabalhadores.minha-equipe');
+    });
+    Route::get('/trabalhadores/create', [TrabalhadorController::class, 'create'])->name('trabalhadores.create');
+    Route::post('/trabalhadores', [TrabalhadorController::class, 'store'])->name('trabalhadores.store');
 
-    Route::post(
-        '/participantes',
-        [ParticipanteController::class, 'change']
-    )->name('participantes.change');
+    // Listagens — todos autenticados (apenas eventos; pessoas e fichas são admin)
+    Route::get('/eventos', [EventoController::class, 'index'])->name('eventos.index');
 
-    Route::post(
-        '/participantes/{evento}/{pessoa}',
-        [EventoController::class, 'confirm']
-    )->name('participantes.confirm');
+    Route::post('/participantes/{evento}/{pessoa}', [EventoController::class, 'confirm'])->name('participantes.confirm');
 
-    Route::resources([
-        'eventos' => EventoController::class,
-        'pessoas' => PessoaController::class,
-        'fichas/vem' => FichaVemController::class,
-        'fichas/ecc' => FichaEccController::class,
-        'fichas/sgm' => FichaSGMController::class,
-    ]);
+    Route::get('/pessoas/{pessoa}/edit', [PessoaController::class, 'edit'])->name('pessoas.edit');
+    Route::put('/pessoas/{pessoa}', [PessoaController::class, 'update'])->name('pessoas.update');
+    Route::patch('/pessoas/{pessoa}', [PessoaController::class, 'update']);
+    Route::get('/pessoas/{pessoa}', [PessoaController::class, 'show'])->name('pessoas.show')->where('pessoa', '[0-9]+');
 
-    Route::get('/termo-sgm', function () {
-        return view('termos.termoSGM');
-    })->name('termo.sgm');
-    Route::get('/termo-vem', function () {
-        return view('termos.termoVEM');
-    })->name('termo.vem');
-    Route::get('fichas/vem/approve/{id}', [FichaVemController::class, 'approve'])
-        ->name('vem.approve');
-    Route::get('fichas/ecc/approve/{id}', [FichaEccController::class, 'approve'])
-        ->name('ecc.approve');
-    Route::get('fichas/sgm/approve/{id}', [FichaSGMController::class, 'approve'])
-        ->name('sgm.approve');
+    Volt::route('settings/profile', 'settings.profile')->name('settings.profile');
+    Volt::route('settings/password', 'settings.password')->name('settings.password');
+    Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 
-    Route::get(
-        '/trabalhadores',
-        [TrabalhadorController::class, 'index']
-    )->name('trabalhadores.index')->middleware(['manager']);
+    // -----------------------------------------------------------------------
+    // Admin + Coord
+    // -----------------------------------------------------------------------
 
-    Route::get(
-        '/trabalhadores/create',
-        [TrabalhadorController::class, 'create']
-    )->name('trabalhadores.create');
+    Route::middleware(['role:admin,coord'])->group(function () {
+        Route::get('/trabalhadores', [TrabalhadorController::class, 'index'])->name('trabalhadores.index');
+    });
 
-    Route::post(
-        '/trabalhadores',
-        [TrabalhadorController::class, 'store']
-    )->name('trabalhadores.store');
+    // -----------------------------------------------------------------------
+    // Gerenciamento de evento: admin + coord + espec
+    // -----------------------------------------------------------------------
 
-    Route::get(
-        '/trabalhadores/review',
-        [TrabalhadorController::class, 'review']
-    )->name('trabalhadores.review');
+    Route::middleware(['role:admin,espec'])->group(function () {
+        Volt::route('eventos/{evento}/gerenciamento', 'evento.gerenciamento')
+            ->name('eventos.gerenciamento')
+            ->withTrashed();
+    });
 
-    Route::delete(
-        '/trabalhadores/{id}',
-        [TrabalhadorController::class, 'destroy']
-    )->name('trabalhadores.destroy');
+    Route::middleware(['role:admin,coord,espec'])->group(function () {
+        // Módulo de Mensagens
+        Volt::route('mensagens', 'mensagens.index')->name('mensagens.index');
+        Volt::route('mensagens/criar', 'mensagens.create')->name('mensagens.create');
+        Volt::route('mensagens/{mensagem}', 'mensagens.show')->name('mensagens.show');
+    });
 
-    Route::get(
-        '/avaliacao',
-        [TrabalhadorController::class, 'review']
-    )->name('avaliacao.review');
+    // -----------------------------------------------------------------------
+    // Importação de Planilhas (Definido antes do wildcard /eventos/{evento} para evitar 404)
+    // -----------------------------------------------------------------------
+    Route::middleware(['role:admin,espec'])->group(function () {
+        Route::get('/configuracoes', [ConfiguracoesController::class, 'index'])->name('configuracoes.index');
+        Route::get('/eventos/importar', [ImportController::class, 'index'])->name('eventos.importar');
+        Route::post('/eventos/importar/participantes', [ImportController::class, 'importarParticipantes'])->name('eventos.importar.participantes');
+        Route::post('/eventos/importar/trabalhadores', [ImportController::class, 'importarTrabalhadores'])->name('eventos.importar.trabalhadores');
+        Route::get('/eventos/importar/modelo-participantes', [ImportController::class, 'downloadModeloParticipantes'])->name('eventos.importar.modelo-participantes');
+        Route::get('/eventos/importar/modelo-trabalhadores', [ImportController::class, 'downloadModeloTrabalhadores'])->name('eventos.importar.modelo-trabalhadores');
+    });
 
-    Route::post(
-        '/avaliacao',
-        [TrabalhadorController::class, 'send']
-    )->name('avaliacao.send');
+    // -----------------------------------------------------------------------
+    // Somente admin: criar/editar/excluir/visualizar recursos e configurações
+    // -----------------------------------------------------------------------
 
-    Route::get(
-        '/montagem',
-        [TrabalhadorController::class, 'mount']
-    )->name('montagem.list');
+    Route::middleware(['role:admin'])->group(function () {
 
-    Route::post(
-        '/montagem',
-        [TrabalhadorController::class, 'confirm']
-    )->name('montagem.confirm')->middleware(['manager']);
+        // Contatos
+        Route::get('/contatos', [ContatoController::class, 'index'])->name('contatos.index');
+        Route::delete('/contatos/{id}', [ContatoController::class, 'destroy'])->name('contatos.destroy');
 
-    Route::get(
-        '/quadrante',
-        [TrabalhadorController::class, 'generate']
-    )->name('quadrante.list');
+        // Eventos
+        Route::get('/eventos/create', [EventoController::class, 'create'])->name('eventos.create');
+        Route::post('/eventos', [EventoController::class, 'store'])->name('eventos.store');
+        Route::get('/eventos/{evento}', [EventoController::class, 'show'])->name('eventos.show');
+        Route::get('/eventos/{evento}/edit', [EventoController::class, 'edit'])->name('eventos.edit');
+        Route::put('/eventos/{evento}', [EventoController::class, 'update'])->name('eventos.update');
+        Route::patch('/eventos/{evento}', [EventoController::class, 'update']);
+        Route::delete('/eventos/{evento}', [EventoController::class, 'destroy'])->name('eventos.destroy');
 
-    Route::get('/aniversario', [AniversarioController::class, 'index'])->name('aniversario.index');
+        // Pessoas — listagem, busca e CRUD
+        Volt::route('/pessoas', 'pessoas.index')->name('pessoas.index');
+        Route::get('/pessoas/create', [PessoaController::class, 'create'])->name('pessoas.create');
+        Route::post('/pessoas', [PessoaController::class, 'store'])->name('pessoas.store');
+        Route::delete('/pessoas/{pessoa}', [PessoaController::class, 'destroy'])->name('pessoas.destroy');
 
-    // Somente admin e coord
-    Route::middleware(['manager'])->group(function () {
-        Route::get(
-            '/configuracoes',
-            [ConfiguracoesController::class, 'index']
-        )->name('configuracoes.index');
+        // Executado diariamente via command
+        Route::get('/aniversario', [AniversarioController::class, 'index'])->name('aniversario.index');
 
+    });
+
+    Route::middleware(['role:admin,espec,visit'])->group(function () {
+
+        Route::middleware(['espec.movimento:2'])->group(function () {
+            // Fichas VEM — listagem, aprovação e CRUD
+            Route::get('/fichas/vem', [FichaVemController::class, 'index'])->name('vem.index');
+            Route::get('fichas/vem/{id}/approve', [FichaVemController::class, 'approve'])->name('vem.approve');
+            Route::post('fichas/vem/{id}/situacao', [FichaVemController::class, 'updateSituacao'])->name('vem.situacao');
+            Route::get('/fichas/vem/create', [FichaVemController::class, 'create'])->name('vem.create');
+            Route::get('/fichas/vem/{vem}', [FichaVemController::class, 'show'])->name('vem.show');
+            Route::get('/fichas/vem/{vem}/edit', [FichaVemController::class, 'edit'])->name('vem.edit');
+            Route::put('/fichas/vem/{vem}', [FichaVemController::class, 'update'])->name('vem.update');
+            Route::patch('/fichas/vem/{vem}', [FichaVemController::class, 'update']);
+            Route::delete('/fichas/vem/{vem}', [FichaVemController::class, 'destroy'])->name('vem.destroy');
+        });
+
+        Route::middleware(['espec.movimento:1'])->group(function () {
+            // Fichas ECC — listagem, aprovação e CRUD
+            Route::get('/fichas/ecc', [FichaEccController::class, 'index'])->name('ecc.index');
+            Route::get('fichas/ecc/{id}/approve', [FichaEccController::class, 'approve'])->name('ecc.approve');
+            Route::post('fichas/ecc/{id}/situacao', [FichaEccController::class, 'updateSituacao'])->name('ecc.situacao');
+            Route::get('/fichas/ecc/create', [FichaEccController::class, 'create'])->name('ecc.create');
+            Route::get('/fichas/ecc/{ecc}', [FichaEccController::class, 'show'])->name('ecc.show');
+            Route::get('/fichas/ecc/{ecc}/edit', [FichaEccController::class, 'edit'])->name('ecc.edit');
+            Route::put('/fichas/ecc/{ecc}', [FichaEccController::class, 'update'])->name('ecc.update');
+            Route::patch('/fichas/ecc/{ecc}', [FichaEccController::class, 'update']);
+            Route::delete('/fichas/ecc/{ecc}', [FichaEccController::class, 'destroy'])->name('ecc.destroy');
+        });
+
+        Route::middleware(['espec.movimento:3'])->group(function () {
+            // Fichas SGM — listagem, aprovação e CRUD
+            Route::get('/fichas/sgm', [FichaSGMController::class, 'index'])->name('sgm.index');
+            Route::get('fichas/sgm/{id}/approve', [FichaSGMController::class, 'approve'])->name('sgm.approve');
+            Route::post('fichas/sgm/{id}/situacao', [FichaSGMController::class, 'updateSituacao'])->name('sgm.situacao');
+            Route::get('/fichas/sgm/create', [FichaSGMController::class, 'create'])->name('sgm.create');
+            Route::get('/fichas/sgm/{sgm}', [FichaSGMController::class, 'show'])->name('sgm.show');
+            Route::get('/fichas/sgm/{sgm}/edit', [FichaSGMController::class, 'edit'])->name('sgm.edit');
+            Route::put('/fichas/sgm/{sgm}', [FichaSGMController::class, 'update'])->name('sgm.update');
+            Route::patch('/fichas/sgm/{sgm}', [FichaSGMController::class, 'update']);
+            Route::delete('/fichas/sgm/{sgm}', [FichaSGMController::class, 'destroy'])->name('sgm.destroy');
+        });
+    });
+
+    Route::middleware(['role:admin,espec'])->group(function () {
+        Route::post('/fichas/{id}/designar-visitador', function (\Illuminate\Http\Request $request, $id) {
+            $request->validate([
+                'idt_pessoa_visitacao' => 'nullable|exists:pessoa,idt_pessoa',
+            ]);
+
+            $ficha = \App\Models\Ficha::findOrFail($id);
+            $ficha->update([
+                'idt_pessoa_visitacao' => $request->input('idt_pessoa_visitacao') ?: null,
+            ]);
+
+            return redirect()->back()->with('success', 'Responsável pela visitação designado com sucesso!');
+        })->name('fichas.designar-visitador');
+    });
+
+    Route::middleware(['role:admin,visit'])->group(function () {
+        Volt::route('/minhas-fichas', 'minhas-fichas.index')->name('minhas-fichas.index');
+    });
+
+    Route::middleware(['role:admin,sales'])->group(function () {
+        Volt::route('/mercadinho/{evento?}', 'mercadinho.index')->name('mercadinho.index');
+    });
+
+    Route::middleware(['role:admin'])->group(function () {
+
+        // Configurações
         Route::get('/configuracoes/role', [TipoPerfilController::class, 'index'])->name('role.index');
         Route::post('/configuracoes/role', [TipoPerfilController::class, 'store'])->name('role.store');
         Route::post('/configuracoes/role/change', [TipoPerfilController::class, 'change'])->name('role.change');
 
         Route::resources([
             'configuracoes/equipe' => TipoEquipeController::class,
-            'configuracoes/movimento' => TipoMovimentoController::class,
-            'configuracoes/responsavel' => TipoResponsavelController::class,
-            'configuracoes/restricao' => TipoRestricaoController::class,
         ]);
     });
-
-    Volt::route('eventos/{evento}/gerenciamento', 'evento.gerenciamento')->name('eventos.gerenciamento');
-    Volt::route('settings/profile', 'settings.profile')->name('settings.profile');
-    Volt::route('settings/password', 'settings.password')->name('settings.password');
-    Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 });
 
 require __DIR__.'/auth.php';

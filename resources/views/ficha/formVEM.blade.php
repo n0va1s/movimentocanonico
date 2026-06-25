@@ -16,8 +16,39 @@
                 enviando: false,
                 selectedEventoId: '{{ old('idt_evento', $ficha->idt_evento ?? '') }}',
                 eventosData: {{ $eventosJson }},
-                get info() {
-                    return this.eventosData[String(this.selectedEventoId)] || { faixa: '---', data_limite: '---', vagas: 0, valor: '0,00' };
+
+                get eventoSelecionado() {
+                    const id = String(this.selectedEventoId);
+                    const e = this.eventosData[id];
+                    if (!e) return { faixa: '---', data_limite: '---', vaga: 0, valor: '0,00' };
+                    return {
+                        faixa:       e.faixa,
+                        data_limite: e.data_limite,
+                        vaga:        e.vaga,
+                        valor:       e.valor,
+                    };
+                },
+                buscarPorCpf() {
+                    let cpf = document.getElementById('num_cpf_candidato').value.replace(/\D/g, '');
+                    if (cpf.length === 11) {
+                        fetch(`/pessoas/${cpf}/busca/`)
+                            .then(response => {
+                                if (response.ok) return response.json();
+                                throw new Error('Not found');
+                            })
+                            .then(data => {
+                                document.getElementById('nom_candidato').value = data.nom_pessoa || '';
+                                document.getElementById('nom_apelido').value = data.nom_apelido || '';
+                                if(data.dat_nascimento) document.getElementById('dat_nascimento').value = data.dat_nascimento.split('T')[0];
+                                document.getElementById('tel_candidato').value = data.tel_pessoa || '';
+                                document.getElementById('eml_candidato').value = data.eml_pessoa || '';
+                                document.getElementById('des_endereco').value = data.des_endereco || '';
+                                
+                                if (data.tam_camiseta) document.getElementById('tam_camiseta').value = data.tam_camiseta;
+                                if (data.tip_genero) document.getElementById('tip_genero').value = data.tip_genero;
+                            })
+                            .catch(error => console.log('Candidato ainda não existe, preenchimento manual necessário.'));
+                    }
                 }
             }">
 
@@ -73,8 +104,25 @@
                     </li>
                 </ol>
             </div>
-        </div>
 
+            <div
+                class="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-4 flex gap-3">
+                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                    <p class="text-sm font-semibold text-blue-800 dark:text-blue-300">Aviso sobre a participação</p>
+                    <p class="text-xs text-blue-700 dark:text-blue-400 mt-1 leading-relaxed">
+                        A realização desta pré-inscrição <strong>não garante a participação</strong> automática no
+                        encontro. Todas as fichas passarão por um processo de seleção baseado nos critérios acima, e
+                        a confirmação final ocorrerá somente após o contato e a confirmação dos dados.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
         {{-- Botão voltar (admin) --}}
         @if (Auth::user()?->isAdmin())
             <div class="flex justify-end mb-4">
@@ -87,9 +135,90 @@
             </div>
         @endif
 
+        @if (Auth::user()?->hasRole('admin', 'espec', 'coord') && $ficha->exists)
+            <div class="bg-white dark:bg-zinc-800 rounded-xl shadow border border-gray-200 dark:border-zinc-700 p-4 sm:p-6 mb-6">
+                <p class="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-3">Mudar Situação para:</p>
+                <div class="flex flex-wrap gap-2">
+                    @php
+                        $situacoes = \App\Enums\TipoSituacao::cases();
+                    @endphp
+                    @foreach($situacoes as $situacao)
+                        @php
+                            $isCurrent = $ficha->tip_situacao === $situacao;
+                            $style = $situacao->badge();
+                        @endphp
+                        
+                        @if($isCurrent)
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold text-white {{ $style['bg'] }} shadow-sm">
+                                <x-heroicon-s-check class="w-4 h-4" />
+                                {{ $situacao->label() }}
+                            </span>
+                        @else
+                            <form method="POST" action="{{ route('vem.situacao', $ficha->idt_ficha) }}" class="inline">
+                                @csrf
+                                <input type="hidden" name="tip_situacao" value="{{ $situacao->value }}">
+                                <button type="submit" 
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border transition-all duration-200 cursor-pointer hover:text-white {{ $style['light'] }} {{ $style['hover'] }}">
+                                    @if($situacao->value === 'N')
+                                        <x-heroicon-o-document-text class="w-4 h-4" />
+                                    @elseif($situacao->value === 'S')
+                                        <x-heroicon-o-check-circle class="w-4 h-4" />
+                                    @elseif($situacao->value === 'E')
+                                        <x-heroicon-o-envelope class="w-4 h-4" />
+                                    @elseif($situacao->value === 'R')
+                                        <x-heroicon-o-document-check class="w-4 h-4" />
+                                    @elseif($situacao->value === 'P')
+                                        <x-heroicon-o-credit-card class="w-4 h-4" />
+                                    @elseif($situacao->value === 'C')
+                                        <x-heroicon-o-x-circle class="w-4 h-4" />
+                                    @elseif($situacao->value === 'A')
+                                        <x-heroicon-o-sparkles class="w-4 h-4" />
+                                    @elseif($situacao->value === 'F')
+                                        <x-heroicon-o-phone class="w-4 h-4" />
+                                    @elseif($situacao->value === 'W')
+                                        <x-heroicon-o-clock class="w-4 h-4" />
+                                    @elseif($situacao->value === 'V')
+                                        <x-heroicon-o-check-circle class="w-4 h-4" />
+                                    @endif
+                                    {{ $situacao->label() }}
+                                </button>
+                            </form>
+                        @endif
+                    @endforeach
+                </div>
+                @if(Auth::user()?->hasRole('admin', 'espec'))
+                    <div class="mt-4 border-t border-gray-100 dark:border-zinc-700 pt-4">
+                        <form method="POST" action="{{ route('fichas.designar-visitador', $ficha->idt_ficha) }}">
+                            @csrf
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                <label for="idt_pessoa_visitacao" class="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Responsável pela Visitação:</label>
+                                <div class="flex items-center gap-2 w-full sm:w-auto">
+                                    <select name="idt_pessoa_visitacao" id="idt_pessoa_visitacao" 
+                                        class="text-xs rounded-md border border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 text-gray-900 dark:text-gray-100 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="">Sem responsável designado</option>
+                                        @if(isset($visitadores))
+                                            @foreach($visitadores as $v)
+                                                <option value="{{ $v->idt_pessoa }}" @selected($ficha->idt_pessoa_visitacao === $v->idt_pessoa)>
+                                                    {{ $v->nom_pessoa }}
+                                                </option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                    <button type="submit" class="px-3 py-1.5 bg-blue-600 text-white rounded-md text-xs font-semibold hover:bg-blue-700">
+                                        Designar
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                @endif
+            </div>
+        @endif
+
         @if ($eventos->count() > 0)
-            <form method="POST"
-                @submit="enviando = true"
+            <form method="POST" 
+                enctype="multipart/form-data"
+                @submit="setTimeout(() => enviando = true, 50)"
                 action="{{ $ficha->exists ? route('vem.update', $ficha) : route('vem.store') }}"
                 class="space-y-6" novalidate>
                 @csrf
@@ -100,6 +229,58 @@
                     <legend class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Dados do
                         Participante</legend>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                        
+                        {{-- Foto --}}
+                        <div class="flex flex-col items-center gap-3" x-data="{ photoPreview: '{{ $ficha->foto?->med_foto ? Storage::url($ficha->foto->med_foto) : '' }}' }">
+                            <div
+                                class="w-28 h-28 rounded-full bg-gray-100 dark:bg-zinc-700 border-2 border-gray-300 dark:border-zinc-600 flex items-center justify-center overflow-hidden">
+                                <template x-if="photoPreview">
+                                    <img :src="photoPreview" alt="Foto do participante"
+                                        class="w-full h-full object-cover" />
+                                </template>
+                                <template x-if="!photoPreview">
+                                    <x-heroicon-o-user class="w-14 h-14 text-gray-400 dark:text-gray-500"
+                                        aria-hidden="true" />
+                                </template>
+                            </div>
+                            <div>
+                                <label for="med_foto"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 text-center">
+                                    Foto
+                                </label>
+                                <input type="file" name="med_foto" id="med_foto" accept="image/*"
+                                    x-bind:disabled="bloqueado"
+                                    @change="
+                                        const file = $event.target.files[0];
+                                        if (file) {
+                                            photoPreview = URL.createObjectURL(file);
+                                        } else {
+                                            photoPreview = '{{ $ficha->foto?->med_foto ? Storage::url($ficha->foto->med_foto) : '' }}';
+                                        }
+                                    "
+                                    class="block text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-300" />
+                                @error('med_foto')
+                                    <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+
+                        {{-- CPF --}}
+                        <div>
+                            <label for="num_cpf_candidato"
+                                class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
+                                CPF
+                            </label>
+                            <input type="text" name="num_cpf_candidato" id="num_cpf_candidato"
+                                x-bind:disabled="bloqueado" maxlength="14" autocomplete="off"
+                                value="{{ old('num_cpf_candidato', $ficha->num_cpf_candidato) }}"
+                                @blur="buscarPorCpf()"
+                                placeholder="000.000.000-00"
+                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('num_cpf_candidato') border-red-500 @enderror" />
+                            @error('num_cpf_candidato')
+                                <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                            @enderror
+                        </div>
 
                         {{-- Movimento --}}
                         <div>
@@ -155,7 +336,7 @@
                                 <option value="">Selecione o sexo</option>
                                 @foreach(\App\Enums\Genero::cases() as $genero)
                                     <option value="{{ $genero->value }}"
-                                        {{ old('tip_genero', $ficha->tip_genero) == $genero->value ? 'selected' : '' }}>
+                                        {{ old('tip_genero', $ficha->tip_genero?->value) == $genero->value ? 'selected' : '' }}>
                                         {{ $genero->label() }}
                                     </option>
                                 @endforeach
@@ -186,12 +367,11 @@
                         <div>
                             <label for="nom_apelido"
                                 class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
-                                Apelido <span class="text-red-600" aria-hidden="true">*</span><span
-                                    class="sr-only">(obrigatório)</span>
+                                Apelido
                             </label>
                             <input type="text" name="nom_apelido" id="nom_apelido" x-bind:disabled="bloqueado"
-                                required maxlength="100" value="{{ old('nom_apelido', $ficha->nom_apelido) }}"
-                                placeholder="Como gosta de ser chamado" aria-required="true"
+                                maxlength="100" value="{{ old('nom_apelido', $ficha->nom_apelido) }}"
+                                placeholder="Como gosta de ser chamado"
                                 class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('nom_apelido') border-red-500 @enderror" />
                             @error('nom_apelido')
                                 <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
@@ -252,10 +432,10 @@
                         <div>
                             <label for="des_endereco"
                                 class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
-                                Endereço
+                                Endereço <span class="text-red-600" aria-hidden="true">*</span><span class="sr-only">(obrigatório)</span>
                             </label>
                             <input type="text" name="des_endereco" id="des_endereco" x-bind:disabled="bloqueado"
-                                maxlength="500" autocomplete="street-address"
+                                required maxlength="500" autocomplete="street-address" aria-required="true"
                                 value="{{ old('des_endereco', $ficha->des_endereco) }}"
                                 placeholder="Rua, número, bairro, cidade"
                                 class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('des_endereco') border-red-500 @enderror" />
@@ -277,7 +457,7 @@
                                 <option value="">Selecione o tamanho</option>
                                 @foreach(\App\Enums\TamanhoCamiseta::cases() as $tamanho)
                                     <option value="{{ $tamanho->value }}"
-                                        {{ old('tam_camiseta', $ficha->tam_camiseta) == $tamanho->value ? 'selected' : '' }}>
+                                        {{ old('tam_camiseta', $ficha->tam_camiseta?->value) == $tamanho->value ? 'selected' : '' }}>
                                         {{ $tamanho->value }}
                                     </option>
                                 @endforeach
@@ -298,7 +478,7 @@
                                 <option value="">Selecione uma opção</option>
                                 @foreach(\App\Enums\ComoSoube::cases() as $comoSoube)
                                     <option value="{{ $comoSoube->value }}"
-                                        {{ old('tip_como_soube', $ficha->tip_como_soube) == $comoSoube->value ? 'selected' : '' }}>
+                                        {{ old('tip_como_soube', $ficha->tip_como_soube?->value) == $comoSoube->value ? 'selected' : '' }}>
                                         {{ $comoSoube->label() }}
                                     </option>
                                 @endforeach
@@ -312,9 +492,39 @@
                 </fieldset>
 
                 {{-- ===== RESPONSÁVEIS ===== --}}
-                <fieldset class="bg-white dark:bg-zinc-800 rounded-md shadow p-4 sm:p-6">
-                    <legend class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Responsáveis
-                    </legend>
+                <fieldset class="bg-white dark:bg-zinc-800 rounded-md shadow p-4 sm:p-6"
+                    x-data="{
+                        nomMae: '{{ old('nom_mae', optional($ficha->fichaVem)->nom_mae) }}',
+                        nomPai: '{{ old('nom_pai', optional($ficha->fichaVem)->nom_pai) }}',
+                        nomResp: '{{ old('nom_responsavel', optional($ficha->fichaVem)->nom_responsavel) }}',
+                        get algumPreenchido() {
+                            return this.nomMae.trim() !== '' || this.nomPai.trim() !== '' || this.nomResp.trim() !== '';
+                        }
+                    }">
+                    <legend class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">Responsáveis</legend>
+
+                    {{-- Aviso de obrigatoriedade --}}
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                        Preencha ao menos um responsável: <strong>mãe</strong>, <strong>pai</strong> ou <strong>responsável</strong>.
+                        Também indique com quem devemos falar em caso de necessidade.
+                    </p>
+
+                    {{-- Erro geral de responsáveis --}}
+                    @error('responsaveis')
+                        <div class="mb-4 flex items-center gap-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 px-4 py-3" role="alert">
+                            <x-heroicon-o-exclamation-circle class="w-5 h-5 text-red-500 shrink-0" aria-hidden="true" />
+                            <p class="text-sm text-red-700 dark:text-red-400">{{ $message }}</p>
+                        </div>
+                    @enderror
+
+                    {{-- Alerta dinâmico (Alpine) --}}
+                    <div x-show="!algumPreenchido" x-transition
+                        class="mb-4 flex items-center gap-2 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 px-4 py-3"
+                        role="alert" aria-live="polite">
+                        <x-heroicon-o-exclamation-triangle class="w-5 h-5 text-amber-500 shrink-0" aria-hidden="true" />
+                        <p class="text-sm text-amber-700 dark:text-amber-400">Preencha o nome de ao menos um responsável.</p>
+                    </div>
+
                     <div class="space-y-6">
 
                         {{-- Mãe --}}
@@ -325,7 +535,7 @@
                                     <label for="nom_mae"
                                         class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Nome</label>
                                     <input type="text" name="nom_mae" id="nom_mae" x-bind:disabled="bloqueado"
-                                        value="{{ old('nom_mae', optional($ficha->fichaVem)->nom_mae) }}"
+                                        x-model="nomMae"
                                         maxlength="255" autocomplete="off" placeholder="Nome completo"
                                         class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('nom_mae') border-red-500 @enderror" />
                                     @error('nom_mae')
@@ -365,7 +575,7 @@
                                     <label for="nom_pai"
                                         class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Nome</label>
                                     <input type="text" name="nom_pai" id="nom_pai" x-bind:disabled="bloqueado"
-                                        value="{{ old('nom_pai', optional($ficha->fichaVem)->nom_pai) }}"
+                                        x-model="nomPai"
                                         maxlength="255" autocomplete="off" placeholder="Nome completo"
                                         class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('nom_pai') border-red-500 @enderror" />
                                     @error('nom_pai')
@@ -401,8 +611,7 @@
                         <div class="border-t border-gray-200 dark:border-zinc-600 pt-5">
                             <p class="font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
                                 Responsável
-                                <span class="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">(caso não more
-                                    com os pais)</span>
+                                <span class="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">(caso não more com os pais)</span>
                             </p>
                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mt-2">
                                 <div>
@@ -410,7 +619,7 @@
                                         class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Nome</label>
                                     <input type="text" name="nom_responsavel" id="nom_responsavel"
                                         x-bind:disabled="bloqueado"
-                                        value="{{ old('nom_responsavel', optional($ficha->fichaVem)->nom_responsavel) }}"
+                                        x-model="nomResp"
                                         maxlength="150" autocomplete="off" placeholder="Nome completo"
                                         class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('nom_responsavel') border-red-500 @enderror" />
                                     @error('nom_responsavel')
@@ -445,8 +654,7 @@
                         </div>
 
                         {{-- Falar com | Onde estuda | Mora com quem --}}
-                        <div
-                            class="border-t border-gray-200 dark:border-zinc-600 pt-5 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
+                        <div class="border-t border-gray-200 dark:border-zinc-600 pt-5 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
                             <div>
                                 <label for="idt_falar_com"
                                     class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
@@ -515,10 +723,10 @@
                         <div>
                             <p class="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm sm:text-base"
                                 id="sacramentos-label">
-                                Sacramentos recebidos
+                                Sacramentos
                             </p>
-                            <div class="space-y-2" role="group" aria-labelledby="sacramentos-label">
-                                <label class="flex items-center gap-2 cursor-pointer">
+                            <div class="flex flex-col gap-2" role="group" aria-labelledby="sacramentos-label">
+                                <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_catolico" value="0">
                                     <input type="checkbox" name="ind_catolico" value="1"
                                         x-bind:disabled="bloqueado"
@@ -526,29 +734,29 @@
                                         class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">É católico</span>
                                 </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
+                                <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_batizado" value="0">
                                     <input type="checkbox" name="ind_batizado" value="1"
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_batizado', optional($ficha->fichaVem)->ind_batizado) ? 'checked' : '' }}
                                         class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                    <span class="text-sm text-gray-800 dark:text-gray-100">Batizado</span>
+                                    <span class="text-sm text-gray-800 dark:text-gray-100">Foi batizado</span>
                                 </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
+                                <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_primeira_comunhao" value="0">
                                     <input type="checkbox" name="ind_primeira_comunhao" value="1"
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_primeira_comunhao', optional($ficha->fichaVem)->ind_primeira_comunhao) ? 'checked' : '' }}
                                         class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                    <span class="text-sm text-gray-800 dark:text-gray-100">Primeira Comunhão</span>
+                                    <span class="text-sm text-gray-800 dark:text-gray-100">Fez primeira comunhão</span>
                                 </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
+                                <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_crismado" value="0">
                                     <input type="checkbox" name="ind_crismado" value="1"
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_crismado', optional($ficha->fichaVem)->ind_crismado) ? 'checked' : '' }}
                                         class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                    <span class="text-sm text-gray-800 dark:text-gray-100">Crismado</span>
+                                    <span class="text-sm text-gray-800 dark:text-gray-100">Foi crismado</span>
                                 </label>
                             </div>
                         </div>
@@ -574,7 +782,7 @@
                                     id="instrumento-label">
                                     Toca algum instrumento?
                                 </p>
-                                <label class="flex items-center gap-2 cursor-pointer">
+                                <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_toca_instrumento" value="0">
                                     <input type="checkbox" name="ind_toca_instrumento" value="1"
                                         x-bind:disabled="bloqueado"
@@ -720,28 +928,12 @@
                 </fieldset>
 
                 {{-- ===== AÇÕES ===== --}}
-                <div class="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+                <div class="mt-8 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
                     <button type="submit" x-bind:disabled="bloqueado || enviando"
                         class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                         <x-heroicon-o-check class="w-5 h-5 mr-2" aria-hidden="true" />
                         <span x-text="enviando ? 'Salvando...' : 'Salvar'"></span>
                     </button>
-
-                    @if ($ficha->exists)
-                        <a href="{{ route('vem.approve', $ficha->idt_ficha) }}"
-                            class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 text-white font-medium rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus-visible:ring-offset-2
-                                {{ $ficha->ind_aprovado
-                                    ? 'bg-red-500 hover:bg-red-600 focus:ring-red-500'
-                                    : 'bg-green-500 hover:bg-green-600 focus:ring-green-500' }}"
-                            aria-label="{{ $ficha->ind_aprovado ? 'Desfazer aprovação desta ficha' : 'Aprovar esta ficha' }}">
-                            @if ($ficha->ind_aprovado)
-                                <x-heroicon-o-x-mark class="w-5 h-5 mr-2" aria-hidden="true" />
-                            @else
-                                <x-heroicon-o-check class="w-5 h-5 mr-2" aria-hidden="true" />
-                            @endif
-                            {{ $ficha->ind_aprovado ? 'Desfazer aprovação' : 'Aprovar' }}
-                        </a>
-                    @endif
                 </div>
             </form>
 
@@ -754,7 +946,7 @@
                         <x-heroicon-o-users class="w-5 h-5 text-blue-500 shrink-0" />
                         <div>
                             <p class="text-xs text-gray-500">Público</p>
-                            <p class="text-xs sm:text-sm font-medium" x-text="info.faixa"></p>
+                            <p class="text-xs sm:text-sm font-medium" x-text="eventoSelecionado.faixa"></p>
                         </div>
                     </div>
 
@@ -762,7 +954,7 @@
                         <x-heroicon-o-calendar class="w-5 h-5 text-red-500 shrink-0" />
                         <div>
                             <p class="text-xs text-gray-500">Inscrições até</p>
-                            <p class="text-xs sm:text-sm font-medium" x-text="info.data_limite"></p>
+                            <p class="text-xs sm:text-sm font-medium" x-text="eventoSelecionado.data_limite"></p>
                         </div>
                     </div>
 
@@ -770,7 +962,7 @@
                         <x-heroicon-o-ticket class="w-5 h-5 text-green-500 shrink-0" />
                         <div>
                             <p class="text-xs text-gray-500">Vagas</p>
-                            <p class="text-xs sm:text-sm font-medium"><span x-text="info.vaga"></span> vagas</p>
+                            <p class="text-xs sm:text-sm font-medium"><span x-text="eventoSelecionado.vaga"></span> vagas</p>
                         </div>
                     </div>
 
@@ -778,7 +970,7 @@
                         <x-heroicon-o-currency-dollar class="w-5 h-5 text-yellow-500 shrink-0" />
                         <div>
                             <p class="text-xs text-gray-500">Taxa</p>
-                            <p class="text-xs sm:text-sm font-medium">R$ <span x-text="info.valor"></span></p>
+                            <p class="text-xs sm:text-sm font-medium">R$ <span x-text="eventoSelecionado.valor"></span></p>
                         </div>
                     </div>
                 </div>

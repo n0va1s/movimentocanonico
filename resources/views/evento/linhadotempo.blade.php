@@ -130,15 +130,22 @@
                                         <h4 class="text-lg font-bold text-gray-900 dark:text-white leading-tight mb-1 group-hover:text-indigo-600 transition-colors">
                                             {{ $eventEntry['event']->des_evento }}
                                         </h4>
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-[10px] font-black px-2 py-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 uppercase">
-                                                {{ $eventEntry['type'] }}
-                                            </span>
-                                            @if ($eventEntry['details']['coordenador'] ?? false)
-                                                <span class="flex items-center gap-1 text-[10px] font-bold text-yellow-600 dark:text-yellow-400 uppercase italic">
-                                                    <x-heroicon-s-star class="w-3 h-3" /> Liderança
+                                        <div class="flex items-center justify-between gap-2">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-[10px] font-black px-2 py-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 uppercase">
+                                                    {{ $eventEntry['type'] }}
                                                 </span>
-                                            @endif
+                                                @if ($eventEntry['details']['coordenador'] ?? false)
+                                                    <span class="flex items-center gap-1 text-[10px] font-bold text-yellow-600 dark:text-yellow-400 uppercase italic">
+                                                        <x-heroicon-s-star class="w-3 h-3" /> Liderança
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            
+                                            <span class="bg-yellow-400/20 text-yellow-700 dark:text-yellow-400 text-[10px] font-black px-2.5 py-1 rounded-full border border-yellow-400/30 flex items-center gap-1 shadow-sm">
+                                                <x-heroicon-s-bolt class="w-3.5 h-3.5 text-yellow-500" />
+                                                +{{ $eventEntry['pontos'] }} XP
+                                            </span>
                                         </div>
                                     </div>
 

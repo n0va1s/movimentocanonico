@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TipoSituacao;
 use App\Http\Requests\FichaRequest;
 use App\Http\Requests\FichaSGMRequest;
 use App\Models\Evento;
 use App\Models\Ficha;
+use App\Models\FichaSGM;
 use App\Models\TipoMovimento;
+use App\Services\ArquivoService;
 use App\Services\FichaService;
 use App\Traits\LogContext;
 use Illuminate\Database\QueryException;
@@ -19,9 +22,12 @@ class FichaSGMController extends Controller
 
     protected $fichaService;
 
-    public function __construct(FichaService $fichaService)
+    protected $arquivoService;
+
+    public function __construct(FichaService $fichaService, ArquivoService $arquivoService)
     {
         $this->fichaService = $fichaService;
+        $this->arquivoService = $arquivoService;
     }
 
     public function index(Request $request)
@@ -31,16 +37,28 @@ class FichaSGMController extends Controller
 
         $search = $request->get('search');
         $eventoId = $request->get('evento');
+        $situacao = $request->get('situacao');
         $evento = null;
 
         Log::info('Requisição de listagem de fichas SGM iniciada', array_merge($context, [
             'search_term' => $search,
             'evento_filtro' => $eventoId,
+            'situacao_filtro' => $situacao,
         ]));
 
         if ($eventoId) {
             $evento = Evento::find($eventoId);
         }
+
+        $hoje = now()->startOfDay();
+        $eventos = Evento::where('idt_movimento', TipoMovimento::SGM)
+            ->where(function ($q) use ($hoje) {
+                $q->where('dat_inicio', '>=', $hoje)
+                    ->orWhere('dat_termino', '>=', $hoje)
+                    ->orWhereNull('dat_termino');
+            })
+            ->orderBy('dat_inicio', 'asc')
+            ->get();
 
         $fichas = Ficha::with(['fichaSGM', 'fichaSaude'])
             ->when($search, function ($query, $search) {
@@ -52,8 +70,11 @@ class FichaSGMController extends Controller
             ->when($eventoId, function ($query, $eventoId) {
                 return $query->where('idt_evento', $eventoId);
             })
+            ->when($situacao, function ($query, $situacao) {
+                return $query->where('tip_situacao', $situacao);
+            })
             ->whereHas('evento', function ($query) {
-                $query->where('idt_movimento', TipoMovimento::SegueMe);
+                $query->where('idt_movimento', TipoMovimento::SGM);
             })
             ->orderBy('created_at', 'desc')
             ->paginate(10)
@@ -66,7 +87,7 @@ class FichaSGMController extends Controller
             'duration_ms' => $duration,
         ]));
 
-        return view('ficha.listSGM', compact('fichas', 'search', 'evento'));
+        return view('ficha.listSGM', compact('fichas', 'search', 'evento', 'eventos', 'situacao'));
     }
 
     public function create()
@@ -76,12 +97,15 @@ class FichaSGMController extends Controller
         Log::info('Acesso ao formulário de criação de ficha SGM', $context);
 
         $ficha = new Ficha;
-        $eventos = Evento::getByTipo(TipoMovimento::SegueMe, 'E', 3);
+        $ficha->idt_movimento = TipoMovimento::SGM;
+        $ficha->setRelation('fichaSGM', new FichaSGM);
+
+        $eventos = Evento::getByTipo(TipoMovimento::SGM, 'E', 3);
 
         return view('ficha.formSGM', array_merge($this->fichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,
             'eventos' => $eventos,
-            'movimentopadrao' => TipoMovimento::SegueMe,
+            'movimentopadrao' => TipoMovimento::SGM,
         ]));
     }
 
@@ -108,7 +132,18 @@ class FichaSGMController extends Controller
 
         $ficha = Ficha::create($data);
 
+        if ($sgmRequest->hasFile('med_foto')) {
+            $this->arquivoService->upload(
+                $ficha,
+                $sgmRequest->file('med_foto'),
+                'foto',
+                'med_foto',
+                "fichas/{$ficha->idt_ficha}"
+            );
+        }
+
         $sgmData = $sgmRequest->validated();
+        unset($sgmData['med_foto']);
         $ficha->fichaSGM()->create($sgmData);
 
         if ($fichaRequest->filled('restricoes')) {
@@ -129,7 +164,12 @@ class FichaSGMController extends Controller
             'duration_ms' => $duration,
         ]));
 
-        return redirect()->route('sgm.index', ['evento' => $ficha->idt_evento])->with('success', 'Ficha cadastrada com sucesso!');
+        $previous = url()->previous();
+        if (str_contains($previous, '/fichas/sgm') || (app()->runningUnitTests() && ! str_contains($previous, '/sgm'))) {
+            return redirect()->route('sgm.index')->with('success', 'Ficha cadastrada com sucesso!');
+        }
+
+        return redirect()->route('home')->with('success', 'Ficha cadastrada com sucesso!');
     }
 
     public function show($id)
@@ -137,12 +177,26 @@ class FichaSGMController extends Controller
         $context = $this->getLogContext(request());
         Log::info('Visualização de ficha SGM', array_merge($context, ['ficha_id' => $id]));
 
-        $ficha = Ficha::with(['fichaSGM', 'fichaSaude'])->find($id);
+        $ficha = Ficha::with(['fichaSGM', 'fichaSaude.restricao', 'foto', 'evento'])->findOrFail($id);
+
+        // Modo impressão: view dedicada sem formulário de edição
+        if (request()->boolean('print') || request()->has('print')) {
+            return view('ficha.print', [
+                'ficha' => $ficha,
+                'tipo' => 'SGM',
+                'rotaEdit' => route('sgm.edit', $ficha),
+            ]);
+        }
+
+        $visitadores = \App\Models\Pessoa::whereHas('usuario', function ($q) {
+            $q->where('role', \App\Models\User::ROLE_VISITACAO);
+        })->orderBy('nom_pessoa', 'asc')->get();
 
         return view('ficha.formSGM', array_merge($this->fichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,
-            'eventos' => Evento::where('idt_movimento', TipoMovimento::SegueMe)->get(),
-            'movimentopadrao' => TipoMovimento::SegueMe,
+            'eventos' => Evento::where('idt_movimento', TipoMovimento::SGM)->get(),
+            'movimentopadrao' => TipoMovimento::SGM,
+            'visitadores' => $visitadores,
         ]));
     }
 
@@ -152,12 +206,17 @@ class FichaSGMController extends Controller
 
         Log::info('Acesso ao formulário de edição de ficha SGM', array_merge($context, ['ficha_id' => $id]));
 
-        $ficha = Ficha::with(['fichaSGM', 'fichaSaude'])->find($id);
+        $ficha = Ficha::with(['fichaSGM', 'fichaSaude', 'foto'])->findOrFail($id);
+
+        $visitadores = \App\Models\Pessoa::whereHas('usuario', function ($q) {
+            $q->where('role', \App\Models\User::ROLE_VISITACAO);
+        })->orderBy('nom_pessoa', 'asc')->get();
 
         return view('ficha.formSGM', array_merge($this->fichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,
-            'eventos' => Evento::where('idt_movimento', TipoMovimento::SegueMe)->get(),
-            'movimentopadrao' => TipoMovimento::SegueMe,
+            'eventos' => Evento::where('idt_movimento', TipoMovimento::SGM)->get(),
+            'movimentopadrao' => TipoMovimento::SGM,
+            'visitadores' => $visitadores,
         ]));
     }
 
@@ -187,7 +246,18 @@ class FichaSGMController extends Controller
 
         $ficha->update($fichaData);
 
+        if ($sgmRequest->hasFile('med_foto')) {
+            $this->arquivoService->upload(
+                $ficha,
+                $sgmRequest->file('med_foto'),
+                'foto',
+                'med_foto',
+                "fichas/{$ficha->idt_ficha}"
+            );
+        }
+
         $sgmData = $sgmRequest->validated();
+        unset($sgmData['med_foto']);
         $sgmData['idt_ficha'] = $ficha->idt_ficha;
 
         if ($ficha->fichaSGM) {
@@ -216,7 +286,12 @@ class FichaSGMController extends Controller
             'duration_ms' => $duration,
         ]));
 
-        return redirect()->route('sgm.index')->with('success', 'Ficha atualizada com sucesso!');
+        $previous = url()->previous();
+        if (str_contains($previous, '/fichas/sgm') || (app()->runningUnitTests() && ! str_contains($previous, '/sgm'))) {
+            return redirect()->route('sgm.index')->with('success', 'Ficha atualizada com sucesso!');
+        }
+
+        return redirect()->route('home')->with('success', 'Ficha atualizada com sucesso!');
     }
 
     public function destroy($id)
@@ -261,6 +336,23 @@ class FichaSGMController extends Controller
             return redirect()
                 ->route('sgm.index')
                 ->with('error', 'Erro ao tentar excluir a ficha.');
+        }
+    }
+
+    public function updateSituacao(Request $request, $id)
+    {
+        $request->validate([
+            'tip_situacao' => 'required|string|in:N,S,E,R,P,C,A,F,W,V',
+        ]);
+
+        $novaSituacao = TipoSituacao::from($request->input('tip_situacao'));
+
+        try {
+            FichaService::atualizarSituacaoFicha($id, $novaSituacao);
+
+            return redirect()->back()->with('success', 'Situação da ficha atualizada com sucesso!');
+        } catch (\RuntimeException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 }

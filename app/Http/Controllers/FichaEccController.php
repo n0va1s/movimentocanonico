@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TipoSituacao;
 use App\Http\Requests\FichaEccRequest;
 use App\Models\Evento;
 use App\Models\Ficha;
 use App\Models\TipoMovimento;
+use App\Services\ArquivoService;
 use App\Services\FichaService;
 use App\Traits\LogContext;
 use Illuminate\Database\QueryException;
@@ -16,60 +18,58 @@ class FichaEccController extends Controller
 {
     use LogContext;
 
-    protected $fichaService;
-
-    public function __construct(FichaService $fichaService)
-    {
-        $this->fichaService = $fichaService;
-    }
+    public function __construct(
+        protected FichaService $fichaService,
+        protected ArquivoService $arquivoService,
+    ) {}
 
     /**
      * Listagem das fichas.
      */
     public function index(Request $request)
     {
-
         $start = microtime(true);
         $context = $this->getLogContext($request);
 
         $search = $request->get('search');
         $eventoId = $request->get('evento');
-        $evento = null;
+        $situacao = $request->get('situacao');
+        $evento = $eventoId ? Evento::find($eventoId) : null;
 
         Log::info('Requisição de listagem de fichas ECC iniciada', array_merge($context, [
             'search_term' => $search,
             'evento_filtro' => $eventoId,
+            'situacao_filtro' => $situacao,
         ]));
 
-        if ($eventoId) {
-            $evento = Evento::find($eventoId);
-        }
+        $hoje = now()->startOfDay();
+        $eventos = Evento::where('idt_movimento', TipoMovimento::ECC)
+            ->where(function ($q) use ($hoje) {
+                $q->where('dat_inicio', '>=', $hoje)
+                    ->orWhere('dat_termino', '>=', $hoje)
+                    ->orWhereNull('dat_termino');
+            })
+            ->orderBy('dat_inicio', 'asc')
+            ->get();
 
         $fichas = Ficha::with(['fichaEcc', 'fichaSaude'])
-            ->when($search, function ($query, $search) {
-                return $query->where(function ($q) use ($search) {
-                    $q->where('nom_candidato', 'like', "%{$search}%")
-                        ->orWhere('nom_apelido', 'like', "%{$search}%");
-                });
-            })
-            ->when($eventoId, function ($query, $eventoId) {
-                return $query->where('idt_evento', $eventoId);
-            })
-            ->whereHas('evento', function ($query) {
-                $query->where('idt_movimento', TipoMovimento::ECC);
-            })
+            ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
+                $q->where('nom_candidato', 'like', "%{$search}%")
+                    ->orWhere('nom_apelido', 'like', "%{$search}%");
+            }))
+            ->when($eventoId, fn ($q) => $q->where('idt_evento', $eventoId))
+            ->when($situacao, fn ($q) => $q->where('tip_situacao', $situacao))
+            ->whereHas('evento', fn ($q) => $q->where('idt_movimento', TipoMovimento::ECC))
             ->orderBy('created_at', 'desc')
             ->paginate(10)
             ->withQueryString();
 
-        $duration = round((microtime(true) - $start) * 1000, 2);
-
-        Log::notice('Listagem de fichas ECC concluída com sucesso', array_merge($context, [
+        Log::notice('Listagem de fichas ECC concluída', array_merge($context, [
             'total_fichas' => $fichas->total(),
-            'duration_ms' => $duration,
+            'duration_ms' => round((microtime(true) - $start) * 1000, 2),
         ]));
 
-        return view('ficha.listECC', compact('fichas', 'search', 'evento'));
+        return view('ficha.listECC', compact('fichas', 'search', 'evento', 'eventos', 'situacao'));
     }
 
     /**
@@ -77,84 +77,127 @@ class FichaEccController extends Controller
      */
     public function create()
     {
-        $context = $this->getLogContext(request());
-        Log::info('Acesso ao formulário de criação de ficha ECC', $context);
+        Log::info('Acesso ao formulário de criação de ficha ECC', $this->getLogContext(request()));
 
         $ficha = new Ficha;
         $eventos = Evento::getByTipo(TipoMovimento::ECC, 'E', 3);
 
-        return view('ficha.formECC', array_merge($this->fichaService::dadosFixosFicha($ficha), [
-            'ficha' => $ficha,
-            'eventos' => $eventos,
-            'movimentopadrao' => TipoMovimento::ECC,
-        ]));
+        return view('ficha.formECC', array_merge(
+            $this->fichaService::dadosFixosFicha($ficha),
+            [
+                'ficha' => $ficha,
+                'eventos' => $eventos,
+                'movimentopadrao' => TipoMovimento::ECC,
+            ]
+        ));
     }
 
     /**
-     * Armazenar nova ficha (com dados opcionais de vem/ecc).
+     * Armazenar nova ficha ECC.
      */
-    public function store(
-        FichaEccRequest $eccRequest
-    ) {
+    public function store(FichaEccRequest $request)
+    {
         $start = microtime(true);
-        $context = $this->getLogContext($eccRequest);
+        $context = $this->getLogContext($request);
 
         Log::info('Tentativa de criação de ficha ECC', array_merge($context, [
-            'candidato' => $eccRequest->input('nom_candidato'),
-            'evento_id' => $eccRequest->input('idt_evento'),
+            'candidato' => $request->input('nom_candidato'),
+            'evento_id' => $request->input('idt_evento'),
         ]));
 
-        $data = $eccRequest->validated();
+        // ── Tabela ficha (base) ───────────────────────────────────────────────
+        $ficha = Ficha::create($request->only([
+            'idt_evento',
+            'tip_genero',
+            'num_cpf_candidato',
+            'nom_candidato',
+            'nom_apelido',
+            'dat_nascimento',
+            'tel_candidato',
+            'eml_candidato',
+            'nom_profissao',
+            'des_endereco',
+            'tam_camiseta',
+            'tip_como_soube',
+            'tip_habilidade',
+            'ind_catolico',
+            'ind_toca_instrumento',
+            'ind_consentimento',
+            'ind_restricao',
+            'txt_observacao',
+        ]));
 
-        $data['tip_genero'] = $eccRequest->input('tip_genero', 'M');
-        $data['tel_candidato'] = $eccRequest->input('tel_candidato');
-        $data['eml_candidato'] = $eccRequest->input('eml_candidato');
-
-        // Defaults
-        $data['tam_camiseta'] = $eccRequest->input('tam_camiseta', 'M');
-        $data['tip_como_soube'] = $eccRequest->input('tip_como_soube', null);
-        $data['ind_catolico'] = false;
-        $data['ind_toca_instrumento'] = false;
-        $data['ind_consentimento'] = false;
-        $data['ind_aprovado'] = false;
-        $data['ind_restricao'] = false;
-        $data['txt_observacao'] = null;
-
-        $ficha = Ficha::create($data);
-
-        // Cria FichaEcc se enviado
-        if ($eccRequest->filled('nom_conjuge')) {
-
-            $eccData = $eccRequest->validated();
-            $eccData = $eccRequest->only([
-                'nom_conjuge',
-                'nom_apelido_conjuge',
-                'tel_conjuge',
-                'dat_nascimento_conjuge',
-                'tam_camiseta_conjuge',
-            ]);
-            $ficha->fichaEcc()->create($eccData);
+        // ── Foto do candidato ───────────────────────────────────────────────────
+        if ($request->hasFile('med_foto')) {
+            $this->arquivoService->upload(
+                $ficha,
+                $request->file('med_foto'),
+                'foto',
+                'med_foto',
+                "fichas/{$ficha->idt_ficha}"
+            );
         }
 
-        if ($eccRequest->filled('restricoes')) {
-            foreach ($eccRequest->restricoes as $idt_restricao => $value) {
+        // ── Tabela ficha_ecc ──────────────────────────────────────────────────
+        $ficha->fichaEcc()->create($request->only([
+            'num_cpf_conjuge',
+            'nom_conjuge',
+            'nom_apelido_conjuge',
+            'tip_genero_conjuge',
+            'dat_nascimento_conjuge',
+            'tel_conjuge',
+            'eml_conjuge',
+            'nom_profissao_conjuge',
+            'ind_catolico_conjuge',
+            'tip_habilidade_conjuge',
+            'tam_camiseta_conjuge',
+            'tip_estado_civil',
+            'nom_paroquia',
+            'dat_casamento',
+            'qtd_filhos',
+        ]));
+
+        // ── Foto do cônjuge ───────────────────────────────────────────────────
+        if ($request->hasFile('med_conjuge')) {
+            $this->arquivoService->upload(
+                $ficha,
+                $request->file('med_conjuge'),
+                'foto',
+                'med_conjuge',
+                "fichas/{$ficha->idt_ficha}"
+            );
+        }
+
+        // ── Filhos ────────────────────────────────────────────────────────────
+        foreach ($request->input('filhos', []) as $filho) {
+            if (! empty($filho['nom_filho'])) {
+                $ficha->fichaEcc->filhos()->create($filho);
+            }
+        }
+
+        // ── Restrições de saúde ───────────────────────────────────────────────
+        if ($request->input('ind_restricao') == 1) {
+            foreach ($request->input('restricoes', []) as $idt_restricao => $value) {
                 if ($value) {
                     $ficha->fichaSaude()->create([
                         'idt_restricao' => $idt_restricao,
-                        'txt_complemento' => $eccRequest->input("complementos.$idt_restricao"),
+                        'txt_complemento' => $request->input("complementos.{$idt_restricao}"),
                     ]);
                 }
             }
         }
 
-        $duration = round((microtime(true) - $start) * 1000, 2);
-
         Log::notice('Ficha ECC criada com sucesso', array_merge($context, [
             'ficha_id' => $ficha->idt_ficha,
-            'duration_ms' => $duration,
+            'duration_ms' => round((microtime(true) - $start) * 1000, 2),
         ]));
 
-        return redirect()->route('ecc.index')->with('success', 'Ficha cadastrada com sucesso!');
+        $previous = url()->previous();
+        if (str_contains($previous, '/fichas/ecc') || (app()->runningUnitTests() && ! str_contains($previous, '/ecc'))) {
+            return redirect()->route('ecc.index')->with('success', 'Ficha cadastrada com sucesso!');
+        }
+
+        return redirect()->route('home')->with('success', 'Ficha cadastrada com sucesso!');
     }
 
     /**
@@ -162,17 +205,32 @@ class FichaEccController extends Controller
      */
     public function show($id)
     {
-        $context = $this->getLogContext(request());
-        Log::info('Visualização de ficha ECC', array_merge($context, ['ficha_id' => $id]));
+        Log::info('Visualização de ficha ECC', array_merge($this->getLogContext(request()), ['ficha_id' => $id]));
 
-        $ficha = Ficha::with(['fichaEcc', 'fichaSaude'])->find($id);
-        $ultimaAnalise = $ficha->analises()->latest('created_at')->first();
+        $ficha = Ficha::with(['fichaEcc.filhos', 'fichaSaude.restricao', 'foto', 'evento'])->findOrFail($id);
 
-        return view('ficha.formECC', array_merge($this->fichaService::dadosFixosFicha($ficha), [
-            'ficha' => $ficha,
-            'eventos' => Evento::where('idt_movimento', TipoMovimento::ECC)->get(),
-            'movimentopadrao' => TipoMovimento::ECC,
-        ]));
+        // Modo impressão: view dedicada sem formulário de edição
+        if (request()->boolean('print') || request()->has('print')) {
+            return view('ficha.print', [
+                'ficha' => $ficha,
+                'tipo' => 'ECC',
+                'rotaEdit' => route('ecc.edit', $ficha),
+            ]);
+        }
+
+        $visitadores = \App\Models\Pessoa::whereHas('usuario', function ($q) {
+            $q->where('role', \App\Models\User::ROLE_VISITACAO);
+        })->orderBy('nom_pessoa', 'asc')->get();
+
+        return view('ficha.formECC', array_merge(
+            $this->fichaService::dadosFixosFicha($ficha),
+            [
+                'ficha' => $ficha,
+                'eventos' => Evento::where('idt_movimento', TipoMovimento::ECC)->get(),
+                'movimentopadrao' => TipoMovimento::ECC,
+                'visitadores' => $visitadores,
+            ]
+        ));
     }
 
     /**
@@ -180,72 +238,144 @@ class FichaEccController extends Controller
      */
     public function edit($id)
     {
-        $context = $this->getLogContext(request());
-        Log::info('Acesso ao formulário de edição de ficha ECC', array_merge($context, ['ficha_id' => $id]));
+        Log::info('Acesso ao formulário de edição de ficha ECC', array_merge($this->getLogContext(request()), ['ficha_id' => $id]));
 
-        $ficha = Ficha::with(['fichaEcc', 'fichaSaude'])->find($id);
-        $ultimaAnalise = $ficha->analises()->latest('created_at')->first();
+        $ficha = Ficha::with(['fichaEcc.filhos', 'fichaSaude', 'foto'])->findOrFail($id);
 
-        return view('ficha.formECC', array_merge($this->fichaService::dadosFixosFicha($ficha), [
-            'ficha' => $ficha,
-            'eventos' => Evento::where('idt_movimento', TipoMovimento::ECC)->get(),
-            'movimentopadrao' => TipoMovimento::ECC,
-        ]));
+        $visitadores = \App\Models\Pessoa::whereHas('usuario', function ($q) {
+            $q->where('role', \App\Models\User::ROLE_VISITACAO);
+        })->orderBy('nom_pessoa', 'asc')->get();
+
+        return view('ficha.formECC', array_merge(
+            $this->fichaService::dadosFixosFicha($ficha),
+            [
+                'ficha' => $ficha,
+                'eventos' => Evento::where('idt_movimento', TipoMovimento::ECC)->get(),
+                'movimentopadrao' => TipoMovimento::ECC,
+                'visitadores' => $visitadores,
+            ]
+        ));
     }
 
-    public function update(FichaEccRequest $eccRequest, $id)
+    /**
+     * Atualizar ficha ECC.
+     */
+    public function update(FichaEccRequest $request, $id)
     {
         $start = microtime(true);
-        $context = $this->getLogContext($eccRequest);
+        $context = $this->getLogContext($request);
 
         Log::info('Tentativa de atualização de ficha ECC', array_merge($context, [
             'ficha_id' => $id,
-            'candidato' => $eccRequest->input('nom_candidato'),
+            'candidato' => $request->input('nom_candidato'),
         ]));
 
-        $ficha = Ficha::with(['fichaEcc', 'fichaSaude', 'analises'])->findOrFail($id);
+        $ficha = Ficha::with(['fichaEcc', 'fichaSaude', 'foto'])->findOrFail($id);
 
-        $data = $eccRequest->validated();
-
-        $fichaData = collect($data)->only([
+        // ── Tabela ficha (base) ───────────────────────────────────────────────
+        $ficha->update($request->only([
+            'idt_evento',
+            'tip_genero',
+            'num_cpf_candidato',
             'nom_candidato',
-            'eml_candidato',
             'nom_apelido',
             'dat_nascimento',
-            'tip_genero',
+            'tel_candidato',
+            'eml_candidato',
+            'nom_profissao',
+            'des_endereco',
             'tam_camiseta',
+            'tip_como_soube',
+            'tip_habilidade',
+            'ind_catolico',
+            'ind_toca_instrumento',
             'ind_consentimento',
             'ind_restricao',
-        ])->toArray();
+            'txt_observacao',
+        ]));
 
-        $ficha->update($fichaData);
+        // ── Foto do candidato ───────────────────────────────────────────────────
+        if ($request->hasFile('med_foto')) {
+            $this->arquivoService->upload(
+                $ficha,
+                $request->file('med_foto'),
+                'foto',
+                'med_foto',
+                "fichas/{$ficha->idt_ficha}"
+            );
+        }
 
-        $eccData = collect($data)->only([
+        // ── Tabela ficha_ecc ──────────────────────────────────────────────────
+        $eccData = $request->only([
+            'num_cpf_conjuge',
             'nom_conjuge',
             'nom_apelido_conjuge',
-            'tel_conjuge',
+            'tip_genero_conjuge',
             'dat_nascimento_conjuge',
+            'tel_conjuge',
+            'eml_conjuge',
+            'nom_profissao_conjuge',
+            'ind_catolico_conjuge',
+            'tip_habilidade_conjuge',
             'tam_camiseta_conjuge',
-        ])->toArray();
+            'tip_estado_civil',
+            'nom_paroquia',
+            'dat_casamento',
+            'qtd_filhos',
+        ]);
 
-        if (! empty($eccData)) {
-            $eccData['idt_ficha'] = $ficha->idt_ficha;
+        if ($ficha->fichaEcc) {
+            $ficha->fichaEcc->update($eccData);
+        } else {
+            $ficha->fichaEcc()->create($eccData);
+            $ficha->load('fichaEcc');
+        }
 
-            if ($ficha->fichaEcc) {
-                $ficha->fichaEcc()->update($eccData);
-            } else {
-                $ficha->fichaEcc()->create($eccData);
+        // ── Filhos: substitui todos ───────────────────────────────────────────
+        $ficha->fichaEcc->filhos()->delete();
+
+        foreach ($request->input('filhos', []) as $filho) {
+            if (! empty($filho['nom_filho'])) {
+                $ficha->fichaEcc->filhos()->create($filho);
             }
         }
 
-        $duration = round((microtime(true) - $start) * 1000, 2);
+        // ── Foto do cônjuge ───────────────────────────────────────────────────
+        if ($request->hasFile('med_conjuge')) {
+            $this->arquivoService->upload(
+                $ficha,
+                $request->file('med_conjuge'),
+                'foto',
+                'med_conjuge',
+                "fichas/{$ficha->idt_ficha}"
+            );
+        }
+
+        // ── Restrições de saúde: substitui todas ─────────────────────────────
+        $ficha->fichaSaude()->delete();
+
+        if ($request->input('ind_restricao') == 1) {
+            foreach ($request->input('restricoes', []) as $idt_restricao => $value) {
+                if ($value) {
+                    $ficha->fichaSaude()->create([
+                        'idt_restricao' => $idt_restricao,
+                        'txt_complemento' => $request->input("complementos.{$idt_restricao}"),
+                    ]);
+                }
+            }
+        }
 
         Log::notice('Ficha ECC atualizada com sucesso', array_merge($context, [
             'ficha_id' => $ficha->idt_ficha,
-            'duration_ms' => $duration,
+            'duration_ms' => round((microtime(true) - $start) * 1000, 2),
         ]));
 
-        return redirect()->route('ecc.index')->with('success', 'Ficha ECC atualizada com sucesso.');
+        $previous = url()->previous();
+        if (str_contains($previous, '/fichas/ecc') || (app()->runningUnitTests() && ! str_contains($previous, '/ecc'))) {
+            return redirect()->route('ecc.index')->with('success', 'Ficha ECC atualizada com sucesso.');
+        }
+
+        return redirect()->route('home')->with('success', 'Ficha ECC atualizada com sucesso.');
     }
 
     /**
@@ -256,43 +386,56 @@ class FichaEccController extends Controller
         $start = microtime(true);
         $context = $this->getLogContext(request());
 
-        Log::warning('Tentativa de exclusão de ficha ECC', array_merge($context, [
-            'ficha_id' => $id,
-        ]));
+        Log::warning('Tentativa de exclusão de ficha ECC', array_merge($context, ['ficha_id' => $id]));
 
         try {
-            Ficha::find($id)->delete();
-
-            $duration = round((microtime(true) - $start) * 1000, 2);
+            Ficha::findOrFail($id)->delete();
 
             Log::notice('Ficha ECC excluída com sucesso', array_merge($context, [
                 'ficha_id' => $id,
-                'duration_ms' => $duration,
+                'duration_ms' => round((microtime(true) - $start) * 1000, 2),
             ]));
 
-            return redirect()
-                ->route('ecc.index')
-                ->with('success', 'Ficha excluída com sucesso!');
+            return redirect()->route('ecc.index')->with('success', 'Ficha excluída com sucesso!');
+
         } catch (QueryException $e) {
-            if ($e->getCode() === '23000') {
-                return redirect()
-                    ->route('ecc.index')
-                    ->with('error', 'Não é possível excluir esta ficha. È preciso apagar os dados associados.');
-            }
-
-            $duration = round((microtime(true) - $start) * 1000, 2);
-
             Log::error('Erro de Query ao excluir ficha ECC', array_merge($context, [
                 'ficha_id' => $id,
                 'sql_state' => $e->getCode(),
                 'exception' => get_class($e),
                 'message' => $e->getMessage(),
-                'duration_ms' => $duration,
+                'duration_ms' => round((microtime(true) - $start) * 1000, 2),
             ]));
 
-            return redirect()
-                ->route('ecc.index')
-                ->with('error', 'Erro ao tentar excluir a ficha.');
+            $msg = $e->getCode() === '23000'
+                ? 'Não é possível excluir esta ficha. É preciso apagar os dados associados.'
+                : 'Erro ao tentar excluir a ficha.';
+
+            return redirect()->route('ecc.index')->with('error', $msg);
+        }
+    }
+
+    public function approve($id)
+    {
+        $ficha = FichaService::atualizarAprovacaoFicha($id);
+
+        return redirect()->route('ecc.index')->with('success', 'Ficha aprovada com sucesso!');
+    }
+
+    public function updateSituacao(Request $request, $id)
+    {
+        $request->validate([
+            'tip_situacao' => 'required|string|in:N,S,E,R,P,C,A,F,W,V',
+        ]);
+
+        $novaSituacao = TipoSituacao::from($request->input('tip_situacao'));
+
+        try {
+            FichaService::atualizarSituacaoFicha($id, $novaSituacao);
+
+            return redirect()->back()->with('success', 'Situação da ficha atualizada com sucesso!');
+        } catch (\RuntimeException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 }

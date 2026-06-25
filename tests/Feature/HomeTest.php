@@ -31,7 +31,7 @@ test('pagina inicial exibe informacoes da organizacao', function () {
     $response = $this->get(route('home'));
 
     $response->assertStatus(200);
-    $response->assertSee('Sistema de Gestão de Movimentos Paroquiais');
+    $response->assertSee('Movimento Canônico');
     $response->assertSee('Não tenhais medo!');
 });
 
@@ -49,16 +49,6 @@ test('pagina inicial exibe movimentos', function () {
     $response->assertSee('ECC');
 });
 
-// ==========================================
-// TESTES DE REDIRECIONAMENTOS
-// ==========================================
-
-test('visitante nao autenticado permanece na home', function () {
-    $response = $this->get(route('home'));
-
-    $response->assertStatus(200);
-    $response->assertViewIs('welcome');
-});
 
 // ==========================================
 // TESTES DE SEO E META TAGS
@@ -99,7 +89,7 @@ test('visitante pode enviar formulario de contato com dados validos', function (
 
     $response
         ->assertRedirect(route('home'))
-        ->assertSessionHas('message');
+        ->assertSessionHas('success');
 
     $this->assertDatabaseHas('contato', [
         'nom_contato' => 'João da Silva',

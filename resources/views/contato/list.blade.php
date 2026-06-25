@@ -4,8 +4,8 @@
             <x-session-alert />
         </div>
         <div class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Gerenciar Contatos</h1>
-            <p class="text-gray-700 mt-1 dark:text-gray-400">Gerencie os contatos recebidos.</p>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Contatos</h1>
+            <p class="text-gray-700 mt-1 dark:text-gray-400">Após responder exclua a mensagem</p>
         </div>
 
         <div class="mb-4">

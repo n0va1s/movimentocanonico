@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             FichaSeeder::class,
             EnvolvidoSeeder::class,
             ContatoSeeder::class,
+            ProdutoSeeder::class,
         ]);
         Schema::enableForeignKeyConstraints();
     }

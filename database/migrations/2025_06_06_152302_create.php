@@ -198,7 +198,7 @@ return new class extends Migration
                 ->constrained('pessoa', 'idt_pessoa')->nullOnDelete(); // pessoa criada apos aprovacao
             $table->string('tip_genero', 3);
             $table->string('nom_candidato', 255)->index();
-            $table->string('nom_apelido', 255);
+            $table->string('nom_apelido', 255)->nullable();
             $table->date('dat_nascimento');
             $table->string('tel_candidato', 20)->nullable();
             $table->string('eml_candidato', 255)->index();

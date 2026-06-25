@@ -67,7 +67,7 @@ class Trabalhador extends Model
 
     public function evento()
     {
-        return $this->belongsTo(Evento::class, 'idt_evento');
+        return $this->belongsTo(Evento::class, 'idt_evento')->withTrashed();
     }
 
     public function equipe()

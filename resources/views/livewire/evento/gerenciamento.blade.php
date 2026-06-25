@@ -11,12 +11,19 @@ new class extends Component {
 
     public function mount(Evento $evento): void
     {
+        \Illuminate\Support\Facades\Gate::authorize('acessar-gerenciamento-evento', $evento);
+
         $this->evento = $evento->load(['movimento'])->loadCount([
             'fichas',
             'participantes',
             'trabalhadores',
             'voluntarios as voluntarios_count' => fn($q) => $q->whereNull('idt_trabalhador')->distinct('idt_pessoa'),
         ]);
+
+        $abas = array_keys($this->tabs());
+        if (!in_array($this->activeTab, $abas) && !empty($abas)) {
+            $this->activeTab = $abas[0];
+        }
     }
 
     public function setTab(string $tab): void
@@ -29,29 +36,50 @@ new class extends Component {
     #[Computed]
     public function tabs(): array
     {
-        $isEncontro = $this->evento->tip_evento === TipoEvento::ENCONTRO;
+        $isEncontro = ($this->evento->tip_evento?->value ?? $this->evento->tip_evento) === 'E';
+        $evento     = $this->evento;
 
         $todasAbas = [
             'resumo'       => ['icon' => 'chart-bar',      'label' => 'Resumo'],
-            'participantes'=> ['icon' => 'user-group',    'label' => 'Participantes'],
             'fichas'       => ['icon' => 'document-text', 'label' => 'Fichas',        'encontro_only' => true],
+            'participantes'=> ['icon' => 'user-group',    'label' => 'Participantes'],
+            'restricoes'   => ['icon' => 'shield-check',  'label' => 'Restrições'],
             'voluntarios'  => ['icon' => 'hand-raised',   'label' => 'Voluntários',   'encontro_only' => true],
             'trabalhadores'=> ['icon' => 'briefcase',     'label' => 'Trabalhadores', 'encontro_only' => true],
-            'crachas'      => ['icon' => 'identification','label' => 'Crachás'],
-            'quadrante'    => ['icon' => 'table-cells',   'label' => 'Quadrante',     'encontro_only' => true],            
+            'crachas'      => ['icon' => 'identification','label' => 'Crachás',        'encontro_only' => true],
             'presenca'     => ['icon' => 'finger-print',  'label' => 'Presença'],
+            'quadrante'    => ['icon' => 'table-cells',   'label' => 'Quadrante',     'encontro_only' => true],            
             'contas'       => ['icon' => 'banknotes',     'label' => 'Prestação de Contas'],
         ];
 
-        return array_filter($todasAbas, function ($aba) use ($isEncontro) {
-            return !($aba['encontro_only'] ?? false) || $isEncontro;
-        });
+        return array_filter($todasAbas, function ($aba, $tab) use ($isEncontro, $evento) {
+            $tipoPermitido = !($aba['encontro_only'] ?? false) || $isEncontro;
+            $temPermissao  = \Illuminate\Support\Facades\Gate::allows("evento-tab-{$tab}", $evento);
+
+            return $tipoPermitido && $temPermissao;
+        }, ARRAY_FILTER_USE_BOTH);
     }
 }; ?>
 
 <section class="w-full">
+    <style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+
     {{-- Cabeçalho do Evento --}}
-    <header class="mb-8 space-y-2">
+    <header class="mb-8 space-y-4">
+        <div class="md:hidden">
+            <flux:button href="{{ route('eventos.index') }}" icon="arrow-left" variant="ghost" class="text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white">
+                Voltar para Eventos
+            </flux:button>
+        </div>
+
         <div class="flex items-center gap-3">
             <flux:heading size="xl">{{ $evento->des_evento }}</flux:heading>
             
@@ -90,32 +118,41 @@ new class extends Component {
         </div>
 
         <flux:separator variant="subtle" />
-        
-        <flux:subheading class="mt-4">Painel de Controle</flux:subheading>
+
+        {{-- Barra de Navegação Horizontal Simplificada com Dropdown (Tab Selector) --}}
+        <div class="relative w-full border-b border-zinc-200 dark:border-zinc-700 mt-2 pb-4 flex items-center justify-between">
+            @php
+                $tabs = $this->tabs;
+                $activeTabMeta = $tabs[$activeTab] ?? null;
+            @endphp
+            @if ($activeTabMeta)
+                <div class="flex gap-3">
+                    <flux:dropdown>
+                        <flux:button 
+                            icon="{{ $activeTabMeta['icon'] }}" 
+                            icon-trailing="chevron-down" 
+                            class="min-w-64 justify-between"
+                        >
+                            {{ $activeTabMeta['label'] }}
+                        </flux:button>
+                        <flux:menu class="w-64">
+                            @foreach ($tabs as $tab => $meta)
+                                <flux:menu.item 
+                                    wire:click="setTab('{{ $tab }}')"
+                                    icon="{{ $meta['icon'] }}"
+                                    class="cursor-pointer {{ $activeTab === $tab ? 'bg-zinc-100 dark:bg-zinc-700/50 font-semibold text-blue-600 dark:text-blue-400' : '' }}"
+                                >
+                                    {{ $meta['label'] }}
+                                </flux:menu.item>
+                            @endforeach
+                        </flux:menu>
+                    </flux:dropdown>
+                </div>
+            @endif
+        </div>
     </header>
 
-    <div class="flex flex-col md:flex-row gap-8">
-        {{-- Sidebar de Navegação --}}
-        <aside class="w-full md:w-64 space-y-1">
-            <nav class="flex flex-col gap-1">
-                <flux:navlist>
-                    @foreach ($this->tabs as $tab => $meta)
-                        <flux:navlist.item
-                            wire:click="setTab('{{ $tab }}')"
-                            wire:loading.attr="disabled"
-                            :variant="$activeTab === '{{ $tab }}' ? 'bullet' : 'ghost'"
-                            icon="{{ $meta['icon'] }}"
-                            class="cursor-pointer"
-                        >
-                            {{ $meta['label'] }}
-                        </flux:navlist.item>
-                    @endforeach
-                </flux:navlist>
-            </nav>
-        </aside>
-
-        <main class="flex-1 bg-white dark:bg-zinc-800 p-6 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm relative">
-    
+    <main class="w-full bg-white dark:bg-zinc-800 p-6 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm relative">
         {{-- Loading Overlay --}}
         <div wire:loading wire:target="setTab" class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm">
             <div class="flex items-center gap-3 text-zinc-500 dark:text-zinc-400">
@@ -136,6 +173,7 @@ new class extends Component {
                 @case('quadrante') <livewire:evento.partials.quadrante :evento="$evento" /> @break
                 @case('crachas') <livewire:evento.partials.crachas :evento="$evento" /> @break
                 @case('contas') <livewire:evento.partials.contas :evento="$evento" /> @break
+                @case('restricoes') <livewire:evento.partials.restricoes :evento="$evento" /> @break
             @endswitch
         @else
             <div class="p-4 text-zinc-500 italic">
@@ -143,5 +181,4 @@ new class extends Component {
             </div>
         @endif
     </main>
-    </div>
 </section>

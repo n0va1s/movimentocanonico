@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\FaixaEtaria;
 use App\Enums\TipoEvento;
 use App\Models\Evento;
 use App\Models\TipoMovimento;
@@ -18,7 +19,7 @@ class EventoFactory extends Factory
         $dataTermino = (clone $dataInicio)->modify('+3 days');
 
         return [
-            'idt_movimento' => $this->faker->numberBetween(1, 3) ?? TipoMovimento::inRandomOrder()->first()?->idt_movimento,
+            'idt_movimento' => TipoMovimento::inRandomOrder()->first()?->idt_movimento ?? TipoMovimento::factory(),
             'des_evento' => $this->faker->words(2, true),
             'num_evento' => $this->faker->numberBetween(1, 99),
             'dat_inicio' => $dataInicio->format('Y-m-d'),
@@ -30,6 +31,7 @@ class EventoFactory extends Factory
             'val_venista' => $this->faker->randomNumber(2, 50),
             'val_entrada' => $this->faker->randomNumber(2, 50),
             'tip_evento' => $this->faker->randomElement(TipoEvento::cases())->value,
+            'tip_faixa_etaria' => $this->faker->randomElement(FaixaEtaria::cases())->value,
             'val_receita' => $this->faker->randomNumber(2, 50),
             'val_despesa' => $this->faker->randomNumber(2, 50),
             'txt_informacao' => $this->faker->optional()->paragraph(),

@@ -22,6 +22,7 @@ enum TipoRestricao: string
             self::PNE => 'PNE',
             self::VEG => 'Vegetariano',
             self::MED => 'Medicação',
+            self::NDV => 'Neurodivergente'
         };
     }
 
@@ -35,6 +36,7 @@ enum TipoRestricao: string
             self::PNE => '♿',
             self::VEG => '🥗',
             self::MED => '💊',
+            self::NDV => '🧩',
         };
     }
 
@@ -48,6 +50,7 @@ enum TipoRestricao: string
             self::PNE => 'Descreva a necessidade...',
             self::VEG => 'Ex: vegano, ovolactovegetariano...',
             self::RES => 'Ex: poeira, pólen...',
+            self::NDV => 'Ex: espectro autista, TDAH...',
         };
     }
 }

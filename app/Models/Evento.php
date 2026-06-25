@@ -117,8 +117,10 @@ class Evento extends Model
         if ($search) {
             $lowerSearch = strtolower($search);
 
-            return $query->whereRaw('LOWER(des_evento) LIKE ?', ["%{$lowerSearch}%"])
-                ->orWhereRaw('LOWER(num_evento) LIKE ?', ["%{$lowerSearch}%"]);
+            return $query->where(function (Builder $q) use ($lowerSearch) {
+                $q->whereRaw('LOWER(des_evento) LIKE ?', ["%{$lowerSearch}%"])
+                    ->orWhereRaw('LOWER(num_evento) LIKE ?', ["%{$lowerSearch}%"]);
+            });
         }
 
         return $query;
@@ -145,19 +147,17 @@ class Evento extends Model
      * @param  string  $tipEvento  // E - evento anual, P - pós-encontro, D - desafio
      * @return int|null $limite // quantidade de linha retornadas
      */
-    public static function getByTipo(int $tipMovimento, string $tipEvento, ?int $limite)
+    public static function getByTipo(int $tipMovimento, string $tipEvento, ?int $limite = null)
     {
+        $query = self::where('idt_movimento', $tipMovimento)
+            ->where('tip_evento', $tipEvento)
+            ->orderBy('dat_inicio', 'asc');
+
         if ($limite) {
-            return Evento::where('idt_movimento', $tipMovimento)
-                ->where('tip_evento', $tipEvento)
-                ->orderBy('dat_inicio', 'asc')
-                ->limit($limite)->get();
-        } else {
-            return Evento::where('idt_movimento', $tipMovimento)
-                ->where('tip_evento', $tipEvento)
-                ->orderBy('dat_inicio', 'asc')
-                ->get();
+            return $query->limit($limite)->get();
         }
+
+        return $query->get();
     }
 
     public function getDataInicioFormatada()

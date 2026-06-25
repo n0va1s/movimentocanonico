@@ -7,10 +7,7 @@ use App\Models\Participante;
 use App\Models\Pessoa;
 use App\Models\Trabalhador;
 use Carbon\Carbon;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class EventoService
 {
@@ -20,17 +17,22 @@ class EventoService
      */
     public function getEventosTimeline(Pessoa $pessoa): array
     {
-        $relacoesBase = ['evento.movimento:idt_movimento,des_sigla'];
-
         $trabalhos = Trabalhador::where('idt_pessoa', $pessoa->idt_pessoa)
-            ->whereHas('evento')
-            ->with(array_merge($relacoesBase, ['equipe:idt_equipe,des_equipe']))
+            ->whereHas('evento', fn ($q) => $q->withTrashed())
+            ->with([
+                'evento' => fn ($q) => $q->withTrashed(),
+                'evento.movimento:idt_movimento,des_sigla',
+                'equipe:idt_equipe,des_grupo'
+            ])
             ->get()
             ->map(fn ($t) => $this->formataTimeline($t, 'Trabalhador'));
 
         $participacoes = Participante::where('idt_pessoa', $pessoa->idt_pessoa)
-            ->whereHas('evento')
-            ->with($relacoesBase)
+            ->whereHas('evento', fn ($q) => $q->withTrashed())
+            ->with([
+                'evento' => fn ($q) => $q->withTrashed(),
+                'evento.movimento:idt_movimento,des_sigla'
+            ])
             ->get()
             ->map(fn ($p) => $this->formataTimeline($p, 'Participante'));
 
@@ -61,10 +63,19 @@ class EventoService
                 'date' => null,
                 'event' => null,
                 'details' => [
-                    'equipe' => $model->equipe->des_equipe ?? null,
+                    'equipe' => $model->equipe->des_grupo ?? null,
                     'coordenador' => $model->ind_coordenador ?? false,
                 ],
+                'pontos' => 0,
             ];
+        }
+
+        $pontos = 0;
+        if ($type === 'Trabalhador') {
+            $pontos = $model->ind_coordenador ? 4 : 2;
+        } elseif ($type === 'Participante') {
+            $tipEvento = $model->evento->tip_evento;
+            $pontos = (($tipEvento instanceof \App\Enums\TipoEvento ? $tipEvento->value : $tipEvento) === 'D') ? 3 : 1;
         }
 
         return [
@@ -72,9 +83,10 @@ class EventoService
             'date' => $model->evento->dat_inicio,
             'event' => $model->evento,
             'details' => [
-                'equipe' => $model->equipe->des_equipe ?? null,
+                'equipe' => $model->equipe->des_grupo ?? null,
                 'coordenador' => $model->ind_coordenador ?? false,
             ],
+            'pontos' => $pontos,
         ];
     }
 

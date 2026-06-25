@@ -67,7 +67,7 @@ new class extends Component {
                     <div class="flex flex-col gap-1">
                         <flux:text size="sm" class="uppercase text-xs font-bold text-zinc-400 tracking-wide">Total Entradas</flux:text>
                         <flux:heading size="lg" class="text-green-600 dark:text-green-400">
-                            R$ {{ number_format($evento->val_investimento ?? 0, 2, ',', '.') }}
+                            R$ {{ number_format($evento->val_receita ?? 0, 2, ',', '.') }}
                         </flux:heading>
                     </div>
 
@@ -75,13 +75,13 @@ new class extends Component {
                     <div class="flex flex-col gap-1">
                         <flux:text size="sm" class="uppercase text-xs font-bold text-zinc-400 tracking-wide">Total Saídas</flux:text>
                         <flux:heading size="lg" class="text-red-600 dark:text-red-400">
-                            R$ {{ number_format($evento->val_saldo ?? 0, 2, ',', '.') }}
+                            R$ {{ number_format($evento->val_despesa ?? 0, 2, ',', '.') }}
                         </flux:heading>
                     </div>
 
                     {{-- Saldo --}}
                     @php
-                        $saldo = ($evento->val_investimento ?? 0) - ($evento->val_saldo ?? 0);
+                        $saldo = ($evento->val_receita ?? 0) - ($evento->val_despesa ?? 0);
                     @endphp
                     <div class="flex flex-col gap-1">
                         <flux:text size="sm" class="uppercase text-xs font-bold text-zinc-400 tracking-wide">Saldo</flux:text>

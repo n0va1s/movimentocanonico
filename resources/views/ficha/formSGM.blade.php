@@ -1,5 +1,25 @@
 <x-layouts.public :title="'Ficha do Segue-me'">
     <section class="px-4 py-6 w-full max-w-3xl mx-auto" aria-labelledby="page-title">
+        @php
+            $eventosJson = json_encode((object) $eventos->mapWithKeys(fn($e) => [
+                (string)$e->idt_evento => [
+                    'faixa' => $e->tip_faixa_etaria?->label() ?? 'Livre',
+                    'data_limite' => $e->dat_limite_inscricao?->format('d/m/Y') ?? '--/--/----',
+                    'vaga' => $e->qtd_vaga,
+                    'valor' => number_format($e->val_venista, 2, ',', '.')
+                ]
+            ])->all());
+        @endphp
+
+        <div x-data="{
+                bloqueado: {{ $ficha->ind_aprovado ? 'true' : 'false' }},
+                enviando: false,
+                selectedEventoId: '{{ old('idt_evento', $ficha->idt_evento ?? ($eventos->count() === 1 ? $eventos->first()->idt_evento : '')) }}',
+                eventosData: {{ $eventosJson }},
+                get info() {
+                    return this.eventosData[String(this.selectedEventoId)] || { faixa: '---', data_limite: '---', vaga: 0, valor: '0,00' };
+                }
+            }">
 
         {{-- ===== CABEÇALHO ===== --}}
         <div class="mb-6 space-y-4">
@@ -15,7 +35,7 @@
                     <x-heroicon-o-users class="w-5 h-5 text-blue-500 shrink-0" aria-hidden="true" />
                     <div>
                         <p class="text-xs text-gray-500 dark:text-gray-400">Público</p>
-                        <p class="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-100">16 a 23 anos</p>
+                        <p class="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-100" x-text="info.faixa">16 a 23 anos</p>
                     </div>
                 </div>
                 <div role="listitem"
@@ -23,7 +43,7 @@
                     <x-heroicon-o-calendar class="w-5 h-5 text-red-500 shrink-0" aria-hidden="true" />
                     <div>
                         <p class="text-xs text-gray-500 dark:text-gray-400">Inscrições até</p>
-                        <p class="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-100">12/07/2026</p>
+                        <p class="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-100" x-text="info.data_limite">12/07/2026</p>
                     </div>
                 </div>
                 <div role="listitem"
@@ -31,7 +51,7 @@
                     <x-heroicon-o-ticket class="w-5 h-5 text-green-500 shrink-0" aria-hidden="true" />
                     <div>
                         <p class="text-xs text-gray-500 dark:text-gray-400">Vagas</p>
-                        <p class="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-100">60 vagas</p>
+                        <p class="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-100"><span x-text="info.vaga">60</span> vagas</p>
                     </div>
                 </div>
                 <div role="listitem"
@@ -39,7 +59,7 @@
                     <x-heroicon-o-currency-dollar class="w-5 h-5 text-yellow-500 shrink-0" aria-hidden="true" />
                     <div>
                         <p class="text-xs text-gray-500 dark:text-gray-400">Taxa</p>
-                        <p class="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-100">R$ 120,00</p>
+                        <p class="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-100">R$ <span x-text="info.valor">120,00</span></p>
                     </div>
                 </div>
             </div>
@@ -51,8 +71,9 @@
                     <x-heroicon-o-calendar-days class="w-5 h-5 text-purple-500 shrink-0 mt-0.5" aria-hidden="true" />
                     <div>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Datas</p>
-                        <p class="text-sm font-medium text-gray-800 dark:text-gray-100">SGM: <span
-                                class="font-semibold">28 a 30/08/2026</span></p>
+                        <p class="text-sm font-medium text-gray-800 dark:text-gray-100">
+                            <span class="font-semibold">28 a 30/08/2026</span>
+                        </p>
                     </div>
                 </div>
                 <div
@@ -164,20 +185,148 @@
             </div>
         @endif
 
+        @if (Auth::user()?->hasRole('admin', 'espec', 'coord') && $ficha->exists)
+            <div class="bg-white dark:bg-zinc-800 rounded-xl shadow border border-gray-200 dark:border-zinc-700 p-4 sm:p-6 mb-6">
+                <p class="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-3">Mudar Situação para:</p>
+                <div class="flex flex-wrap gap-2">
+                    @php
+                        $situacoes = \App\Enums\TipoSituacao::cases();
+                    @endphp
+                    @foreach($situacoes as $situacao)
+                        @php
+                            $isCurrent = $ficha->tip_situacao === $situacao;
+                            $style = $situacao->badge();
+                        @endphp
+                        
+                        @if($isCurrent)
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold text-white {{ $style['bg'] }} shadow-sm">
+                                <x-heroicon-s-check class="w-4 h-4" />
+                                {{ $situacao->label() }}
+                            </span>
+                        @else
+                            <form method="POST" action="{{ route('sgm.situacao', $ficha->idt_ficha) }}" class="inline">
+                                @csrf
+                                <input type="hidden" name="tip_situacao" value="{{ $situacao->value }}">
+                                <button type="submit" 
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border transition-all duration-200 cursor-pointer hover:text-white {{ $style['light'] }} {{ $style['hover'] }}">
+                                    @if($situacao->value === 'N')
+                                        <x-heroicon-o-document-text class="w-4 h-4" />
+                                    @elseif($situacao->value === 'S')
+                                        <x-heroicon-o-check-circle class="w-4 h-4" />
+                                    @elseif($situacao->value === 'E')
+                                        <x-heroicon-o-envelope class="w-4 h-4" />
+                                    @elseif($situacao->value === 'R')
+                                        <x-heroicon-o-document-check class="w-4 h-4" />
+                                    @elseif($situacao->value === 'P')
+                                        <x-heroicon-o-credit-card class="w-4 h-4" />
+                                    @elseif($situacao->value === 'C')
+                                        <x-heroicon-o-x-circle class="w-4 h-4" />
+                                    @elseif($situacao->value === 'A')
+                                        <x-heroicon-o-sparkles class="w-4 h-4" />
+                                    @elseif($situacao->value === 'F')
+                                        <x-heroicon-o-phone class="w-4 h-4" />
+                                    @elseif($situacao->value === 'W')
+                                        <x-heroicon-o-clock class="w-4 h-4" />
+                                    @elseif($situacao->value === 'V')
+                                        <x-heroicon-o-check-circle class="w-4 h-4" />
+                                    @endif
+                                    {{ $situacao->label() }}
+                                </button>
+                            </form>
+                        @endif
+                    @endforeach
+                </div>
+                @if(Auth::user()?->hasRole('admin', 'espec'))
+                    <div class="mt-4 border-t border-gray-100 dark:border-zinc-700 pt-4">
+                        <form method="POST" action="{{ route('fichas.designar-visitador', $ficha->idt_ficha) }}">
+                            @csrf
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                <label for="idt_pessoa_visitacao" class="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Responsável pela Visitação:</label>
+                                <div class="flex items-center gap-2 w-full sm:w-auto">
+                                    <select name="idt_pessoa_visitacao" id="idt_pessoa_visitacao" 
+                                        class="text-xs rounded-md border border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 text-gray-900 dark:text-gray-100 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="">Sem responsável designado</option>
+                                        @if(isset($visitadores))
+                                            @foreach($visitadores as $v)
+                                                <option value="{{ $v->idt_pessoa }}" @selected($ficha->idt_pessoa_visitacao === $v->idt_pessoa)>
+                                                    {{ $v->nom_pessoa }}
+                                                </option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                    <button type="submit" class="px-3 py-1.5 bg-blue-600 text-white rounded-md text-xs font-semibold hover:bg-blue-700">
+                                        Designar
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                @endif
+            </div>
+        @endif
+
         {{-- ===== FORMULÁRIO ===== --}}
         @if ($eventos->count() > 0)
-            <form method="POST" x-data="{ bloqueado: {{ $ficha->ind_aprovado ? 'true' : 'false' }}, enviando: false }" @submit="enviando = true"
+            <form method="POST" enctype="multipart/form-data" @submit="setTimeout(() => enviando = true, 50)"
                 action="{{ $ficha->exists ? route('sgm.update', $ficha) : route('sgm.store') }}" class="space-y-8">
                 @csrf
-                @if ($ficha->exists)
-                    @method('PUT')
-                @endif
+                @if ($ficha->exists) @method('PUT') @endif
 
                 {{-- ===== DADOS BÁSICOS ===== --}}
-                <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-6">
+                <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-4 sm:p-6">
                     <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Dados Básicos</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                        {{-- Foto --}}
+                        <div class="flex flex-col items-center gap-3" x-data="{ photoPreview: '{{ $ficha->foto?->med_foto ? Storage::url($ficha->foto->med_foto) : '' }}' }">
+                            <div
+                                class="w-28 h-28 rounded-full bg-gray-100 dark:bg-zinc-700 border-2 border-gray-300 dark:border-zinc-600 flex items-center justify-center overflow-hidden">
+                                <template x-if="photoPreview">
+                                    <img :src="photoPreview" alt="Foto do participante"
+                                        class="w-full h-full object-cover" />
+                                </template>
+                                <template x-if="!photoPreview">
+                                    <x-heroicon-o-user class="w-14 h-14 text-gray-400 dark:text-gray-500"
+                                        aria-hidden="true" />
+                                </template>
+                            </div>
+                            <div>
+                                <label for="med_foto"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 text-center">
+                                    Foto
+                                </label>
+                                <input type="file" name="med_foto" id="med_foto" accept="image/*"
+                                    x-bind:disabled="bloqueado"
+                                    @change="
+                                        const file = $event.target.files[0];
+                                        if (file) {
+                                            photoPreview = URL.createObjectURL(file);
+                                        } else {
+                                            photoPreview = '{{ $ficha->foto?->med_foto ? Storage::url($ficha->foto->med_foto) : '' }}';
+                                        }
+                                    "
+                                    class="block text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-300" />
+                                @error('med_foto')
+                                    <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
 
+                        {{-- CPF --}}
+                        <div>
+                            <label for="num_cpf_candidato"
+                                class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
+                                CPF <span class="text-red-600" aria-hidden="true">*</span><span
+                                    class="sr-only">(obrigatório)</span>
+                            </label>
+                            <input type="text" name="num_cpf_candidato" id="num_cpf_candidato"
+                                x-bind:disabled="bloqueado" required maxlength="14" autocomplete="off"
+                                value="{{ old('num_cpf_candidato', $ficha->num_cpf_candidato) }}"
+                                placeholder="000.000.000-00" aria-required="true"
+                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('num_cpf_candidato') border-red-500 @enderror" />
+                            @error('num_cpf_candidato')
+                                <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                            @enderror
+                        </div>
                         {{-- Movimento --}}
                         <div>
                             <label for="idt_movimento"
@@ -207,12 +356,12 @@
                             <label for="idt_evento" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
                                 Evento <span class="text-red-600">*</span>
                             </label>
-                            <select name="idt_evento" id="idt_evento" required x-bind:disabled="bloqueado"
+                            <select name="idt_evento" id="idt_evento" required x-bind:disabled="bloqueado" x-model="selectedEventoId"
                                 class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('idt_evento') border-red-500 @enderror">
                                 <option class="dark:bg-zinc-700" value="">Selecione um evento</option>
                                 @foreach ($eventos as $evento)
                                     <option class="dark:bg-zinc-700" value="{{ $evento->idt_evento }}"
-                                        {{ old('idt_evento', $ficha->idt_evento) == $evento->idt_evento ? 'selected' : '' }}>
+                                        {{ old('idt_evento', $ficha->idt_evento ?? ($eventos->count() === 1 ? $eventos->first()->idt_evento : null)) == $evento->idt_evento ? 'selected' : '' }}>
                                         {{ $evento->des_evento }} - {{ $evento->dat_inicio->format('d/m/Y') }}
                                     </option>
                                 @endforeach
@@ -260,10 +409,10 @@
                         {{-- Apelido --}}
                         <div>
                             <label for="nom_apelido" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Apelido <span class="text-red-600">*</span>
+                                Apelido
                             </label>
                             <input type="text" name="nom_apelido" id="nom_apelido" x-bind:disabled="bloqueado"
-                                value="{{ old('nom_apelido', $ficha->nom_apelido) }}" required maxlength="100"
+                                value="{{ old('nom_apelido', $ficha->nom_apelido) }}" maxlength="100"
                                 placeholder="Como gosta de ser chamado"
                                 class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('nom_apelido') border-red-500 @enderror" />
                             @error('nom_apelido')
@@ -275,7 +424,7 @@
                         <div>
                             <label for="tel_candidato"
                                 class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Telefone <span class="text-red-600">*</span>
+                                Telefone
                             </label>
                             <input type="text" name="tel_candidato" id="tel_candidato"
                                 x-bind:disabled="bloqueado" value="{{ old('tel_candidato', $ficha->tel_candidato) }}"
@@ -318,14 +467,16 @@
 
                         {{-- Naturalidade --}}
                         <div>
-                            <label for="naturalidade" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            <label for="des_naturalidade"
+                                class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
                                 Naturalidade <span class="text-red-600">*</span>
                             </label>
-                            <input type="text" name="naturalidade" id="naturalidade" x-bind:disabled="bloqueado"
-                                value="{{ old('naturalidade', optional($ficha->fichaSgm)->naturalidade) }}" required
-                                maxlength="255" placeholder="Naturalidade"
-                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('naturalidade') border-red-500 @enderror" />
-                            @error('naturalidade')
+                            <input type="text" name="des_naturalidade" id="des_naturalidade"
+                                x-bind:disabled="bloqueado"
+                                value="{{ old('des_naturalidade', optional($ficha->fichaSGM)->des_naturalidade) }}"
+                                required maxlength="255" placeholder="Ex: Brasília/DF"
+                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('des_naturalidade') border-red-500 @enderror" />
+                            @error('des_naturalidade')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
@@ -353,9 +504,10 @@
                         {{-- Endereço --}}
                         <div class="col-span-1 md:col-span-2">
                             <label for="des_endereco" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Endereço
+                                Endereço <span class="text-red-600" aria-hidden="true">*</span><span class="sr-only">(obrigatório)</span>
                             </label>
                             <input type="text" name="des_endereco" id="des_endereco" x-bind:disabled="bloqueado"
+                                required aria-required="true"
                                 value="{{ old('des_endereco', $ficha->des_endereco) }}" maxlength="500"
                                 placeholder="Rua, número, bairro, cidade"
                                 class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('des_endereco') border-red-500 @enderror" />
@@ -367,164 +519,221 @@
                     </div>
                 </div>
 
-                {{-- ===== RESPONSÁVEIS ===== --}}
-                <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-6">
-                    <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Responsáveis</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {{-- ===== FILIAÇÃO ===== --}}
+                <fieldset class="bg-white dark:bg-zinc-800 rounded-md shadow p-4 sm:p-6">
+                    <legend class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Filiação
+                    </legend>
+                    <div class="space-y-6">
 
-                        {{-- Nome do Pai --}}
+                        {{-- Mãe --}}
                         <div>
-                            <label for="nom_pai" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Nome do Pai
-                            </label>
-                            <input type="text" name="nom_pai" id="nom_pai" x-bind:disabled="bloqueado"
-                                value="{{ old('nom_pai', optional($ficha->fichaSgm)->nom_pai) }}" maxlength="255"
-                                placeholder="Nome completo do pai"
-                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('nom_pai') border-red-500 @enderror" />
-                            @error('nom_pai')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
+                            <p class="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm sm:text-base">Mãe</p>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                                <div>
+                                    <label for="nom_mae"
+                                        class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Nome</label>
+                                    <input type="text" name="nom_mae" id="nom_mae" x-bind:disabled="bloqueado"
+                                        value="{{ old('nom_mae', optional($ficha->fichaSGM)->nom_mae) }}"
+                                        maxlength="255" autocomplete="off" placeholder="Nome completo"
+                                        class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('nom_mae') border-red-500 @enderror" />
+                                    @error('nom_mae')
+                                        <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label for="tel_mae"
+                                        class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Telefone</label>
+                                    <input type="tel" name="tel_mae" id="tel_mae" x-bind:disabled="bloqueado"
+                                        value="{{ old('tel_mae', optional($ficha->fichaSGM)->tel_mae) }}"
+                                        maxlength="20" autocomplete="off" placeholder="(61) 90000-0000"
+                                        class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('tel_mae') border-red-500 @enderror" />
+                                    @error('tel_mae')
+                                        <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label for="eml_mae"
+                                        class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Email</label>
+                                    <input type="email" name="eml_mae" id="eml_mae" x-bind:disabled="bloqueado"
+                                        value="{{ old('eml_mae', optional($ficha->fichaSGM)->eml_mae) }}"
+                                        maxlength="100" autocomplete="off" placeholder="email@exemplo.com"
+                                        class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('eml_mae') border-red-500 @enderror" />
+                                    @error('eml_mae')
+                                        <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
                         </div>
 
-                        {{-- Telefone do Pai --}}
-                        <div>
-                            <label for="tel_pai" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Telefone do Pai
-                            </label>
-                            <input type="text" name="tel_pai" id="tel_pai" x-bind:disabled="bloqueado"
-                                value="{{ old('tel_pai', optional($ficha->fichaSgm)->tel_pai) }}" maxlength="20"
-                                placeholder="(00) 00000-0000"
-                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('tel_pai') border-red-500 @enderror" />
-                            @error('tel_pai')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        {{-- Nome da Mãe --}}
-                        <div>
-                            <label for="nom_mae" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Nome da Mãe
-                            </label>
-                            <input type="text" name="nom_mae" id="nom_mae" x-bind:disabled="bloqueado"
-                                value="{{ old('nom_mae', optional($ficha->fichaSgm)->nom_mae) }}" maxlength="255"
-                                placeholder="Nome completo da mãe"
-                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('nom_mae') border-red-500 @enderror" />
-                            @error('nom_mae')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        {{-- Telefone da Mãe --}}
-                        <div>
-                            <label for="tel_mae" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Telefone da Mãe
-                            </label>
-                            <input type="text" name="tel_mae" id="tel_mae" x-bind:disabled="bloqueado"
-                                value="{{ old('tel_mae', optional($ficha->fichaSgm)->tel_mae) }}" maxlength="20"
-                                placeholder="(00) 00000-0000"
-                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('tel_mae') border-red-500 @enderror" />
-                            @error('tel_mae')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
+                        {{-- Pai --}}
+                        <div class="border-t border-gray-100 dark:border-zinc-700 pt-5">
+                            <p class="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm sm:text-base">Pai</p>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                                <div>
+                                    <label for="nom_pai"
+                                        class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Nome</label>
+                                    <input type="text" name="nom_pai" id="nom_pai" x-bind:disabled="bloqueado"
+                                        value="{{ old('nom_pai', optional($ficha->fichaSGM)->nom_pai) }}"
+                                        maxlength="255" autocomplete="off" placeholder="Nome completo"
+                                        class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('nom_pai') border-red-500 @enderror" />
+                                    @error('nom_pai')
+                                        <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label for="tel_pai"
+                                        class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Telefone</label>
+                                    <input type="tel" name="tel_pai" id="tel_pai" x-bind:disabled="bloqueado"
+                                        value="{{ old('tel_pai', optional($ficha->fichaSGM)->tel_pai) }}"
+                                        maxlength="20" autocomplete="off" placeholder="(61) 90000-0000"
+                                        class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('tel_pai') border-red-500 @enderror" />
+                                    @error('tel_pai')
+                                        <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label for="eml_pai"
+                                        class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Email</label>
+                                    <input type="email" name="eml_pai" id="eml_pai" x-bind:disabled="bloqueado"
+                                        value="{{ old('eml_pai', optional($ficha->fichaSGM)->eml_pai) }}"
+                                        maxlength="100" autocomplete="off" placeholder="email@exemplo.com"
+                                        class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('eml_pai') border-red-500 @enderror" />
+                                    @error('eml_pai')
+                                        <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
                         </div>
 
                         {{-- Falar com --}}
-                        <div>
-                            <label for="idt_falar_com"
-                                class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Falar com <span class="text-red-600">*</span>
-                            </label>
-                            <select name="idt_falar_com" id="idt_falar_com" required x-bind:disabled="bloqueado"
-                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('idt_falar_com') border-red-500 @enderror">
-                                <option class="dark:bg-zinc-700" value="">Selecione um responsável</option>
-                                @foreach ($responsaveis as $responsavel)
-                                    <option class="dark:bg-zinc-700" value="{{ $responsavel->idt_responsavel }}"
-                                        {{ old('idt_falar_com', optional($ficha->fichaSgm)->idt_falar_com) == $responsavel->idt_responsavel ? 'selected' : '' }}>
-                                        {{ $responsavel->des_responsavel }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('idt_falar_com')
-                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        {{-- Mora com quem --}}
-                        <div>
-                            <label for="des_mora_quem"
-                                class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Mora com quem? <span class="text-red-600">*</span>
-                            </label>
-                            <input type="text" name="des_mora_quem" id="des_mora_quem"
-                                x-bind:disabled="bloqueado"
-                                value="{{ old('des_mora_quem', optional($ficha->fichaSgm)->des_mora_quem) }}" required
-                                maxlength="255" placeholder="Ex: Pais, avós, sozinho..."
-                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('des_mora_quem') border-red-500 @enderror" />
-                            @error('des_mora_quem')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
+                        <div
+                            class="border-t border-gray-200 dark:border-zinc-600 pt-5 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
+                            <div>
+                                <label for="idt_falar_com"
+                                    class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
+                                    Falar com <span class="text-red-600" aria-hidden="true">*</span><span
+                                        class="sr-only">(obrigatório)</span>
+                                </label>
+                                <select name="idt_falar_com" id="idt_falar_com" required x-bind:disabled="bloqueado"
+                                    aria-required="true"
+                                    class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('idt_falar_com') border-red-500 @enderror">
+                                    <option value="" disabled
+                                        {{ old('idt_falar_com', optional($ficha->fichaSGM)->idt_falar_com) ? '' : 'selected' }}>
+                                        Selecione</option>
+                                    @foreach ($responsaveis as $responsavel)
+                                        <option value="{{ $responsavel->idt_responsavel }}"
+                                            {{ old('idt_falar_com', optional($ficha->fichaSGM)->idt_falar_com) == $responsavel->idt_responsavel ? 'selected' : '' }}>
+                                            {{ $responsavel->des_responsavel }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('idt_falar_com')
+                                    <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="nom_falar_com"
+                                    class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Nome do Contato</label>
+                                <input type="text" name="nom_falar_com" id="nom_falar_com" x-bind:disabled="bloqueado"
+                                    value="{{ old('nom_falar_com', optional($ficha->fichaSGM)->nom_falar_com) }}"
+                                    maxlength="150" autocomplete="off" placeholder="Nome completo"
+                                    class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('nom_falar_com') border-red-500 @enderror" />
+                                @error('nom_falar_com')
+                                    <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="tel_falar_com"
+                                    class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Telefone</label>
+                                <input type="tel" name="tel_falar_com" id="tel_falar_com" x-bind:disabled="bloqueado"
+                                    value="{{ old('tel_falar_com', optional($ficha->fichaSGM)->tel_falar_com) }}"
+                                    maxlength="20" autocomplete="off" placeholder="(61) 90000-0000"
+                                    class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('tel_falar_com') border-red-500 @enderror" />
+                                @error('tel_falar_com')
+                                    <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                                @enderror
+                            </div>
                         </div>
 
                     </div>
-                </div>
+                </fieldset>
+
 
                 {{-- ===== ESCOLARIDADE ===== --}}
-                <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-6">
+                <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-4 sm:p-6">
                     <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Escolaridade</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
 
                         {{-- Escolaridade --}}
                         <div>
-                            <label for="escolaridade" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Escolaridade
+                            <label for="tip_escolaridade"
+                                class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Escolaridade <span class="text-red-600">*</span>
                             </label>
-                            <input type="text" name="escolaridade" id="escolaridade" x-bind:disabled="bloqueado"
-                                value="{{ old('escolaridade', optional($ficha->fichaSgm)->escolaridade) }}"
-                                maxlength="255" placeholder="Escolaridade"
-                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('escolaridade') border-red-500 @enderror" />
-                            @error('escolaridade')
+                            <select name="tip_escolaridade" id="tip_escolaridade" required
+                                x-bind:disabled="bloqueado"
+                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('tip_escolaridade') border-red-500 @enderror">
+                                <option class="dark:bg-zinc-700" value="">Selecione uma opção</option>
+                                @foreach (\App\Enums\Escolaridade::cases() as $escolaridade)
+                                    <option class="dark:bg-zinc-700" value="{{ $escolaridade->value }}"
+                                        {{ old('tip_escolaridade', $ficha->fichaSGM->tip_escolaridade?->value ?? $ficha->fichaSGM?->tip_escolaridade) == $escolaridade->value ? 'selected' : '' }}>
+                                        {{ $escolaridade->label() }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('tip_escolaridade')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
 
                         {{-- Situação --}}
                         <div>
-                            <label for="situacao" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Situação
+                            <label for="tip_escolaridade_situacao"
+                                class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Situação <span class="text-red-600">*</span>
                             </label>
-                            <input type="text" name="situacao" id="situacao" x-bind:disabled="bloqueado"
-                                value="{{ old('situacao', optional($ficha->fichaSgm)->situacao) }}" maxlength="255"
-                                placeholder="Situação"
-                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('situacao') border-red-500 @enderror" />
-                            @error('situacao')
+                            <select name="tip_escolaridade_situacao" id="tip_escolaridade_situacao" required
+                                x-bind:disabled="bloqueado"
+                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('tip_escolaridade_situacao') border-red-500 @enderror">
+                                <option class="dark:bg-zinc-700" value="">Selecione uma opção</option>
+                                @foreach (\App\Enums\EscolaridadeSituacao::cases() as $escolaridade)
+                                    <option class="dark:bg-zinc-700" value="{{ $escolaridade->value }}"
+                                        {{ old('tip_escolaridade_situacao', $ficha->fichaSGM->tip_escolaridade_situacao?->value ?? $ficha->fichaSGM?->tip_escolaridade_situacao) == $escolaridade->value ? 'selected' : '' }}>
+                                        {{ $escolaridade->label() }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('tip_escolaridade_situacao')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
 
                         {{-- Curso --}}
                         <div>
-                            <label for="curso" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            <label for="des_curso" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
                                 Curso
                             </label>
-                            <input type="text" name="curso" id="curso" x-bind:disabled="bloqueado"
-                                value="{{ old('curso', optional($ficha->fichaSgm)->curso) }}" maxlength="255"
-                                placeholder="Curso"
-                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('curso') border-red-500 @enderror" />
-                            @error('curso')
+                            <input type="text" name="des_curso" id="des_curso" x-bind:disabled="bloqueado"
+                                value="{{ old('des_curso', optional($ficha->fichaSgm)->des_curso) }}" maxlength="255"
+                                placeholder="Nome do curso. Ex: Direito"
+                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('des_curso') border-red-500 @enderror" />
+                            @error('des_curso')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
 
                         {{-- Instituição --}}
                         <div>
-                            <label for="instituicao" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            <label for="nom_instituicao"
+                                class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
                                 Instituição
                             </label>
-                            <input type="text" name="instituicao" id="instituicao" x-bind:disabled="bloqueado"
-                                value="{{ old('instituicao', optional($ficha->fichaSgm)->instituicao) }}"
-                                maxlength="255" placeholder="Instituição"
-                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('instituicao') border-red-500 @enderror" />
-                            @error('instituicao')
+                            <input type="text" name="nom_instituicao" id="nom_instituicao"
+                                x-bind:disabled="bloqueado"
+                                value="{{ old('nom_instituicao', optional($ficha->fichaSgm)->nom_instituicao) }}"
+                                maxlength="255" placeholder="Nome da instituição ou escola"
+                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('fichaSgm.nom_instituicao') border-red-500 @enderror" />
+                            @error('fichaSgm.nom_instituicao')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
@@ -533,32 +742,38 @@
                 </div>
 
                 {{-- ===== RELIGIÃO ===== --}}
-                <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-6">
-                    <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Religião</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-4 sm:p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Fé e Sacramentos</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
 
                         {{-- Religião --}}
                         <div>
-                            <label for="religiao" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Religião
+                            <label for="tip_religiao" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Religião <span class="text-red-600">*</span>
                             </label>
-                            <input type="text" name="religiao" id="religiao" x-bind:disabled="bloqueado"
-                                value="{{ old('religiao', optional($ficha->fichaSgm)->religiao) }}" maxlength="255"
-                                placeholder="Religião"
-                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('religiao') border-red-500 @enderror" />
-                            @error('religiao')
+                            <select name="tip_religiao" id="tip_religiao" required x-bind:disabled="bloqueado"
+                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('tip_religiao') border-red-500 @enderror">
+                                <option class="dark:bg-zinc-700" value="">Selecione uma opção</option>
+                                @foreach (\App\Enums\Religiao::cases() as $religiao)
+                                    <option class="dark:bg-zinc-700" value="{{ $religiao->value }}"
+                                        {{ old('tip_religiao', $ficha->fichaSGM->tip_religiao?->value ?? $ficha->fichaSGM?->tip_religiao) == $religiao->value ? 'selected' : '' }}>
+                                        {{ $religiao->label() }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('tip_religiao')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
 
-                        {{-- Igreja que frequenta --}}
+                        {{-- Paróquia que frequenta --}}
                         <div>
                             <label for="nom_paroquia" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Igreja que frequenta
+                                Paróquia que frequenta
                             </label>
                             <input type="text" name="nom_paroquia" id="nom_paroquia" x-bind:disabled="bloqueado"
                                 value="{{ old('nom_paroquia', optional($ficha->fichaSgm)->nom_paroquia) }}"
-                                maxlength="255" placeholder="Igreja que frequenta"
+                                maxlength="255" placeholder="Nome da sua paróquia. Ex: Nossa Senhora do Lago"
                                 class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('nom_paroquia') border-red-500 @enderror" />
                             @error('nom_paroquia')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -567,11 +782,11 @@
 
                         {{-- Sacramentos --}}
                         <div>
-                            <p class="font-medium text-gray-700 dark:text-gray-300 mb-1" id="sacramentos-label">
+                            <p class="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm sm:text-base" id="sacramentos-label">
                                 Sacramentos:
                             </p>
-                            <div class="flex gap-4" role="group" aria-labelledby="sacramentos-label">
-                                <label class="flex items-center gap-2 cursor-pointer">
+                            <div class="flex flex-col gap-2" role="group" aria-labelledby="sacramentos-label">
+                                <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_batismo" value="0">
                                     <input type="checkbox" name="ind_batismo" value="1"
                                         x-bind:disabled="bloqueado"
@@ -579,7 +794,7 @@
                                         class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">Batismo</span>
                                 </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
+                                <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_eucaristia" value="0">
                                     <input type="checkbox" name="ind_eucaristia" value="1"
                                         x-bind:disabled="bloqueado"
@@ -587,7 +802,7 @@
                                         class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">Eucaristia</span>
                                 </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
+                                <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_crisma" value="0">
                                     <input type="checkbox" name="ind_crisma" value="1"
                                         x-bind:disabled="bloqueado"
@@ -600,16 +815,16 @@
 
                         {{-- Participa de movimento --}}
                         <div>
-                            <label for="part_movimento"
+                            <label for="des_participa_movimento"
                                 class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
                                 Participa (ou) de algum movimento da Igreja? Qual(is)?
                             </label>
-                            <input type="text" name="part_movimento" id="part_movimento"
+                            <input type="text" name="des_participa_movimento" id="des_participa_movimento"
                                 x-bind:disabled="bloqueado"
-                                value="{{ old('part_movimento', optional($ficha->fichaSgm)->part_movimento) }}"
+                                value="{{ old('des_participa_movimento', optional($ficha->fichaSgm)->des_participa_movimento) }}"
                                 maxlength="255" placeholder="Movimento que participa(ou)"
-                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('part_movimento') border-red-500 @enderror" />
-                            @error('part_movimento')
+                                class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('des_participa_movimento') border-red-500 @enderror" />
+                            @error('des_participa_movimento')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
@@ -618,10 +833,10 @@
                 </div>
 
                 {{-- ===== QUEM CONVIDOU ===== --}}
-                <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-6">
+                <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-4 sm:p-6">
                     <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Quem convidou você para
                         participar do encontro?</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
 
                         {{-- Como soube do evento --}}
                         <div>
@@ -651,7 +866,7 @@
                             </label>
                             <input type="text" name="nom_convidou" id="nom_convidou" x-bind:disabled="bloqueado"
                                 value="{{ old('nom_convidou', optional($ficha->fichaSgm)->nom_convidou) }}"
-                                maxlength="255" placeholder="Quem indicou?"
+                                maxlength="255" placeholder="Nome completo"
                                 class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('nom_convidou') border-red-500 @enderror" />
                             @error('nom_convidou')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -661,11 +876,11 @@
                         {{-- Número de quem indicou --}}
                         <div>
                             <label for="tel_convidou" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Número de quem indicou
+                                Telefone de quem indicou
                             </label>
                             <input type="text" name="tel_convidou" id="tel_convidou" x-bind:disabled="bloqueado"
                                 value="{{ old('tel_convidou', optional($ficha->fichaSgm)->tel_convidou) }}"
-                                maxlength="255" placeholder="Número de quem indicou?"
+                                maxlength="255" placeholder="(61) 90000-0000"
                                 class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('tel_convidou') border-red-500 @enderror" />
                             @error('tel_convidou')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -679,7 +894,7 @@
                             </label>
                             <input type="text" name="end_convidou" id="end_convidou" x-bind:disabled="bloqueado"
                                 value="{{ old('end_convidou', optional($ficha->fichaSgm)->end_convidou) }}"
-                                maxlength="255" placeholder="Endereço de quem indicou?"
+                                maxlength="255" placeholder="Rua, número, complemento, bairro, cidade, estado"
                                 class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('end_convidou') border-red-500 @enderror" />
                             @error('end_convidou')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -773,22 +988,25 @@
                 </div>
 
                 {{-- ===== CONSENTIMENTO ===== --}}
-                <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-6">
+                <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-4 sm:p-6">
                     <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Consentimento</h2>
                     <div class="space-y-3">
-                        <label class="flex items-center space-x-2">
-                            <input type="hidden" name="ind_consentimento" value="0">
-                            <input type="checkbox" name="ind_consentimento" value="1" required
-                                x-bind:disabled="bloqueado"
-                                {{ old('ind_consentimento', $ficha->ind_consentimento) ? 'checked' : '' }}
-                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_consentimento') border-red-500 @enderror">
-                            <span class="text-gray-800 dark:text-gray-100">
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <div class="flex items-center pt-0.5 shrink-0">
+                                <input type="hidden" name="ind_consentimento" value="0">
+                                <input type="checkbox" name="ind_consentimento" value="1" required
+                                    x-bind:disabled="bloqueado"
+                                    {{ old('ind_consentimento', $ficha->ind_consentimento) ? 'checked' : '' }}
+                                    aria-required="true"
+                                    class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_consentimento') border-red-500 @enderror">
+                            </div>
+                            <span class="text-sm sm:text-base text-gray-800 dark:text-gray-100">
                                 Concorda com os
                                 <a href="{{ route('termo.sgm') }}" target="_blank"
                                     class="text-blue-600 dark:text-blue-400 underline hover:no-underline font-medium">
                                     Termos e Políticas de Privacidade
                                 </a>?
-                                <span class="text-red-600">*</span>
+                                <span class="text-red-600" aria-hidden="true">*</span><span class="sr-only">(obrigatório)</span>
                             </span>
                         </label>
                         @error('ind_consentimento')
@@ -798,7 +1016,7 @@
 
                     <div class="mt-6">
                         <label for="txt_observacao" class="block font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Observações
+                            Observações que julgar convenientes
                         </label>
                         <textarea name="txt_observacao" id="txt_observacao" rows="4" maxlength="1000" x-bind:disabled="bloqueado"
                             placeholder="Inclua observações como remédios contínuos ou outros pontos de atenção"
@@ -811,26 +1029,12 @@
                 </div>
 
                 {{-- ===== AÇÕES ===== --}}
-                <div class="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+                <div class="mt-8 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
                     <button type="submit" x-bind:disabled="bloqueado || enviando"
                         class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                         <x-heroicon-o-check class="w-5 h-5 mr-2" aria-hidden="true" />
                         <span x-text="enviando ? 'Salvando...' : 'Salvar'"></span>
                     </button>
-
-                    @if ($ficha->exists)
-                        <a href="{{ route('sgm.approve', $ficha->idt_ficha) }}"
-                            class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 text-white font-medium rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus-visible:ring-offset-2
-                            {{ $ficha->ind_aprovado ? 'bg-red-500 hover:bg-red-600 focus:ring-red-500' : 'bg-green-500 hover:bg-green-600 focus:ring-green-500' }}"
-                            aria-label="{{ $ficha->ind_aprovado ? 'Desfazer aprovação desta ficha' : 'Aprovar esta ficha' }}">
-                            @if ($ficha->ind_aprovado)
-                                <x-heroicon-o-x-mark class="w-5 h-5 mr-2" aria-hidden="true" />
-                            @else
-                                <x-heroicon-o-check class="w-5 h-5 mr-2" aria-hidden="true" />
-                            @endif
-                            {{ $ficha->ind_aprovado ? 'Desfazer aprovação' : 'Aprovar' }}
-                        </a>
-                    @endif
                 </div>
 
             </form>
@@ -844,6 +1048,7 @@
             </div>
 
         @endif
+        </div>
 
     </section>
 </x-layouts.public>

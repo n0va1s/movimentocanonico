@@ -18,6 +18,7 @@ new class extends Component {
     public function participantes()
     {
         return Participante::where('idt_evento', $this->evento->idt_evento)
+            ->where('ind_presente', true)
             ->with('pessoa')
             ->orderBy('tip_cor_troca')
             ->get()
@@ -29,6 +30,7 @@ new class extends Component {
     {
         return Trabalhador::where('idt_evento', $this->evento->idt_evento)
             ->whereHas('pessoa')
+            ->where('ind_presente', true)
             ->with(['pessoa', 'equipe'])
             ->orderBy('idt_equipe')
             ->get()
@@ -38,13 +40,18 @@ new class extends Component {
     #[Computed]
     public function totalParticipantes(): int
     {
-        return Participante::where('idt_evento', $this->evento->idt_evento)->count();
+        return Participante::where('idt_evento', $this->evento->idt_evento)
+            ->where('ind_presente', true)
+            ->count();
     }
 
     #[Computed]
     public function totalTrabalhadores(): int
     {
-        return Trabalhador::where('idt_evento', $this->evento->idt_evento)->whereHas('pessoa')->count();
+        return Trabalhador::where('idt_evento', $this->evento->idt_evento)
+            ->whereHas('pessoa')
+            ->where('ind_presente', true)
+            ->count();
     }
 }; ?>
 
@@ -58,6 +65,19 @@ new class extends Component {
         </flux:button>
     </div>
 
+    {{-- Aviso quando nenhuma presença foi marcada --}}
+    @if($this->totalParticipantes === 0 && $this->totalTrabalhadores === 0)
+        <div class="flex items-start gap-3 px-4 py-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 print:hidden">
+            <flux:icon name="exclamation-triangle" variant="outline" class="size-5 text-amber-500 shrink-0 mt-0.5" />
+            <div>
+                <flux:text class="font-semibold text-amber-800 dark:text-amber-300">Nenhuma presença confirmada</flux:text>
+                <flux:text size="sm" class="text-amber-700 dark:text-amber-400">
+                    O quadrante exibe apenas pessoas marcadas como presentes. Acesse a aba <strong>Presença</strong> para registrar as presenças antes de imprimir.
+                </flux:text>
+            </div>
+        </div>
+    @endif
+
     {{-- ============================================================
          CABEÇALHO DO QUADRANTE
     ============================================================ --}}
@@ -65,9 +85,9 @@ new class extends Component {
 
         {{-- Foto oficial do evento --}}
         <div class="shrink-0">
-            @if($evento->foto?->url_foto)
+            @if($evento->foto?->med_foto)
                 <img
-                    src="{{ asset('storage/' . $evento->foto->url_foto) }}"
+                    src="{{ asset('storage/' . $evento->foto->med_foto) }}"
                     alt="Foto oficial do evento"
                     class="w-32 h-32 object-cover rounded-xl border border-zinc-300 dark:border-zinc-600 shadow-sm print:w-24 print:h-24"
                 />

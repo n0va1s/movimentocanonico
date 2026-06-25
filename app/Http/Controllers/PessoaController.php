@@ -6,6 +6,10 @@ use App\Http\Requests\PessoaRequest;
 use App\Models\Pessoa;
 use App\Models\PessoaFoto;
 use App\Models\TipoRestricao;
+use App\Models\Evento;
+use App\Models\Participante;
+use App\Models\Trabalhador;
+use App\Models\Ficha;
 use App\Services\UserService;
 use App\Traits\LogContext;
 use Illuminate\Database\QueryException;
@@ -26,47 +30,28 @@ class PessoaController extends Controller
         $this->userService = $userService;
     }
 
-    public function index(Request $request): View
+    public function show($id): View
     {
         $start = microtime(true);
-        $context = $this->getLogContext($request);
+        $context = $this->getLogContext(request());
 
-        $search = $request->get('search');
-
-        Log::info('Requisição de listagem de pessoas iniciada', array_merge($context, [
-            'search_term' => $search,
-        ]));
-
-        $pessoas = Pessoa::select(
-            'idt_pessoa',
-            'idt_usuario',
-            'idt_parceiro',
-            'nom_pessoa',
-            'nom_apelido',
-            'tel_pessoa',
-            'eml_pessoa',
-            'tip_estado_civil',
-            'tip_habilidade',
-            'created_at'
-        )
-            ->with([
-                'foto:idt_pessoa,med_foto',
-            ])
-            ->when($search, function ($query, $search) {
-                return $query->searchByName($search);
-            })
-            ->orderBy('nom_pessoa')
-            ->paginate(10)
-            ->withQueryString();
+        $pessoa = Pessoa::with([
+            'foto:idt_pessoa,med_foto',
+            'restricoes',
+            'pontos',
+            'trabalhadores.evento:idt_evento,des_evento,dat_inicio',
+            'trabalhadores.equipe:idt_equipe,des_grupo',
+        ])->findOrFail($id);
 
         $duration = round((microtime(true) - $start) * 1000, 2);
-        Log::notice('Listagem de pessoas concluída com sucesso', array_merge($context, [
-            'total_pessoas' => $pessoas->total(),
+        Log::notice('Visualização de pessoa', array_merge($context, [
+            'pessoa_id' => $id,
             'duration_ms' => $duration,
         ]));
 
-        return view('pessoa.list', compact('pessoas', 'search'));
+        return view('pessoa.show', compact('pessoa'));
     }
+
 
     public function create(): View
     {
@@ -147,8 +132,7 @@ class PessoaController extends Controller
         if ($request->input('ind_restricao') == 1) {
             foreach ($request->input('restricoes', []) as $idt_restricao => $value) {
                 if ($value) {
-                    $pessoa->restricoes()->create([
-                        'idt_restricao' => $idt_restricao,
+                    $pessoa->restricoes()->attach($idt_restricao, [
                         'txt_complemento' => $request->input("complementos.$idt_restricao"),
                     ]);
                     $countRestricoes++;
@@ -176,6 +160,12 @@ class PessoaController extends Controller
             'usuario:id,name',
             'restricoes',
         ])->findOrFail($id);
+
+        // Usuários não-admin só podem editar a própria pessoa
+        $user = auth()->user();
+        if (! $user->isAdmin() && optional($user->pessoa)->idt_pessoa !== $pessoa->idt_pessoa) {
+            abort(403);
+        }
 
         $restricoes = TipoRestricao::select(
             'idt_restricao',
@@ -214,11 +204,17 @@ class PessoaController extends Controller
 
         $pessoa = Pessoa::with(['foto', 'usuario', 'restricoes'])->findOrFail($id);
 
-        $user = $this->userService::getUsuarioByEmail($request->input('eml_pessoa'));
+        // Usuários não-admin só podem editar a própria pessoa
+        $user = auth()->user();
+        if (! $user->isAdmin() && optional($user->pessoa)->idt_pessoa !== $pessoa->idt_pessoa) {
+            abort(403);
+        }
+
+        $user2 = $this->userService::getUsuarioByEmail($request->input('eml_pessoa'));
         $data = $request->validated();
 
-        if ($user) {
-            $data['idt_usuario'] = $user->id;
+        if ($user2) {
+            $data['idt_usuario'] = $user2->id;
         }
 
         $pessoa->update($data);
@@ -323,5 +319,16 @@ class PessoaController extends Controller
                 ->route('pessoas.index')
                 ->with('error', 'Erro ao tentar excluir a pessoa.');
         }
+    }
+
+    public function buscaPorCpf($cpf)
+    {
+        $cpf = preg_replace('/[^0-9]/', '', $cpf);
+        $pessoa = Pessoa::where('num_cpf_pessoa', $cpf)->first();
+        if ($pessoa) {
+            return response()->json($pessoa);
+        }
+
+        return response()->json(['error' => 'not found'], 404);
     }
 }

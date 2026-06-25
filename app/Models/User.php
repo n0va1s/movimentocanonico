@@ -8,6 +8,8 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use App\Services\PhoneService;
 use Illuminate\Support\Str;
 
 class User extends Authenticatable
@@ -21,19 +23,92 @@ class User extends Authenticatable
 
     const ROLE_COORDENADOR = 'coord';
 
+    const ROLE_ESPEC = 'espec';
+
+    const ROLE_VISITACAO = 'visit';
+
+    const ROLE_SALES = 'sales';
+
     public function isAdmin(): bool
     {
-        return $this->role === self::ROLE_ADMIN;
+        $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
+
+        return strtolower($roleValue) === self::ROLE_ADMIN;
     }
 
     public function isCoordenador(): bool
     {
-        return $this->role === self::ROLE_COORDENADOR;
+        $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
+
+        return strtolower($roleValue) === self::ROLE_COORDENADOR;
+    }
+
+    public function isEspec(): bool
+    {
+        $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
+
+        return strtolower($roleValue) === self::ROLE_ESPEC;
+    }
+
+    public function isVisitacao(): bool
+    {
+        $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
+
+        return strtolower($roleValue) === self::ROLE_VISITACAO;
+    }
+
+    public function isSales(): bool
+    {
+        $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
+
+        return strtolower($roleValue) === self::ROLE_SALES;
+    }
+
+    public function hasRole(string ...$roles): bool
+    {
+        $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
+
+        return in_array(strtolower($roleValue), array_map('strtolower', $roles));
+    }
+
+    /**
+     * Verifica se o usuário está trabalhando (como coord ou espec) em um evento específico.
+     * Coord: precisa ter ind_coordenador = true no evento.
+     * Espec: basta estar na tabela trabalhador do evento.
+     */
+    public function trabalhaNoEvento(int $idtEvento): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        if ($this->isEspec()) {
+            $evento = \App\Models\Evento::find($idtEvento);
+            if (! $evento || is_null($this->idt_movimento) || (int) $evento->idt_movimento !== (int) $this->idt_movimento) {
+                return false;
+            }
+        }
+
+        $pessoa = $this->pessoa;
+
+        if (! $pessoa) {
+            return false;
+        }
+
+        return Trabalhador::where('idt_evento', $idtEvento)
+            ->where('idt_pessoa', $pessoa->idt_pessoa)
+            ->when($this->isCoordenador(), fn ($q) => $q->where('ind_coordenador', true))
+            ->exists();
     }
 
     public function pessoa()
     {
         return $this->hasOne(Pessoa::class, 'idt_usuario', 'id');
+    }
+
+    public function movimento()
+    {
+        return $this->belongsTo(TipoMovimento::class, 'idt_movimento', 'idt_movimento');
     }
 
     protected static function boot()
@@ -68,6 +143,8 @@ class User extends Authenticatable
         'email',
         'phone',
         'password',
+        'role',
+        'idt_movimento',
     ];
 
     /**
@@ -103,5 +180,22 @@ class User extends Authenticatable
             ->take(2)
             ->map(fn ($word) => Str::substr($word, 0, 1))
             ->implode('');
+    }
+
+    public function routeNotificationForTelegram()
+    {
+        if ($this->role === 'admin') {
+            return env('TELEGRAM_CHAT_IDS');
+        }
+
+        return null;
+    }
+
+    protected function phone(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => PhoneService::format($value),
+            set: fn (?string $value) => PhoneService::clean($value),
+        );
     }
 }

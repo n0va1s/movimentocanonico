@@ -7,6 +7,9 @@ use App\Enums\Genero;
 use App\Enums\HabilidadePrincipal;
 use App\Enums\TamanhoCamiseta;
 use App\Mail\BoasVindasMail;
+use App\Services\CpfService;
+use App\Services\PhoneService;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -26,6 +29,7 @@ class Pessoa extends Model
     protected $fillable = [
         'idt_usuario',
         'idt_parceiro',
+        'num_cpf_pessoa',
         'nom_pessoa',
         'nom_apelido',
         'tel_pessoa',
@@ -36,6 +40,7 @@ class Pessoa extends Model
         'tip_genero',
         'tip_estado_civil',
         'tip_habilidade',
+        'nom_profissao',
         'ind_restricao',
     ];
 
@@ -97,6 +102,11 @@ class Pessoa extends Model
             ->withTimestamps();
     }
 
+    public function fichas()
+    {
+        return $this->hasMany(Ficha::class, 'idt_pessoa', 'idt_pessoa');
+    }
+
     public function participantes()
     {
         return $this->hasMany(Participante::class, 'idt_pessoa');
@@ -105,6 +115,11 @@ class Pessoa extends Model
     public function trabalhadores()
     {
         return $this->hasMany(Trabalhador::class, 'idt_pessoa');
+    }
+
+    public function contas()
+    {
+        return $this->hasMany(Conta::class, 'idt_pessoa', 'idt_pessoa');
     }
 
     public function voluntarios()
@@ -162,14 +177,6 @@ class Pessoa extends Model
 
     public function scopeSearchByName($query, $search)
     {
-        // Verifica se estamos usando MySQL/MariaDB (produção)
-        if (config('database.default') === 'mysql' || config('database.default') === 'mariadb') {
-            // Usa o Full-Text Search OTIMIZADO (Exige que você adicione o FTS manualmente no MySQL)
-            return $query->whereFullText(['nom_pessoa', 'nom_apelido'], $search);
-        }
-
-        // Caso contrário (ambiente SQLite de desenvolvimento)
-        // Usamos a sintaxe mais lenta, mas compatível (LIKE "%...%")
         return $query->where(function ($q) use ($search) {
             $q->where('nom_pessoa', 'like', "%{$search}%")
                 ->orWhere('nom_apelido', 'like', "%{$search}%");
@@ -189,5 +196,21 @@ class Pessoa extends Model
     public function scopePessoasComUsuario($query)
     {
         return $query->whereNotNull('idt_usuario');
+    }
+
+    protected function numCpfPessoa(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => CpfService::format($value),
+            set: fn (?string $value) => CpfService::clean($value),
+        );
+    }
+
+    protected function telPessoa(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => PhoneService::format($value),
+            set: fn (?string $value) => PhoneService::clean($value),
+        );
     }
 }

@@ -1,70 +1,80 @@
-| Route (URI) | Tested URL | HTTP Status | Return Message |
-|-------------|------------|-------------|----------------|
-| / | / | 200 | OK |
-| vem | /vem | 200 | OK |
-| ecc | /ecc | 500 | Undefined variable $situacoes (View: /var/www/html/resources/views/ficha/formECC.blade.php) |
-| sgm | /sgm | 500 | Undefined variable $situacoes (View: /var/www/html/resources/views/ficha/formSGM.blade.php) |
-| settings | /settings | 302 | OK |
-| timeline | /timeline | 200 | OK |
-| dashboard | /dashboard | 200 | OK |
-| contatos | /contatos | 200 | OK |
-| participantes | /participantes | 200 | OK |
-| eventos | /eventos | 200 | OK |
-| eventos/create | /eventos/create | 200 | OK |
-| eventos/{evento} | /eventos/1 | 200 | OK |
-| eventos/{evento}/edit | /eventos/1/edit | 200 | OK |
-| pessoas | /pessoas | 200 | OK |
-| pessoas/create | /pessoas/create | 200 | OK |
-| pessoas/{pessoa} | /pessoas/1 | 500 | Call to undefined method App\Http\Controllers\PessoaController::show() |
-| pessoas/{pessoa}/edit | /pessoas/1/edit | 200 | OK |
-| fichas/vem | /fichas/vem | 200 | OK |
-| fichas/vem/create | /fichas/vem/create | 200 | OK |
-| fichas/vem/{vem} | /fichas/vem/1 | 200 | OK |
-| fichas/vem/{vem}/edit | /fichas/vem/1/edit | 200 | OK |
-| fichas/ecc | /fichas/ecc | 200 | OK |
-| fichas/ecc/create | /fichas/ecc/create | 500 | Undefined variable $situacoes (View: /var/www/html/resources/views/ficha/formECC.blade.php) |
-| fichas/ecc/{ecc} | /fichas/ecc/1 | 500 | Call to undefined method App\Models\Ficha::analises() |
-| fichas/ecc/{ecc}/edit | /fichas/ecc/1/edit | 500 | Call to undefined method App\Models\Ficha::analises() |
-| fichas/sgm | /fichas/sgm | 200 | OK |
-| fichas/sgm/create | /fichas/sgm/create | 500 | Undefined variable $situacoes (View: /var/www/html/resources/views/ficha/formSGM.blade.php) |
-| fichas/sgm/{sgm} | /fichas/sgm/1 | 500 | Undefined variable $situacoes (View: /var/www/html/resources/views/ficha/formSGM.blade.php) |
-| fichas/sgm/{sgm}/edit | /fichas/sgm/1/edit | 500 | Undefined variable $situacoes (View: /var/www/html/resources/views/ficha/formSGM.blade.php) |
-| fichas/vem/approve/{id} | /fichas/vem/approve/1 | 500 | Call to undefined method App\Http\Controllers\FichaVemController::approve() |
-| fichas/ecc/approve/{id} | /fichas/ecc/approve/1 | 500 | Call to undefined method App\Http\Controllers\FichaEccController::approve() |
-| fichas/sgm/approve/{id} | /fichas/sgm/approve/1 | 500 | Call to undefined method App\Http\Controllers\FichaSGMController::approve() |
-| trabalhadores | /trabalhadores | 200 | OK |
-| trabalhadores/create | /trabalhadores/create | 500 | Attempt to read property "idt_evento" on null (View: /var/www/html/resources/views/trabalhador/form. |
-| trabalhadores/review | /trabalhadores/review | 200 | OK |
-| avaliacao | /avaliacao | 200 | OK |
-| montagem | /montagem | 200 | OK |
-| quadrante | /quadrante | 200 | OK |
-| aniversario | /aniversario | 200 | OK |
-| configuracoes | /configuracoes | 200 | OK |
-| configuracoes/role | /configuracoes/role | 200 | OK |
-| configuracoes/equipe | /configuracoes/equipe | 200 | OK |
-| configuracoes/equipe/create | /configuracoes/equipe/create | 200 | OK |
-| configuracoes/equipe/{equipe} | /configuracoes/equipe/1 | 200 | OK |
-| configuracoes/equipe/{equipe}/edit | /configuracoes/equipe/1/edit | 200 | OK |
-| configuracoes/movimento | /configuracoes/movimento | 200 | OK |
-| configuracoes/movimento/create | /configuracoes/movimento/create | 200 | OK |
-| configuracoes/movimento/{movimento} | /configuracoes/movimento/1 | 500 | View [configuracoes.TipoMovimentoShow] not found. |
-| configuracoes/movimento/{movimento}/edit | /configuracoes/movimento/1/edit | 200 | OK |
-| configuracoes/responsavel | /configuracoes/responsavel | 200 | OK |
-| configuracoes/responsavel/create | /configuracoes/responsavel/create | 200 | OK |
-| configuracoes/responsavel/{responsavel} | /configuracoes/responsavel/1 | 200 | OK |
-| configuracoes/responsavel/{responsavel}/edit | /configuracoes/responsavel/1/edit | 200 | OK |
-| configuracoes/restricao | /configuracoes/restricao | 200 | OK |
-| configuracoes/restricao/create | /configuracoes/restricao/create | 200 | OK |
-| configuracoes/restricao/{restricao} | /configuracoes/restricao/1 | 200 | OK |
-| configuracoes/restricao/{restricao}/edit | /configuracoes/restricao/1/edit | 200 | OK |
-| eventos/{evento}/gerenciamento | /eventos/1/gerenciamento | 200 | OK |
-| settings/profile | /settings/profile | 200 | OK |
-| settings/password | /settings/password | 200 | OK |
-| settings/appearance | /settings/appearance | 200 | OK |
-| login | /login | 302 | OK |
-| register | /register | 302 | OK |
-| forgot-password | /forgot-password | 302 | OK |
-| reset-password/{token} | /reset-password/1 | 302 | OK |
-| verify-email | /verify-email | 200 | OK |
-| verify-email/{id}/{hash} | /verify-email/1/1 | 403 | Invalid signature. |
-| confirm-password | /confirm-password | 200 | OK |
+| Route (URI) | Tested URL | HTTP Status |
+|-------------|------------|-------------|
+| livewire-765707c5/livewire.js | /livewire-765707c5/livewire.js | 500 (Error) |
+| livewire-765707c5/livewire.min.js.map | /livewire-765707c5/livewire.min.js.map | 500 (Error) |
+| livewire-765707c5/livewire.csp.min.js.map | /livewire-765707c5/livewire.csp.min.js.map | 500 (Error) |
+| livewire-765707c5/preview-file/{filename} | /livewire-765707c5/preview-file/1 | 401 |
+| livewire-765707c5/js/{component}.js | /livewire-765707c5/js/1.js | 500 |
+| livewire-765707c5/css/{component}.css | /livewire-765707c5/css/1.css | 500 |
+| livewire-765707c5/css/{component}.global.css | /livewire-765707c5/css/1.global.css | 500 |
+| test-role | /test-role | 200 |
+| / | / | 200 |
+| vem | /vem | 200 |
+| ecc | /ecc | 200 |
+| sgm | /sgm | 200 |
+| settings | /settings | 302 |
+| timeline | /timeline | 200 |
+| dashboard | /dashboard | 200 |
+| pessoas/{cpf}/busca | /pessoas/1/busca | 404 |
+| termo-sgm | /termo-sgm | 200 |
+| termo-vem | /termo-vem | 200 |
+| minha-equipe | /minha-equipe | 200 |
+| trabalhadores/create | /trabalhadores/create | 200 |
+| eventos | /eventos | 200 |
+| pessoas/{pessoa}/edit | /pessoas/1/edit | 404 |
+| pessoas/{pessoa} | /pessoas/1 | 404 |
+| settings/profile | /settings/profile | 200 |
+| settings/password | /settings/password | 200 |
+| settings/appearance | /settings/appearance | 200 |
+| trabalhadores | /trabalhadores | 200 |
+| eventos/{evento}/gerenciamento | /eventos/1/gerenciamento | 404 |
+| configuracoes | /configuracoes | 403 |
+| eventos/importar | /eventos/importar | 403 |
+| eventos/importar/modelo-participantes | /eventos/importar/modelo-participantes | 403 |
+| eventos/importar/modelo-trabalhadores | /eventos/importar/modelo-trabalhadores | 403 |
+| contatos | /contatos | 403 |
+| eventos/create | /eventos/create | 403 |
+| eventos/{evento} | /eventos/1 | 404 |
+| eventos/{evento}/edit | /eventos/1/edit | 404 |
+| pessoas | /pessoas | 403 |
+| pessoas/create | /pessoas/create | 403 |
+| aniversario | /aniversario | 403 |
+| fichas/vem | /fichas/vem | 403 |
+| fichas/vem/{id}/approve | /fichas/vem/1/approve | 403 |
+| fichas/vem/create | /fichas/vem/create | 403 |
+| fichas/vem/{vem} | /fichas/vem/1 | 403 |
+| fichas/vem/{vem}/edit | /fichas/vem/1/edit | 403 |
+| fichas/ecc | /fichas/ecc | 403 |
+| fichas/ecc/{id}/approve | /fichas/ecc/1/approve | 403 |
+| fichas/ecc/create | /fichas/ecc/create | 403 |
+| fichas/ecc/{ecc} | /fichas/ecc/1 | 403 |
+| fichas/ecc/{ecc}/edit | /fichas/ecc/1/edit | 403 |
+| fichas/sgm | /fichas/sgm | 403 |
+| fichas/sgm/{id}/approve | /fichas/sgm/1/approve | 403 |
+| fichas/sgm/create | /fichas/sgm/create | 403 |
+| fichas/sgm/{sgm} | /fichas/sgm/1 | 403 |
+| fichas/sgm/{sgm}/edit | /fichas/sgm/1/edit | 403 |
+| configuracoes/role | /configuracoes/role | 403 |
+| configuracoes/equipe | /configuracoes/equipe | 403 |
+| configuracoes/equipe/create | /configuracoes/equipe/create | 403 |
+| configuracoes/equipe/{equipe} | /configuracoes/equipe/1 | 403 |
+| configuracoes/equipe/{equipe}/edit | /configuracoes/equipe/1/edit | 403 |
+| configuracoes/movimento | /configuracoes/movimento | 403 |
+| configuracoes/movimento/create | /configuracoes/movimento/create | 403 |
+| configuracoes/movimento/{movimento} | /configuracoes/movimento/1 | 403 |
+| configuracoes/movimento/{movimento}/edit | /configuracoes/movimento/1/edit | 403 |
+| configuracoes/responsavel | /configuracoes/responsavel | 403 |
+| configuracoes/responsavel/create | /configuracoes/responsavel/create | 403 |
+| configuracoes/responsavel/{responsavel} | /configuracoes/responsavel/1 | 403 |
+| configuracoes/responsavel/{responsavel}/edit | /configuracoes/responsavel/1/edit | 403 |
+| configuracoes/restricao | /configuracoes/restricao | 403 |
+| configuracoes/restricao/create | /configuracoes/restricao/create | 403 |
+| configuracoes/restricao/{restricao} | /configuracoes/restricao/1 | 403 |
+| configuracoes/restricao/{restricao}/edit | /configuracoes/restricao/1/edit | 403 |
+| login | /login | 302 |
+| register | /register | 302 |
+| forgot-password | /forgot-password | 302 |
+| reset-password/{token} | /reset-password/1 | 302 |
+| verify-email | /verify-email | 200 |
+| verify-email/{id}/{hash} | /verify-email/1/1 | 403 |
+| confirm-password | /confirm-password | 200 |

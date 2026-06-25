@@ -2,15 +2,20 @@
 
 namespace App\Services;
 
+use App\Enums\TipoSituacao;
 use App\Models\Ficha;
+use App\Models\FichaEcc;
+use App\Models\FichaEccFilho;
 use App\Models\Participante;
 use App\Models\Pessoa;
+use App\Models\PessoaFoto;
 use App\Models\PessoaSaude;
 use App\Models\TipoMovimento;
 use App\Models\TipoResponsavel;
 use App\Models\TipoRestricao;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class FichaService
 {
@@ -27,40 +32,122 @@ class FichaService
         });
     }
 
-    public static function atualizarAprovacaoFicha(int $id): Ficha
+    public static function atualizarSituacaoFicha(int $id, TipoSituacao $novaSituacao): Ficha
     {
-        // Carregamos a ficha com a relação de saúde
-        $ficha = Ficha::with('fichaSaude')->findOrFail($id);
+        // Carrega a ficha com todas as relações necessárias
+        $ficha = Ficha::with(['fichaSaude', 'fichaEcc.filhos'])->findOrFail($id);
 
-        return DB::transaction(function () use ($ficha) {
-            // 1. Inverte o status
-            $ficha->ind_aprovado = ! $ficha->ind_aprovado;
-            $ficha->save();
+        return DB::transaction(function () use ($ficha, $novaSituacao) {
+            $situacaoAnterior = $ficha->tip_situacao;
 
-            if ($ficha->ind_aprovado) {
-                // 2. Se aprovou: Cria Pessoa -> Saúde -> Participante
-                $pessoa = self::criarOuAtualizarPessoaAPartirDaFicha($ficha);
-                
-                // Vincula a pessoa à ficha
-                $ficha->update(['idt_pessoa' => $pessoa->idt_pessoa]);
-
-                self::criarPessoaSaude(
-                    $pessoa->idt_pessoa, 
-                    $ficha->fichaSaude->toArray() 
-                );
-
-                self::criarParticipante($pessoa->idt_pessoa, $ficha->idt_evento);
-            } else {
-                self::removerParticipante($ficha->idt_pessoa, $ficha->idt_evento);
+            if ($situacaoAnterior === $novaSituacao) {
+                return $ficha;
             }
 
-            return $ficha;
+            $ficha->tip_situacao = $novaSituacao;
+            $ficha->save();
+
+            if ($novaSituacao === TipoSituacao::APROVADA) {
+                self::aprovarFicha($ficha);
+            } elseif ($situacaoAnterior === TipoSituacao::APROVADA) {
+                self::desaprovarFicha($ficha);
+            }
+
+            return $ficha->fresh();
         });
     }
 
-    private static function criarOuAtualizarPessoaAPartirDaFicha(Ficha $ficha): Pessoa
+    public static function atualizarAprovacaoFicha(int $id): Ficha
+    {
+        $ficha = Ficha::findOrFail($id);
+        $novaSituacao = $ficha->tip_situacao === TipoSituacao::APROVADA
+            ? TipoSituacao::NOVA
+            : TipoSituacao::APROVADA;
+
+        return self::atualizarSituacaoFicha($id, $novaSituacao);
+    }
+
+    /**
+     * Cria Pessoa(s), Saúde e Participante(s) de acordo com o tipo de ficha.
+     *
+     * - VEM / SGM: apenas o candidato torna-se Pessoa.
+     * - ECC: o candidato, o cônjuge e cada filho tornam-se Pessoas independentes.
+     *
+     * @throws \RuntimeException quando o CPF do candidato está ausente (impede criação da Pessoa).
+     */
+    private static function aprovarFicha(Ficha $ficha): void
+    {
+        $fichaSaude = $ficha->fichaSaude->toArray();
+
+        // ── Candidato (comum a todos os tipos) ───────────────────────────────
+        if (! $ficha->num_cpf_candidato) {
+            // CPF ausente: aprovação marcada, mas participante NÃO pode ser criado.
+            // Lança exceção para que a transação seja revertida e o chamador informe o usuário.
+            throw new \RuntimeException(
+                "A ficha de {$ficha->nom_candidato} não possui CPF cadastrado. ".
+                'Preencha o CPF antes de aprovar.'
+            );
+        }
+
+        $pessoa = self::criarPessoaCandidato($ficha);
+        $ficha->update(['idt_pessoa' => $pessoa->idt_pessoa]);
+        self::criarPessoaSaude($pessoa->idt_pessoa, $fichaSaude);
+        self::criarParticipante($pessoa->idt_pessoa, $ficha->idt_evento);
+        self::sincronizarFotoPessoa($ficha, $pessoa->idt_pessoa);
+
+        // ── Dados exclusivos do ECC (cônjuge + filhos) ───────────────────────
+        $fichaEcc = $ficha->fichaEcc;
+
+        if (! $fichaEcc) {
+            return; // Ficha VEM ou SGM: encerra aqui
+        }
+
+        // Cônjuge
+        if ($fichaEcc->num_cpf_conjuge) {
+            $pessoaConjuge = self::criarPessoaConjuge($fichaEcc);
+            $fichaEcc->update(['idt_pessoa' => $pessoaConjuge->idt_pessoa]);
+            self::criarPessoaSaude($pessoaConjuge->idt_pessoa, $fichaSaude);
+            self::criarParticipante($pessoaConjuge->idt_pessoa, $ficha->idt_evento);
+        }
+
+        // Cada filho
+        foreach ($fichaEcc->filhos as $filho) {
+            if ($filho->num_cpf_filho) {
+                $pessoaFilho = self::criarPessoaFilho($filho);
+                $filho->update(['idt_pessoa' => $pessoaFilho->idt_pessoa]);
+                self::criarParticipante($pessoaFilho->idt_pessoa, $ficha->idt_evento);
+            }
+        }
+    }
+
+    /**
+     * Remove todos os participantes vinculados a esta ficha:
+     * candidato, cônjuge e filhos (quando ECC).
+     */
+    private static function desaprovarFicha(Ficha $ficha): void
+    {
+        // Candidato
+        self::removerParticipante($ficha->idt_pessoa, $ficha->idt_evento);
+
+        $fichaEcc = $ficha->fichaEcc;
+
+        if (! $fichaEcc) {
+            return;
+        }
+
+        // Cônjuge
+        self::removerParticipante($fichaEcc->idt_pessoa, $ficha->idt_evento);
+
+        // Cada filho
+        foreach ($fichaEcc->filhos as $filho) {
+            self::removerParticipante($filho->idt_pessoa, $ficha->idt_evento);
+        }
+    }
+
+    private static function criarPessoaCandidato(Ficha $ficha): Pessoa
     {
         $dados = [
+            'num_cpf_pessoa' => CpfService::clean($ficha->num_cpf_candidato),
             'nom_pessoa' => $ficha->nom_candidato,
             'nom_apelido' => $ficha->nom_apelido,
             'tel_pessoa' => $ficha->tel_candidato,
@@ -76,14 +163,65 @@ class FichaService
 
         if ($ficha->eml_candidato) {
             $usuario = UserService::getUsuarioByEmail($ficha->eml_candidato);
-            
+
             if ($usuario) {
-                $dados['idt_usuario'] = $usuario->id; 
+                $dados['idt_usuario'] = $usuario->id;
             }
         }
 
         return Pessoa::updateOrCreate(
-            ['eml_pessoa' => $ficha->eml_candidato],
+            ['num_cpf_pessoa' => CpfService::clean($ficha->num_cpf_candidato)],
+            $dados
+        );
+    }
+
+    private static function criarPessoaConjuge(FichaEcc $fichaEcc): Pessoa
+    {
+        $dados = [
+            'num_cpf_pessoa' => CpfService::clean($fichaEcc->num_cpf_conjuge),
+            'nom_pessoa' => $fichaEcc->nom_conjuge,
+            'nom_apelido' => $fichaEcc->nom_apelido_conjuge,
+            'tel_pessoa' => $fichaEcc->tel_conjuge,
+            'dat_nascimento' => $fichaEcc->dat_nascimento_conjuge,
+            'eml_pessoa' => $fichaEcc->eml_conjuge ?? "sem-email-conjuge-{$fichaEcc->num_cpf_conjuge}@lago.org",
+            'tam_camiseta' => $fichaEcc->tam_camiseta_conjuge,
+            'tip_genero' => $fichaEcc->tip_genero_conjuge,
+        ];
+
+        if ($fichaEcc->eml_conjuge) {
+            $usuario = UserService::getUsuarioByEmail($fichaEcc->eml_conjuge);
+
+            if ($usuario) {
+                $dados['idt_usuario'] = $usuario->id;
+            }
+        }
+
+        return Pessoa::updateOrCreate(
+            ['num_cpf_pessoa' => CpfService::clean($fichaEcc->num_cpf_conjuge)],
+            $dados
+        );
+    }
+
+    private static function criarPessoaFilho(FichaEccFilho $filho): Pessoa
+    {
+        $dados = [
+            'num_cpf_pessoa' => CpfService::clean($filho->num_cpf_filho),
+            'nom_pessoa' => $filho->nom_filho,
+            'dat_nascimento' => $filho->dat_nascimento_filho,
+            'eml_pessoa' => $filho->eml_filho ?? "sem-email-filho-{$filho->num_cpf_filho}@lago.org",
+            'tel_pessoa' => $filho->tel_filho,
+        ];
+
+        if ($filho->eml_filho) {
+            $usuario = UserService::getUsuarioByEmail($filho->eml_filho);
+
+            if ($usuario) {
+                $dados['idt_usuario'] = $usuario->id;
+            }
+        }
+
+        return Pessoa::updateOrCreate(
+            ['num_cpf_pessoa' => CpfService::clean($filho->num_cpf_filho)],
             $dados
         );
     }
@@ -106,8 +244,8 @@ class FichaService
     {
         Participante::updateOrCreate(
             [
-                'idt_pessoa' => $idt_pessoa, 
-                'idt_evento' => $idt_evento
+                'idt_pessoa' => $idt_pessoa,
+                'idt_evento' => $idt_evento,
             ]
         );
     }
@@ -118,6 +256,26 @@ class FichaService
             Participante::where('idt_pessoa', $idt_pessoa)
                 ->where('idt_evento', $idt_evento)
                 ->delete();
+        }
+    }
+
+    private static function sincronizarFotoPessoa(Ficha $ficha, int $idt_pessoa): void
+    {
+        if ($ficha->foto && $ficha->foto->med_foto) {
+            $oldPath = $ficha->foto->med_foto;
+            $ext = pathinfo($oldPath, PATHINFO_EXTENSION);
+            $novaPath = "fotos/pessoa/{$idt_pessoa}.{$ext}";
+
+            if (Storage::disk('public')->exists($oldPath) && $oldPath !== $novaPath) {
+                Storage::disk('public')->copy($oldPath, $novaPath);
+
+                PessoaFoto::updateOrCreate(
+                    ['idt_pessoa' => $idt_pessoa],
+                    ['med_foto' => $novaPath]
+                );
+
+                $ficha->foto->update(['med_foto' => $novaPath]);
+            }
         }
     }
 }

@@ -18,6 +18,47 @@
                 </x-botao-navegar>
             </div>
         </div>
+
+        {{-- Filtros  --}}
+        <nav class="bg-white dark:bg-zinc-800 p-5 rounded-xl border border-gray-200 dark:border-zinc-700 shadow-sm mb-6">
+            <form method="GET" action="{{ route('role.index') }}" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                <div class="md:col-span-4">
+                    <flux:input name="nome" value="{{ request('nome') }}" icon="magnifying-glass" placeholder="Buscar por nome..." />
+                </div>
+
+                <div class="md:col-span-3">
+                    <flux:select name="perfil" placeholder="Todos os Perfis">
+                        <flux:select.option value="all" :selected="request('perfil') == 'all' || !request('perfil')">Todos os Perfis</flux:select.option>
+                        <flux:select.option value="admin" :selected="request('perfil') == 'admin'">Admin</flux:select.option>
+                        <flux:select.option value="coord" :selected="request('perfil') == 'coord'">Coordenador</flux:select.option>
+                        <flux:select.option value="espec" :selected="request('perfil') == 'espec'">Especialista</flux:select.option>
+                        <flux:select.option value="visit" :selected="request('perfil') == 'visit'">Visitação</flux:select.option>
+                        <flux:select.option value="sales" :selected="request('perfil') == 'sales'">Mercadinho</flux:select.option>
+                        <flux:select.option value="user" :selected="request('perfil') == 'user'">Usuário</flux:select.option>
+                    </flux:select>
+                </div>
+
+                <div class="md:col-span-3">
+                    <flux:select name="movimento" placeholder="Todos os Movimentos">
+                        <flux:select.option value="all" :selected="request('movimento') == 'all' || !request('movimento')">Todos os Movimentos</flux:select.option>
+                        <flux:select.option value="none" :selected="request('movimento') == 'none'">Sem Movimento</flux:select.option>
+                        @foreach ($movements as $mov)
+                            <flux:select.option value="{{ $mov->idt_movimento }}" :selected="request('movimento') == $mov->idt_movimento">
+                                {{ $mov->des_sigla }} ({{ $mov->nom_movimento }})
+                            </flux:select.option>
+                        @endforeach
+                    </flux:select>
+                </div>
+
+                <div class="md:col-span-2 flex gap-2">
+                    <flux:button type="submit" variant="filled" color="blue" class="flex-1">Filtrar</flux:button>
+                    @if (request('nome') || (request('perfil') && request('perfil') !== 'all') || (request('movimento') && request('movimento') !== 'all'))
+                        <flux:button href="{{ route('role.index') }}" icon="x-mark" variant="ghost" />
+                    @endif
+                </div>
+            </form>
+        </nav>
+
         <form method="POST" action="{{ route('role.change') }}">
             @csrf
             <table
@@ -25,25 +66,43 @@
                 <thead class="bg-gray-100 dark:bg-zinc-700">
                     <tr>
                         <th class="p-3 font-semibold text-gray-900 dark:text-gray-100">Nome</th>
-                        <th class="p-3 font-semibold text-gray-900 dark:text-gray-100">Apelido</th>
                         <th class="p-3 font-semibold text-gray-900 dark:text-gray-100">Email</th>
-                        <th class="p-3 font-semibold text-gray-900 dark:text-gray-100">Telefone</th>
                         <th class="p-3 font-semibold text-gray-900 dark:text-gray-100">Perfil</th>
+                        <th class="p-3 font-semibold text-gray-900 dark:text-gray-100">Movimento</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($perfis as $pessoa)
                         <tr>
                             <td class="p-3 text-gray-700 dark:text-gray-300">{{ $pessoa->name ?? '-' }}</td>
-                            <td class="p-3 text-gray-700 dark:text-gray-300">{{ $pessoa->nom_apelido ?? '-' }}</td>
                             <td class="p-3 text-gray-700 dark:text-gray-300">{{ $pessoa->email ?? '-' }}</td>
-                            <td class="p-3 text-gray-700 dark:text-gray-300">{{ $pessoa->tel_pessoa ?? '-' }}</td>
                             <td>
+                                @php
+                                    $roleLabels = [
+                                        'user' => 'Usuário',
+                                        'admin' => 'Administrador',
+                                        'coord' => 'Coordenador',
+                                        'espec' => 'Especialista',
+                                        'visit' => 'Visitação',
+                                        'sales' => 'Mercadinho'
+                                    ];
+                                @endphp
                                 <select name='role[{{ $pessoa->id ?? '' }}]'
-                                    class="w-full px-2 py-1 rounded-md border border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 text-gray-900 dark:text-gray-100">>
-                                    @foreach (['user', 'admin', 'coord'] as $role)
+                                    class="w-full px-2 py-1 rounded-md border border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 text-gray-900 dark:text-gray-100">
+                                    @foreach (['user', 'admin', 'coord', 'espec', 'visit', 'sales'] as $role)
                                         <option value="{{ $role }}" @selected(strtolower($pessoa->role ?? '') == $role)>
-                                            {{ ucfirst($role) }}
+                                            {{ $roleLabels[$role] }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </td>
+                            <td>
+                                <select name='movimento[{{ $pessoa->id ?? '' }}]'
+                                    class="w-full px-2 py-1 rounded-md border border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 text-gray-900 dark:text-gray-100">
+                                    <option value="">Nenhum</option>
+                                    @foreach ($movements as $mov)
+                                        <option value="{{ $mov->idt_movimento }}" @selected(($pessoa->idt_movimento ?? '') == $mov->idt_movimento)>
+                                            {{ $mov->des_sigla }} ({{ $mov->nom_movimento }})
                                         </option>
                                     @endforeach
                                 </select>
