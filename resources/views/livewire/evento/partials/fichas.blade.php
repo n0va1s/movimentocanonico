@@ -297,6 +297,7 @@ new class extends Component {
             </flux:table.column>
             <flux:table.column>Candidato</flux:table.column>
             <flux:table.column>Data Nasc</flux:table.column>
+            <flux:table.column>Endereço</flux:table.column>
             <flux:table.column>Situação</flux:table.column>
             <flux:table.column align="end">Ações</flux:table.column>
         </flux:table.columns>
@@ -335,6 +336,12 @@ new class extends Component {
                         <span class="text-zinc-400 text-xs ml-1">
                             ({{ \Carbon\Carbon::parse($ficha->dat_nascimento)->age }} anos)
                         </span>
+                    </div>
+                </flux:table.cell>
+
+                <flux:table.cell>
+                    <div class="text-sm text-zinc-600 dark:text-zinc-400 max-w-xs truncate" title="{{ $ficha->des_endereco }}">
+                        {{ $ficha->des_endereco ?: '—' }}
                     </div>
                 </flux:table.cell>
 
@@ -406,7 +413,7 @@ new class extends Component {
             </flux:table.row>
             @empty
             <flux:table.row>
-                <flux:table.cell colspan="5" class="text-center py-12">
+                <flux:table.cell colspan="6" class="text-center py-12">
                     <div class="flex flex-col items-center">
                         <x-heroicon-o-document-magnifying-glass class="w-12 h-12 text-zinc-300 mb-2" />
                         <flux:text>Nenhuma ficha encontrada para este critério.</flux:text>
