@@ -20,9 +20,11 @@ new #[Layout('components.layouts.auth')] class extends Component {
      */
     public function register(): void
     {
+        $this->phone = preg_replace('/\D/', '', $this->phone);
+
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string','regex:/^\d{10,11}$/', 'min:11'],
+            'phone' => ['required', 'string','regex:/^\d{10,11}$/'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
         ]);

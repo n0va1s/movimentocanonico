@@ -39,7 +39,27 @@ class FichaRequest extends FormRequest
                 'string',
                 'max:20',
                 new Cpf,
-                Rule::unique('ficha', 'num_cpf_candidato')->ignore($fichaId, 'idt_ficha'),
+                function ($attribute, $value, $fail) use ($fichaId) {
+                    if (!$value) return;
+
+                    $eventoId = $this->input('idt_evento');
+                    if (!$eventoId) return;
+
+                    $evento = \App\Models\Evento::find($eventoId);
+                    if (!$evento) return;
+
+                    $exists = \App\Models\Ficha::where('num_cpf_candidato', $value)
+                        ->where('idt_ficha', '!=', $fichaId ?? 0)
+                        ->where('tip_situacao', '!=', \App\Enums\TipoSituacao::CANCELADA)
+                        ->whereHas('evento', function ($query) use ($evento) {
+                            $query->where('idt_movimento', $evento->idt_movimento);
+                        })
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('Já existe ficha ativa cadastrada pra este CPF neste movimento.');
+                    }
+                },
             ],
             'nom_candidato' => 'required|string|max:255',
             'nom_apelido' => 'nullable|string|max:255',
