@@ -213,18 +213,20 @@ new class extends Component {
                         @php
                             $resp = $ficha->responsavel_info;
                         @endphp
-                        <div class="bg-zinc-50 dark:bg-zinc-900/50 rounded-lg p-3 mt-4 border border-zinc-200/50 dark:border-zinc-700/50">
-                            <div class="text-3xs font-extrabold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                                {{ $resp['tipo'] }}
+                        @if ($resp)
+                            <div class="bg-zinc-50 dark:bg-zinc-900/50 rounded-lg p-3 mt-4 border border-zinc-200/50 dark:border-zinc-700/50">
+                                <div class="text-3xs font-extrabold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                                    {{ $resp['tipo'] }}
+                                </div>
+                                <div class="text-sm font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5">
+                                    {{ $resp['nome'] }}
+                                </div>
+                                <div class="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 mt-2">
+                                    <flux:icon.phone class="size-3.5 text-zinc-400" />
+                                    <span class="font-medium">{{ $resp['telefone'] }}</span>
+                                </div>
                             </div>
-                            <div class="text-sm font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5">
-                                {{ $resp['nome'] }}
-                            </div>
-                            <div class="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 mt-2">
-                                <flux:icon.phone class="size-3.5 text-zinc-400" />
-                                <span class="font-medium">{{ $resp['telefone'] }}</span>
-                            </div>
-                        </div>
+                        @endif
                     </div>
 
                     {{-- Actions --}}

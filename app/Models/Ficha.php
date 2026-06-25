@@ -164,7 +164,7 @@ class Ficha extends Model
         };
     }
 
-    public function getResponsavelInfoAttribute(): array
+    public function getResponsavelInfoAttribute(): ?array
     {
         if ($this->fichaVem) {
             if (!empty($this->fichaVem->nom_responsavel)) {
@@ -214,20 +214,6 @@ class Ficha extends Model
             }
         }
 
-        if ($this->fichaEcc) {
-            if (!empty($this->fichaEcc->nom_conjuge)) {
-                return [
-                    'nome' => $this->fichaEcc->nom_conjuge,
-                    'telefone' => $this->fichaEcc->tel_conjuge ?: 'Não informado',
-                    'tipo' => 'Cônjuge'
-                ];
-            }
-        }
-
-        return [
-            'nome' => 'Não informado',
-            'telefone' => 'Não informado',
-            'tipo' => 'Responsável'
-        ];
+        return null;
     }
 }
