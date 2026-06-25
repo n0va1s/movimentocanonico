@@ -326,18 +326,20 @@ new class extends Component {
                         @php
                             $resp = $ficha->responsavel_info;
                         @endphp
-                        <div class="bg-zinc-50 dark:bg-zinc-900/40 rounded-xl p-4 mt-5 border border-zinc-100 dark:border-zinc-800/60">
-                            <div class="text-[10px] font-extrabold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                                {{ strtoupper($resp['tipo']) }}
+                        @if ($resp)
+                            <div class="bg-zinc-50 dark:bg-zinc-900/40 rounded-xl p-4 mt-5 border border-zinc-100 dark:border-zinc-800/60">
+                                <div class="text-[10px] font-extrabold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                                    {{ strtoupper($resp['tipo']) }}
+                                </div>
+                                <div class="text-base font-semibold text-zinc-800 dark:text-zinc-200 mt-1">
+                                    {{ $resp['nome'] }}
+                                </div>
+                                <div class="text-sm text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 mt-2.5">
+                                    <flux:icon.phone class="size-4 text-zinc-400 dark:text-zinc-500" />
+                                    <span class="font-medium">{{ $resp['telefone'] }}</span>
+                                </div>
                             </div>
-                            <div class="text-base font-semibold text-zinc-800 dark:text-zinc-200 mt-1">
-                                {{ $resp['nome'] }}
-                            </div>
-                            <div class="text-sm text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 mt-2.5">
-                                <flux:icon.phone class="size-4 text-zinc-400 dark:text-zinc-500" />
-                                <span class="font-medium">{{ $resp['telefone'] }}</span>
-                            </div>
-                        </div>
+                        @endif
                     </div>
 
                     {{-- CTA: Visualizar Ficha Completa --}}
