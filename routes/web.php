@@ -165,11 +165,11 @@ Route::middleware(['auth'])->group(function () {
         // Eventos
         Route::get('/eventos/create', [EventoController::class, 'create'])->name('eventos.create');
         Route::post('/eventos', [EventoController::class, 'store'])->name('eventos.store');
-        Route::get('/eventos/{evento}', [EventoController::class, 'show'])->name('eventos.show');
-        Route::get('/eventos/{evento}/edit', [EventoController::class, 'edit'])->name('eventos.edit');
-        Route::put('/eventos/{evento}', [EventoController::class, 'update'])->name('eventos.update');
-        Route::patch('/eventos/{evento}', [EventoController::class, 'update']);
-        Route::delete('/eventos/{evento}', [EventoController::class, 'destroy'])->name('eventos.destroy');
+        Route::get('/eventos/{evento}', [EventoController::class, 'show'])->name('eventos.show')->withTrashed();
+        Route::get('/eventos/{evento}/edit', [EventoController::class, 'edit'])->name('eventos.edit')->withTrashed();
+        Route::put('/eventos/{evento}', [EventoController::class, 'update'])->name('eventos.update')->withTrashed();
+        Route::patch('/eventos/{evento}', [EventoController::class, 'update'])->withTrashed();
+        Route::delete('/eventos/{evento}', [EventoController::class, 'destroy'])->name('eventos.destroy')->withTrashed();
 
         // Pessoas — listagem, busca e CRUD
         Volt::route('/pessoas', 'pessoas.index')->name('pessoas.index');
