@@ -127,10 +127,6 @@ class Pessoa extends Model
         return $this->hasMany(Voluntario::class, 'idt_pessoa');
     }
 
-    public function fichas()
-    {
-        return $this->hasMany(Ficha::class, 'idt_pessoa');
-    }
 
     public function parceiro()
     {
