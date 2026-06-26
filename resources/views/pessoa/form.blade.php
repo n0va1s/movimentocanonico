@@ -41,7 +41,7 @@
                             <template x-if="photoPreview">
                                 <img :src="photoPreview" alt="Foto do participante"
                                     class="w-full h-full object-cover"
-                                    @error="photoPreview = ''" />
+                                    @@error="photoPreview = ''" />
                             </template>
                             <template x-if="!photoPreview">
                                 <x-heroicon-o-user class="w-14 h-14 text-gray-400 dark:text-gray-500"
