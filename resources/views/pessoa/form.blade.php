@@ -40,7 +40,8 @@
                             class="w-28 h-28 rounded-full bg-gray-100 dark:bg-zinc-700 border-2 border-gray-300 dark:border-zinc-600 flex items-center justify-center overflow-hidden">
                             <template x-if="photoPreview">
                                 <img :src="photoPreview" alt="Foto do participante"
-                                    class="w-full h-full object-cover" />
+                                    class="w-full h-full object-cover"
+                                    @error="photoPreview = ''" />
                             </template>
                             <template x-if="!photoPreview">
                                 <x-heroicon-o-user class="w-14 h-14 text-gray-400 dark:text-gray-500"
