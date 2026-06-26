@@ -11,6 +11,7 @@ new class extends Component {
 
     public Evento $evento;
     public string $search = '';
+    public bool $casalDesignado = false;
 
     public function mount(Evento $evento): void
     {
@@ -19,6 +20,12 @@ new class extends Component {
 
     // Reseta a paginação quando a busca muda
     public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    // Reseta a paginação quando o filtro muda
+    public function updatedCasalDesignado(): void
     {
         $this->resetPage();
     }
@@ -188,10 +195,16 @@ new class extends Component {
     {
         return [
             'fichas' => \App\Models\Ficha::where('idt_evento', $this->evento->idt_evento)
-                ->with('evento') // necessário para rotasPorMovimento()
+                ->with(['evento', 'fichaEcc']) // necessário para rotasPorMovimento()
                 ->when($this->search, function ($query) {
-                    $query->where('nom_candidato', 'like', '%' . $this->search . '%')
-                        ->orWhere('nom_apelido', 'like', '%' . $this->search . '%');
+                    $query->where(function ($q) {
+                        $q->where('nom_candidato', 'like', '%' . $this->search . '%')
+                          ->orWhere('nom_apelido', 'like', '%' . $this->search . '%');
+                    });
+                })
+                ->when(Auth::user()->isAdmin() && $this->casalDesignado, function ($query) {
+                    $query->whereHas('fichaEcc')
+                          ->whereNotNull('idt_pessoa_visitacao');
                 })
                 ->paginate(10),
         ];
@@ -210,7 +223,10 @@ new class extends Component {
             <flux:subheading>Analise e aprove os candidatos para este evento.</flux:subheading>
         </div>
 
-        <div class="w-full md:w-auto">
+        <div class="w-full md:w-auto flex items-center gap-4">
+            @if (Auth::user()->isAdmin())
+                <flux:checkbox wire:model.live="casalDesignado" label="Apenas Casal Designado" />
+            @endif
             <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="Buscar ficha..."
                 class="w-full md:max-w-xs" />
         </div>

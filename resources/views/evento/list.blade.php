@@ -167,38 +167,45 @@
                     </div>
 
                     <footer class="p-4 bg-gray-50 dark:bg-zinc-800/50 border-t border-gray-100 dark:border-zinc-700 mt-auto">
-                        {{-- Botão de participação — visível para todos os perfis --}}
-                        @if ($evento->ja_inscrito_participante || $evento->ja_inscrito_voluntario)
-                            <div class="w-full py-2 bg-gray-100 dark:bg-zinc-700 text-gray-500 dark:text-gray-400 rounded-md font-bold text-center flex items-center justify-center gap-2 border border-gray-200 dark:border-zinc-600">
-                                <x-heroicon-s-check-circle class="w-5 h-5 text-green-500" />
-                                Inscrição Confirmada
-                            </div>
-                        @else
-                            @php
-                                $tipoValue = $evento->tip_evento instanceof \UnitEnum ? $evento->tip_evento->value : $evento->tip_evento;
-                            @endphp
-
-                            @if ($tipoValue === 'E')
-                                <flux:button href="{{ route('trabalhadores.create', ['evento' => $evento]) }}" color="green" class="w-full">
-                                    Quero Trabalhar
-                                </flux:button>
-                            @elseif (Auth::user()->pessoa)
+                        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 w-full">
+                            {{-- Botão de participação — visível para todos os perfis --}}
+                            @if ($evento->ja_inscrito_participante || $evento->ja_inscrito_voluntario)
+                                <div class="w-full py-2 bg-gray-100 dark:bg-zinc-700 text-gray-500 dark:text-gray-400 rounded-md font-bold text-center flex items-center justify-center gap-2 border border-gray-200 dark:border-zinc-600 text-sm">
+                                    <x-heroicon-s-check-circle class="w-5 h-5 text-green-500" />
+                                    Pré-inscrição confirmada
+                                </div>
+                            @elseif (!empty($evento->has_submitted_ficha))
+                                <div class="w-full py-2 bg-gray-100 dark:bg-zinc-700 text-gray-500 dark:text-gray-400 rounded-md font-bold text-center flex items-center justify-center gap-2 border border-gray-200 dark:border-zinc-600 text-sm">
+                                    <x-heroicon-s-check-circle class="w-5 h-5 text-green-500" />
+                                    Pré-inscrição confirmada
+                                </div>
+                            @else
                                 @php
-                                    $textoBotao = ($tipoValue === 'P') ? 'Vou Participar' : 'Bora pro Desafio';
+                                    $tipoValue = $evento->tip_evento instanceof \UnitEnum ? $evento->tip_evento->value : $evento->tip_evento;
                                 @endphp
 
-                                <form method="POST" action="{{ route('participantes.confirm', ['evento' => $evento, 'pessoa' => Auth::user()->pessoa]) }}">
-                                    @csrf
-                                    <flux:button type="submit" color="green" class="w-full" loading>
-                                        {{ $textoBotao }}
+                                @if ($tipoValue === 'E')
+                                    <flux:button href="{{ route('trabalhadores.create', ['evento' => $evento]) }}" color="green" class="w-full">
+                                        Quero Trabalhar
                                     </flux:button>
-                                </form>
-                            @else
-                                <div class="w-full py-2 text-center text-sm text-gray-500 dark:text-gray-400">
-                                    Complete seu cadastro para participar.
-                                </div>
+                                @elseif (Auth::user()->pessoa)
+                                    @php
+                                        $textoBotao = ($tipoValue === 'P') ? 'Vou Participar' : 'Bora pro Desafio';
+                                    @endphp
+
+                                    <form method="POST" action="{{ route('participantes.confirm', ['evento' => $evento, 'pessoa' => Auth::user()->pessoa]) }}" class="w-full">
+                                        @csrf
+                                        <flux:button type="submit" color="green" class="w-full" loading>
+                                            {{ $textoBotao }}
+                                        </flux:button>
+                                    </form>
+                                @else
+                                    <div class="w-full py-2 text-center text-sm text-gray-500 dark:text-gray-400">
+                                        Complete seu cadastro para participar.
+                                    </div>
+                                @endif
                             @endif
-                        @endif
+                        </div>
                     </footer>
                 </article>
             @empty
