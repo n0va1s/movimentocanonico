@@ -40,7 +40,8 @@ return [
 
         'public' => [
             'driver' => 'local',
-            'root' => storage_path('app/public'),
+            // ALTERADO: Grava direto na pasta public/storage. Resolve 100% dos problemas de symlink na Hostinger
+            'root' => public_path('storage'),
             'url' => '/storage',
             'visibility' => 'public',
             'throw' => false,
