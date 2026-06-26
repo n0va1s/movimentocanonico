@@ -170,7 +170,7 @@ class PessoaController extends Controller
         // Usuários não-admin só podem editar a própria pessoa
         $user = auth()->user();
         if (! $user->isAdmin() && optional($user->pessoa)->idt_pessoa !== $pessoa->idt_pessoa) {
-            abort(403);
+            abort(403, 'Você não tem permissão para editar estes dados.');
         }
 
         $restricoes = TipoRestricao::select(
@@ -213,7 +213,7 @@ class PessoaController extends Controller
         // Usuários não-admin só podem editar a própria pessoa
         $user = auth()->user();
         if (! $user->isAdmin() && optional($user->pessoa)->idt_pessoa !== $pessoa->idt_pessoa) {
-            abort(403);
+            abort(403, 'Você não tem permissão para editar estes dados.');
         }
 
         $user2 = $this->userService::getUsuarioByEmail($request->input('eml_pessoa'));
