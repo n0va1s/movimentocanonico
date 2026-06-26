@@ -19,8 +19,10 @@ use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
 // ---------------------------------------------------------------------------
-// Utilitários (sem auth)
+// Utilitários (Somente admin)
 // ---------------------------------------------------------------------------
+
+Route::middleware(['auth', 'role:admin'])->group(function () {
 
 Route::get('/limpar-tudo', function () {
     Artisan::call('config:clear');
@@ -55,6 +57,7 @@ Route::get('/encerrar-eventos', function () {
     } catch (Exception $e) {
         return 'Erro ao encerrar eventos: '.$e->getMessage();
     }
+});
 });
 
 
@@ -139,7 +142,6 @@ Route::middleware(['auth'])->group(function () {
     // Importação de Planilhas (Definido antes do wildcard /eventos/{evento} para evitar 404)
     // -----------------------------------------------------------------------
     Route::middleware(['role:admin,espec'])->group(function () {
-        Route::get('/configuracoes', [ConfiguracoesController::class, 'index'])->name('configuracoes.index');
         Route::get('/eventos/importar', [ImportController::class, 'index'])->name('eventos.importar');
         Route::post('/eventos/importar/participantes', [ImportController::class, 'importarParticipantes'])->name('eventos.importar.participantes');
         Route::post('/eventos/importar/trabalhadores', [ImportController::class, 'importarTrabalhadores'])->name('eventos.importar.trabalhadores');
@@ -152,6 +154,9 @@ Route::middleware(['auth'])->group(function () {
     // -----------------------------------------------------------------------
 
     Route::middleware(['role:admin'])->group(function () {
+
+        // Configurações Globais
+        Route::get('/configuracoes', [ConfiguracoesController::class, 'index'])->name('configuracoes.index');
 
         // Contatos
         Route::get('/contatos', [ContatoController::class, 'index'])->name('contatos.index');

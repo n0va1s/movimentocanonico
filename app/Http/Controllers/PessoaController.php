@@ -43,6 +43,12 @@ class PessoaController extends Controller
             'trabalhadores.equipe:idt_equipe,des_grupo',
         ])->findOrFail($id);
 
+        // Se não for admin, ele só pode ver o PRÓPRIO perfil.
+        $user = auth()->user();
+        if (! $user->isAdmin() && optional($user->pessoa)->idt_pessoa !== $pessoa->idt_pessoa) {
+            abort(403, 'Você não tem permissão para visualizar estes dados.');
+        }
+
         $duration = round((microtime(true) - $start) * 1000, 2);
         Log::notice('Visualização de pessoa', array_merge($context, [
             'pessoa_id' => $id,
