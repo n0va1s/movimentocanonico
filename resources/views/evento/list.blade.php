@@ -178,7 +178,7 @@
                                 $tipoValue = $evento->tip_evento instanceof \UnitEnum ? $evento->tip_evento->value : $evento->tip_evento;
                             @endphp
 
-                            @if ($tipoValue === 'E')
+                            @if ($tipoValue === 'E' && auth()->user()->pessoa)
                                 <flux:button href="{{ route('trabalhadores.create', ['evento' => $evento]) }}" color="green" class="w-full">
                                     Quero Trabalhar
                                 </flux:button>
@@ -194,9 +194,9 @@
                                     </flux:button>
                                 </form>
                             @else
-                                <div class="w-full py-2 text-center text-sm text-gray-500 dark:text-gray-400">
-                                    Complete seu cadastro para participar.
-                                </div>
+                                <flux:button href="{{ route('pessoas.create') }}" color="blue" class="w-full">
+                                    Sou Veterano (Completar Cadastro)
+                                </flux:button>
                             @endif
                         @endif
                     </footer>

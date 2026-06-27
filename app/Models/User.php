@@ -111,7 +111,7 @@ class User extends Authenticatable
         return $this->belongsTo(TipoMovimento::class, 'idt_movimento', 'idt_movimento');
     }
 
-    protected static function boot()
+    /*protected static function boot()
     {
         parent::boot();
 
@@ -131,7 +131,7 @@ class User extends Authenticatable
                 $pessoaCadastrada->saveQuietly();
             }
         });
-    }
+    }*/
 
     /**
      * The attributes that are mass assignable.

@@ -150,6 +150,12 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // -----------------------------------------------------------------------
+    // Rotas acessíveis a qualquer usuário logado (veteranos podem completar perfil)
+    // -----------------------------------------------------------------------
+    Route::get('/pessoas/create', [PessoaController::class, 'create'])->name('pessoas.create');
+    Route::post('/pessoas', [PessoaController::class, 'store'])->name('pessoas.store');
+
+    // -----------------------------------------------------------------------
     // Somente admin: criar/editar/excluir/visualizar recursos e configurações
     // -----------------------------------------------------------------------
 
@@ -171,10 +177,8 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/eventos/{evento}', [EventoController::class, 'update'])->withTrashed();
         Route::delete('/eventos/{evento}', [EventoController::class, 'destroy'])->name('eventos.destroy')->withTrashed();
 
-        // Pessoas — listagem, busca e CRUD
+        // Pessoas — listagem, busca e CRUD (create e store foram movidos para cima)
         Volt::route('/pessoas', 'pessoas.index')->name('pessoas.index');
-        Route::get('/pessoas/create', [PessoaController::class, 'create'])->name('pessoas.create');
-        Route::post('/pessoas', [PessoaController::class, 'store'])->name('pessoas.store');
         Route::delete('/pessoas/{pessoa}', [PessoaController::class, 'destroy'])->name('pessoas.destroy');
 
         // Executado diariamente via command
