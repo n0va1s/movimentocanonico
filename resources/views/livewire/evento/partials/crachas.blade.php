@@ -71,22 +71,72 @@ new class extends Component {
     }
 }; ?>
 
-<div class="space-y-6">
+<div class="space-y-6"
+    x-data="{ 
+        selecionados: [], 
+        todos: true,
+        pessoasIds: [
+            @foreach($this->pessoas as $idx => $pessoa)
+                '{{ $idx }}',
+            @endforeach
+        ],
+        toggleTodos() {
+            this.selecionados = this.todos ? [...this.pessoasIds] : [];
+        },
+        toggle(idx) {
+            if (this.selecionados.includes(idx)) {
+                this.selecionados = this.selecionados.filter(i => i !== idx);
+            } else {
+                this.selecionados.push(idx);
+            }
+        },
+        init() {
+            this.selecionados = [...this.pessoasIds];
+            this.$watch('selecionados', val => {
+                this.todos = val.length === this.pessoasIds.length && this.pessoasIds.length > 0;
+            });
+        }
+    }">
+
     {{-- Controles --}}
     <div
-        class="flex justify-between items-center print:hidden bg-white p-4 rounded-xl border border-zinc-200 shadow-sm">
+        class="flex flex-col sm:flex-row justify-between items-start sm:items-center print:hidden bg-white p-4 rounded-xl border border-zinc-200 shadow-sm gap-4">
         <div>
             <flux:heading size="lg">Impressão de Crachás</flux:heading>
             <flux:subheading>{{ count($this->pessoas) }} registros encontrados</flux:subheading>
         </div>
-        <flux:button icon="printer" variant="primary" onclick="window.print()">Imprimir Tudo</flux:button>
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full sm:w-auto">
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-zinc-700 font-medium hover:text-zinc-900 transition-colors">
+                <input type="checkbox" x-model="todos" @change="toggleTodos" class="rounded border-zinc-300 text-indigo-600 shadow-sm focus:ring-indigo-500 w-4 h-4">
+                Selecionar Todos
+            </label>
+            <div class="text-sm text-zinc-500 font-medium">
+                <span x-text="selecionados.length"></span> selecionado(s)
+            </div>
+            <flux:button icon="printer" variant="primary" onclick="window.print()" x-bind:disabled="selecionados.length === 0" class="w-full sm:w-auto">
+                <span x-text="selecionados.length === pessoasIds.length && pessoasIds.length > 0 ? 'Imprimir Tudo' : 'Imprimir Selecionados'"></span>
+            </flux:button>
+        </div>
     </div>
 
     {{-- Grid de Crachás --}}
     <div id="crachas-grid" class="flex flex-wrap gap-4 justify-center">
-        @forelse ($this->pessoas as $pessoa)
-        <div class="cracha-container bg-white border-2 rounded-lg flex overflow-hidden shadow-sm print:shadow-none"
-            style="border-color: {{ $pessoa['grupo_cor'] }}; width: 8.6cm; height: 5.4cm; page-break-inside: avoid;">
+        @forelse ($this->pessoas as $idx => $pessoa)
+        <div class="relative group" 
+             x-bind:class="selecionados.includes('{{ $idx }}') ? '' : 'print:hidden'">
+             
+            {{-- Indicador de seleção --}}
+            <div class="absolute top-2 left-2 z-10 print:hidden bg-white p-1 rounded-md shadow-sm border transition-colors cursor-pointer"
+                 x-bind:class="selecionados.includes('{{ $idx }}') ? 'border-indigo-500 bg-indigo-50' : 'border-zinc-200 opacity-60 group-hover:opacity-100'"
+                 @click="toggle('{{ $idx }}')">
+                <input type="checkbox" :checked="selecionados.includes('{{ $idx }}')" 
+                       class="w-5 h-5 rounded border-zinc-300 text-indigo-600 shadow-sm focus:ring-indigo-500 pointer-events-none">
+            </div>
+
+            <div class="cracha-container bg-white border-2 rounded-lg flex overflow-hidden shadow-sm print:shadow-none transition-all cursor-pointer hover:shadow-md"
+                @click="toggle('{{ $idx }}')"
+                x-bind:class="selecionados.includes('{{ $idx }}') ? '' : 'opacity-40 grayscale-[50%] scale-[0.98] hover:opacity-70'"
+                style="border-color: {{ $pessoa['grupo_cor'] }}; width: 8.6cm; height: 5.4cm; page-break-inside: avoid;">
 
             {{-- Lateral: Imagem --}}
            <div class="shrink-0 bg-zinc-50 border-r" style="width: 2.2cm; border-color: {{ $pessoa['grupo_cor'] }}44;">
@@ -154,6 +204,7 @@ new class extends Component {
                 @endforeach
                 </div>
             </div>
+        </div>
         </div>
         @empty
         <div class="w-full text-center py-20 text-zinc-400">Nenhum crachá para gerar.</div>

@@ -19,8 +19,10 @@ use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
 // ---------------------------------------------------------------------------
-// Utilitários (sem auth)
+// Utilitários (Somente admin)
 // ---------------------------------------------------------------------------
+
+Route::middleware(['auth', 'role:admin'])->group(function () {
 
 Route::get('/limpar-tudo', function () {
     Artisan::call('config:clear');
@@ -55,6 +57,7 @@ Route::get('/encerrar-eventos', function () {
     } catch (Exception $e) {
         return 'Erro ao encerrar eventos: '.$e->getMessage();
     }
+});
 });
 
 
@@ -139,7 +142,6 @@ Route::middleware(['auth'])->group(function () {
     // Importação de Planilhas (Definido antes do wildcard /eventos/{evento} para evitar 404)
     // -----------------------------------------------------------------------
     Route::middleware(['role:admin,espec'])->group(function () {
-        Route::get('/configuracoes', [ConfiguracoesController::class, 'index'])->name('configuracoes.index');
         Route::get('/eventos/importar', [ImportController::class, 'index'])->name('eventos.importar');
         Route::post('/eventos/importar/participantes', [ImportController::class, 'importarParticipantes'])->name('eventos.importar.participantes');
         Route::post('/eventos/importar/trabalhadores', [ImportController::class, 'importarTrabalhadores'])->name('eventos.importar.trabalhadores');
@@ -153,6 +155,9 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware(['role:admin'])->group(function () {
 
+        // Configurações Globais
+        Route::get('/configuracoes', [ConfiguracoesController::class, 'index'])->name('configuracoes.index');
+
         // Contatos
         Route::get('/contatos', [ContatoController::class, 'index'])->name('contatos.index');
         Route::delete('/contatos/{id}', [ContatoController::class, 'destroy'])->name('contatos.destroy');
@@ -160,11 +165,11 @@ Route::middleware(['auth'])->group(function () {
         // Eventos
         Route::get('/eventos/create', [EventoController::class, 'create'])->name('eventos.create');
         Route::post('/eventos', [EventoController::class, 'store'])->name('eventos.store');
-        Route::get('/eventos/{evento}', [EventoController::class, 'show'])->name('eventos.show');
-        Route::get('/eventos/{evento}/edit', [EventoController::class, 'edit'])->name('eventos.edit');
-        Route::put('/eventos/{evento}', [EventoController::class, 'update'])->name('eventos.update');
-        Route::patch('/eventos/{evento}', [EventoController::class, 'update']);
-        Route::delete('/eventos/{evento}', [EventoController::class, 'destroy'])->name('eventos.destroy');
+        Route::get('/eventos/{evento}', [EventoController::class, 'show'])->name('eventos.show')->withTrashed();
+        Route::get('/eventos/{evento}/edit', [EventoController::class, 'edit'])->name('eventos.edit')->withTrashed();
+        Route::put('/eventos/{evento}', [EventoController::class, 'update'])->name('eventos.update')->withTrashed();
+        Route::patch('/eventos/{evento}', [EventoController::class, 'update'])->withTrashed();
+        Route::delete('/eventos/{evento}', [EventoController::class, 'destroy'])->name('eventos.destroy')->withTrashed();
 
         // Pessoas — listagem, busca e CRUD
         Volt::route('/pessoas', 'pessoas.index')->name('pessoas.index');

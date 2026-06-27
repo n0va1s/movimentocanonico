@@ -73,6 +73,21 @@ new class extends Component {
         $this->dispatch('notify', message: 'Voluntário confirmado como trabalhador!', type: 'sucesso');
     }
 
+    public function recusarTrabalhador(int $idtPessoa): void
+    {
+        Voluntario::where('idt_evento', $this->evento->idt_evento)
+            ->where('idt_pessoa', $idtPessoa)
+            ->whereNull('idt_trabalhador')
+            ->delete();
+
+        // Limpa a seleção para este voluntário (por precaução)
+        unset($this->selectedEquipes[$idtPessoa]);
+        unset($this->indCoordenador[$idtPessoa]);
+        unset($this->indPrimeiraVez[$idtPessoa]);
+
+        $this->dispatch('notify', message: 'Voluntário recusado e removido da lista.', type: 'sucesso');
+    }
+
     public function with(): array
     {
         return [
@@ -213,7 +228,17 @@ new class extends Component {
                 </div>
 
                 <div class="p-3 bg-zinc-50 dark:bg-zinc-900/50 border-t border-zinc-100 dark:border-zinc-700 flex justify-between gap-2">
-                    <flux:button size="sm" variant="ghost" color="red" class="w-full text-xs" icon="trash">Recusar</flux:button>
+                    <flux:button 
+                        size="sm" 
+                        variant="ghost" 
+                        color="red" 
+                        class="w-full text-xs" 
+                        icon="trash"
+                        wire:click="recusarTrabalhador({{ $pessoa->idt_pessoa }})"
+                        wire:confirm="Tem certeza que deseja recusar e excluir este voluntário da lista?"
+                    >
+                        Recusar
+                    </flux:button>
                 </div>
             </div>
         @empty
