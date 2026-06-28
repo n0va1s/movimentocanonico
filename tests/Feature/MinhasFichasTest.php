@@ -323,3 +323,55 @@ describe('Minhas Fichas Visitor Designation', function () {
             ->assertForbidden();
     });
 });
+
+describe('Minhas Fichas - Admin Designation via Component', function () {
+    beforeEach(function () {
+        $this->admin = User::factory()->create(['role' => 'admin']);
+        $this->visitor = User::factory()->create(['role' => 'visit', 'idt_movimento' => 2]);
+        
+        // Fichas
+        $this->ficha1 = Ficha::factory()->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'nom_candidato' => 'Ficha Teste Um',
+        ]);
+        $this->ficha2 = Ficha::factory()->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'nom_candidato' => 'Ficha Teste Dois',
+        ]);
+    });
+
+    test('visitor cannot see selection checkboxes or designation panel', function () {
+        $this->actingAs($this->visitor);
+        
+        Volt::test('minhas-fichas.index')
+            ->assertDontSee('wire:model.live="selectedFichas"')
+            ->assertDontSee('Designar Visitação');
+    });
+
+    test('admin can select fichas and assign visitor', function () {
+        $this->actingAs($this->admin);
+        
+        $component = Volt::test('minhas-fichas.index')
+            ->assertDontSee('Designar Visitação')
+            ->set('selectedFichas', [(string)$this->ficha1->idt_ficha, (string)$this->ficha2->idt_ficha])
+            ->assertSee('Designar Visitação')
+            ->set('pessoaVisitacaoId', $this->visitor->pessoa->idt_pessoa)
+            ->call('designarVisitacao')
+            ->assertHasNoErrors();
+            
+        expect($this->ficha1->fresh()->idt_pessoa_visitacao)->toBe($this->visitor->pessoa->idt_pessoa)
+            ->and($this->ficha2->fresh()->idt_pessoa_visitacao)->toBe($this->visitor->pessoa->idt_pessoa)
+            ->and($this->ficha1->fresh()->tip_situacao)->toBe(TipoSituacao::SELECIONADA);
+    });
+
+    test('designarVisitacao throws 403 for non-admin users', function () {
+        $this->actingAs($this->visitor);
+        
+        Volt::test('minhas-fichas.index')
+            ->set('selectedFichas', [(string)$this->ficha1->idt_ficha])
+            ->set('pessoaVisitacaoId', $this->visitor->pessoa->idt_pessoa)
+            ->call('designarVisitacao')
+            ->assertForbidden();
+    });
+});
+

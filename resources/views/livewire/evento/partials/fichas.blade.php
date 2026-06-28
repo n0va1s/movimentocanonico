@@ -123,8 +123,23 @@ new class extends Component {
 
     private function getVisitadores()
     {
-        $visitadoresRaw = \App\Models\Pessoa::whereHas('usuario', function ($q) {
-            $q->where('role', \App\Models\User::ROLE_VISITACAO);
+        if (!$this->evento?->idt_evento) {
+            return collect();
+        }
+
+        $visitadoresRaw = \App\Models\Pessoa::where(function ($query) {
+            $query->whereHas('trabalhadores', function ($q) {
+                $q->where('idt_evento', $this->evento->idt_evento)
+                  ->whereHas('equipe', function ($qe) {
+                      $qe->where('des_grupo', 'like', '%Visitação%');
+                  });
+            })
+            ->orWhereHas('parceiro.trabalhadores', function ($q) {
+                $q->where('idt_evento', $this->evento->idt_evento)
+                  ->whereHas('equipe', function ($qe) {
+                      $qe->where('des_grupo', 'like', '%Visitação%');
+                  });
+            });
         })->with('parceiro')->orderBy('nom_pessoa', 'asc')->get();
 
         $processed = [];
@@ -681,7 +696,9 @@ new class extends Component {
             </div>
 
             <div>
-                <flux:select wire:model="pessoaVisitacaoId" label="Visitador(es)" placeholder="Selecione um visitador...">
+                <flux:label>Visitador(es)</flux:label>
+                <select wire:model.live="pessoaVisitacaoId" class="mt-1 block w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2">
+                    <option value="">Selecione um visitador...</option>
                     @foreach ($visitadores as $visitador)
                         <option value="{{ $visitador->idt_pessoa }}">
                             {{ $visitador->nom_pessoa }}
@@ -690,8 +707,8 @@ new class extends Component {
                             @endif
                         </option>
                     @endforeach
-                </flux:select>
-                @error('pessoaVisitacaoId') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                </select>
+                @error('pessoaVisitacaoId') <span class="text-red-500 text-sm mt-1 block">{{ $message }}</span> @enderror
             </div>
 
             <div class="flex gap-2 justify-end">

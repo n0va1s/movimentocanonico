@@ -17,6 +17,8 @@ new class extends Component {
     public string $search = '';
     public string $visitadorSearch = '';
     public bool $showEventFilter = false;
+    public array $selectedFichas = [];
+    public ?int $pessoaVisitacaoId = null;
 
     public function mount(): void
     {
@@ -78,6 +80,69 @@ new class extends Component {
         } catch (\Exception $e) {
             \Flux::toast(__('messages.alerts.error.ficha_update_error', ['error' => $e->getMessage()]), variant: 'danger');
         }
+    }
+
+    private function getVisitadores()
+    {
+        if (!$this->eventoId) {
+            return collect();
+        }
+
+        $visitadoresRaw = \App\Models\Pessoa::where(function ($query) {
+            $query->whereHas('trabalhadores', function ($q) {
+                $q->where('idt_evento', $this->eventoId)
+                  ->whereHas('equipe', function ($qe) {
+                      $qe->where('des_grupo', 'like', '%Visitação%');
+                  });
+            })
+            ->orWhereHas('parceiro.trabalhadores', function ($q) {
+                $q->where('idt_evento', $this->eventoId)
+                  ->whereHas('equipe', function ($qe) {
+                      $qe->where('des_grupo', 'like', '%Visitação%');
+                  });
+            });
+        })->with('parceiro')->orderBy('nom_pessoa', 'asc')->get();
+
+        $processed = [];
+        return $visitadoresRaw->reject(function ($v) use (&$processed) {
+            if (in_array($v->idt_pessoa, $processed)) {
+                return true;
+            }
+            if ($v->idt_parceiro) {
+                $processed[] = $v->idt_parceiro;
+            }
+            return false;
+        });
+    }
+
+    public function abrirModalVisitacao(): void
+    {
+        if (count($this->selectedFichas) === 0) {
+            return;
+        }
+        $this->pessoaVisitacaoId = null;
+        $this->modal('modal-visitacao')->show();
+    }
+
+    public function designarVisitacao(): void
+    {
+        abort_if(!auth()->user()->isAdmin(), 403);
+
+        $this->validate([
+            'pessoaVisitacaoId' => 'required|exists:pessoa,idt_pessoa',
+        ]);
+
+        \App\Models\Ficha::whereIn('idt_ficha', $this->selectedFichas)
+            ->update([
+                'idt_pessoa_visitacao' => $this->pessoaVisitacaoId,
+                'tip_situacao' => \App\Enums\TipoSituacao::SELECIONADA->value,
+            ]);
+
+        $this->modal('modal-visitacao')->close();
+        $this->selectedFichas = [];
+        $this->pessoaVisitacaoId = null;
+
+        session()->flash('success', 'Visitação designada com sucesso e fichas marcadas como Selecionada.');
     }
 
     public function with(): array
@@ -154,6 +219,7 @@ new class extends Component {
         return [
             'fichas' => $fichasQuery->orderBy('created_at', 'desc')->paginate(12),
             'eventosAtivos' => $eventosAtivos,
+            'visitadores' => $this->getVisitadores(),
         ];
     }
 }; ?>
@@ -169,21 +235,21 @@ new class extends Component {
 
     {{-- Alerts --}}
 
-    {{-- Barra de Filtros e Busca --}}
-    <div class="flex flex-col gap-4">
-        <div class="flex flex-col sm:flex-row gap-3 w-full items-center">
-            {{-- Busca --}}
-            <div class="w-full sm:flex-1 max-w-md">
-                <flux:input 
-                    wire:model.live.debounce.300ms="search" 
-                    icon="magnifying-glass" 
-                    placeholder="Buscar contatos..." 
-                    class="bg-white dark:bg-zinc-800"
-                />
-            </div>
+    {{-- Barra de Filtros e Busca (Apenas Admin) --}}
+    @if (auth()->user()->isAdmin())
+        <div class="flex flex-col gap-4">
+            <div class="flex flex-col sm:flex-row gap-3 w-full items-center">
+                {{-- Busca --}}
+                <div class="w-full sm:flex-1 max-w-md">
+                    <flux:input 
+                        wire:model.live.debounce.300ms="search" 
+                        icon="magnifying-glass" 
+                        placeholder="Buscar contatos..." 
+                        class="bg-white dark:bg-zinc-800"
+                    />
+                </div>
 
-            {{-- Filtro de Casal Designado (Apenas Admin) --}}
-            @if (auth()->user()->isAdmin())
+                {{-- Filtro de Casal Designado --}}
                 <div class="w-full sm:w-64">
                     <flux:input 
                         wire:model.live.debounce.300ms="visitadorSearch" 
@@ -192,47 +258,65 @@ new class extends Component {
                         class="bg-white dark:bg-zinc-800"
                     />
                 </div>
+
+                {{-- Situação --}}
+                <div class="w-full sm:w-60">
+                    <flux:select wire:model.live="situacao" placeholder="Todas as Situações">
+                        <flux:select.option value="">Todas as Situações</flux:select.option>
+                        @foreach ([
+                            App\Enums\TipoSituacao::SELECIONADA, 
+                            App\Enums\TipoSituacao::CONTATO, 
+                            App\Enums\TipoSituacao::AGUARDANDO,
+                            App\Enums\TipoSituacao::VISITADA,
+                            App\Enums\TipoSituacao::CANCELADA
+                        ] as $sit)
+                            <flux:select.option value="{{ $sit->value }}">{{ $sit->label() }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                </div>
+
+                {{-- Botão de Eventos --}}
+                <flux:button 
+                    icon="funnel" 
+                    variant="ghost" 
+                    class="shrink-0 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700/50" 
+                    wire:click="toggleEventFilter"
+                    title="Filtrar por Evento"
+                />
+
+                {{-- Botão de Designar Visitação --}}
+                @if (count($selectedFichas) > 0)
+                    <flux:button wire:click="abrirModalVisitacao" icon="user-group" variant="primary" class="shrink-0">
+                        Designar Visitação ({{ count($selectedFichas) }})
+                    </flux:button>
+                @endif
+            </div>
+
+            {{-- Filtro Avançado de Evento (Expansível) --}}
+            @if ($showEventFilter || !$eventoId)
+                <div class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 flex flex-col gap-2 max-w-md transition duration-200">
+                    <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Filtrar por Evento Ativo</span>
+                    <flux:select wire:model.live="eventoId" placeholder="Selecione um Evento Ativo">
+                        <flux:select.option value="">Selecione um Evento Ativo</flux:select.option>
+                        @foreach ($eventosAtivos as $ev)
+                            <flux:select.option value="{{ $ev->idt_evento }}">{{ $ev->des_evento }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                </div>
             @endif
-
-            {{-- Situação --}}
-            <div class="w-full sm:w-60">
-                <flux:select wire:model.live="situacao" placeholder="Todas as Situações">
-                    <flux:select.option value="">Todas as Situações</flux:select.option>
-                    @foreach ([
-                        App\Enums\TipoSituacao::SELECIONADA, 
-                        App\Enums\TipoSituacao::CONTATO, 
-                        App\Enums\TipoSituacao::AGUARDANDO,
-                        App\Enums\TipoSituacao::VISITADA,
-                        App\Enums\TipoSituacao::CANCELADA
-                    ] as $sit)
-                        <flux:select.option value="{{ $sit->value }}">{{ $sit->label() }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-            </div>
-
-            {{-- Botão de Eventos --}}
-            <flux:button 
-                icon="funnel" 
-                variant="ghost" 
-                class="shrink-0 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700/50" 
-                wire:click="toggleEventFilter"
-                title="Filtrar por Evento"
-            />
         </div>
-
-        {{-- Filtro Avançado de Evento (Expansível) --}}
-        @if ($showEventFilter || !$eventoId)
-            <div class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 flex flex-col gap-2 max-w-md transition duration-200">
-                <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Filtrar por Evento Ativo</span>
-                <flux:select wire:model.live="eventoId" placeholder="Selecione um Evento Ativo">
-                    <flux:select.option value="">Selecione um Evento Ativo</flux:select.option>
-                    @foreach ($eventosAtivos as $ev)
-                        <flux:select.option value="{{ $ev->idt_evento }}">{{ $ev->des_evento }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-            </div>
-        @endif
-    </div>
+    @elseif (!$eventoId)
+        {{-- Selecionar Evento Ativo para Visitador sem Evento pré-selecionado --}}
+        <div class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 flex flex-col gap-2 max-w-md">
+            <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Selecionar Evento Ativo</span>
+            <flux:select wire:model.live="eventoId" placeholder="Selecione um Evento Ativo">
+                <flux:select.option value="">Selecione um Evento Ativo</flux:select.option>
+                @foreach ($eventosAtivos as $ev)
+                    <flux:select.option value="{{ $ev->idt_evento }}">{{ $ev->des_evento }}</flux:select.option>
+                @endforeach
+            </flux:select>
+        </div>
+    @endif
 
     {{-- Grid de Fichas --}}
     @if ($fichas->isNotEmpty())
@@ -275,7 +359,17 @@ new class extends Component {
                         ]
                     };
                 @endphp
-                <div class="bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 p-5 shadow-sm hover:shadow-md transition duration-200 flex flex-col h-full justify-between">
+                <div class="relative bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 p-5 shadow-sm hover:shadow-md transition duration-200 flex flex-col h-full justify-between">
+                    @if (auth()->user()->isAdmin())
+                        <div class="absolute top-4 right-4 z-10" wire:click.stop>
+                            <input 
+                                type="checkbox" 
+                                wire:model.live="selectedFichas" 
+                                value="{{ $ficha->idt_ficha }}" 
+                                class="w-5 h-5 rounded border-zinc-300 text-blue-600 shadow-sm focus:ring-blue-500 cursor-pointer"
+                            />
+                        </div>
+                    @endif
                     <div class="flex flex-col flex-1">
                         {{-- Top row: Badges --}}
                         <div class="flex justify-start items-center gap-1.5 mb-4">
@@ -441,5 +535,40 @@ new class extends Component {
                 @endif
             </flux:subheading>
         </div>
+    @endif
+
+    {{-- Modal de Designação de Visitação --}}
+    @if (auth()->user()->isAdmin())
+        <flux:modal name="modal-visitacao" class="min-w-[20rem] md:min-w-[30rem]">
+            <form wire:submit="designarVisitacao" class="space-y-6">
+                <div>
+                    <flux:heading size="lg">Designar Visitação</flux:heading>
+                    <flux:subheading>Selecione o visitador (ou casal) para as {{ count($selectedFichas) }} ficha(s) selecionada(s).</flux:subheading>
+                </div>
+
+                <div>
+                    <flux:label>Visitador(es)</flux:label>
+                    <select wire:model.live="pessoaVisitacaoId" class="mt-1 block w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2">
+                        <option value="">Selecione um visitador...</option>
+                        @foreach ($visitadores as $visitador)
+                            <option value="{{ $visitador->idt_pessoa }}">
+                                {{ $visitador->nom_pessoa }}
+                                @if ($visitador->parceiro)
+                                    e {{ $visitador->parceiro->nom_pessoa }}
+                                @endif
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('pessoaVisitacaoId') <span class="text-red-500 text-sm mt-1 block">{{ $message }}</span> @enderror
+                </div>
+
+                <div class="flex gap-2 justify-end">
+                    <flux:modal.close>
+                        <flux:button variant="ghost">Cancelar</flux:button>
+                    </flux:modal.close>
+                    <flux:button type="submit" variant="primary">Confirmar</flux:button>
+                </div>
+            </form>
+        </flux:modal>
     @endif
 </div>
