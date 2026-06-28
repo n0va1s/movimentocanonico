@@ -3,6 +3,7 @@
 use App\Models\Evento;
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\Computed;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -14,6 +15,7 @@ new class extends Component {
     public array $selectedFichas = [];
     public ?int $pessoaVisitacaoId = null;
     public bool $selectAll = false;
+    public ?string $filtroSituacao = null;
 
     public function mount(Evento $evento): void
     {
@@ -30,9 +32,14 @@ new class extends Component {
     {
         if ($value) {
             $this->selectedFichas = \App\Models\Ficha::where('idt_evento', $this->evento->idt_evento)
+                ->when($this->filtroSituacao, function ($query) {
+                    $query->where('tip_situacao', $this->filtroSituacao);
+                })
                 ->when($this->search, function ($query) {
-                    $query->where('nom_candidato', 'like', '%' . $this->search . '%')
-                        ->orWhere('nom_apelido', 'like', '%' . $this->search . '%');
+                    $query->where(function ($q) {
+                        $q->where('nom_candidato', 'like', '%' . $this->search . '%')
+                            ->orWhere('nom_apelido', 'like', '%' . $this->search . '%');
+                    });
                 })
                 ->pluck('idt_ficha')
                 ->map(fn($id) => (string)$id)
@@ -40,6 +47,19 @@ new class extends Component {
         } else {
             $this->selectedFichas = [];
         }
+    }
+
+    public function toggleFiltroSituacao(?string $status): void
+    {
+        if ($this->filtroSituacao === $status) {
+            $this->filtroSituacao = null;
+        } else {
+            $this->filtroSituacao = $status;
+        }
+        $this->resetPage();
+        
+        $this->selectedFichas = [];
+        $this->selectAll = false;
     }
 
     public function abrirModalVisitacao(): void
@@ -252,14 +272,38 @@ new class extends Component {
         return $response;
     }
 
+    #[Computed]
+    public function contadores(): array
+    {
+        $counts = \App\Models\Ficha::where('idt_evento', $this->evento->idt_evento)
+            ->select('tip_situacao', DB::raw('count(*) as total'))
+            ->groupBy('tip_situacao')
+            ->pluck('total', 'tip_situacao')
+            ->toArray();
+
+        return [
+            \App\Enums\TipoSituacao::NOVA->value => $counts[\App\Enums\TipoSituacao::NOVA->value] ?? 0,
+            \App\Enums\TipoSituacao::AGUARDANDO->value => $counts[\App\Enums\TipoSituacao::AGUARDANDO->value] ?? 0,
+            \App\Enums\TipoSituacao::VISITADA->value => $counts[\App\Enums\TipoSituacao::VISITADA->value] ?? 0,
+            \App\Enums\TipoSituacao::SELECIONADA->value => $counts[\App\Enums\TipoSituacao::SELECIONADA->value] ?? 0,
+            \App\Enums\TipoSituacao::APROVADA->value => $counts[\App\Enums\TipoSituacao::APROVADA->value] ?? 0,
+            \App\Enums\TipoSituacao::CANCELADA->value => $counts[\App\Enums\TipoSituacao::CANCELADA->value] ?? 0,
+        ];
+    }
+
     public function with(): array
     {
         return [
             'fichas' => \App\Models\Ficha::where('idt_evento', $this->evento->idt_evento)
                 ->with(['evento', 'visitador']) // necessário para rotas e visitador
+                ->when($this->filtroSituacao, function ($query) {
+                    $query->where('tip_situacao', $this->filtroSituacao);
+                })
                 ->when($this->search, function ($query) {
-                    $query->where('nom_candidato', 'like', '%' . $this->search . '%')
-                        ->orWhere('nom_apelido', 'like', '%' . $this->search . '%');
+                    $query->where(function ($q) {
+                        $q->where('nom_candidato', 'like', '%' . $this->search . '%')
+                            ->orWhere('nom_apelido', 'like', '%' . $this->search . '%');
+                    });
                 })
                 ->paginate(10),
             'visitadores' => $this->getVisitadores(),
@@ -288,6 +332,79 @@ new class extends Component {
             <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="Buscar ficha..."
                 class="w-full md:max-w-xs" />
         </div>
+    </div>
+
+    {{-- Dashboard de Status --}}
+    @php
+        $statusCards = [
+            [
+                'status' => \App\Enums\TipoSituacao::NOVA->value,
+                'label' => 'Novas',
+                'color' => 'blue',
+                'icon' => 'document-text',
+                'textClass' => 'text-blue-600 dark:text-blue-400',
+                'activeClass' => 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950/20 border-blue-500',
+            ],
+            [
+                'status' => \App\Enums\TipoSituacao::AGUARDANDO->value,
+                'label' => 'Aguardando',
+                'color' => 'amber',
+                'icon' => 'clock',
+                'textClass' => 'text-amber-500 dark:text-amber-400',
+                'activeClass' => 'ring-2 ring-amber-500 bg-amber-50 dark:bg-amber-950/20 border-amber-500',
+            ],
+            [
+                'status' => \App\Enums\TipoSituacao::VISITADA->value,
+                'label' => 'Visitadas',
+                'color' => 'purple',
+                'icon' => 'map-pin',
+                'textClass' => 'text-purple-600 dark:text-purple-400',
+                'activeClass' => 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-950/20 border-purple-500',
+            ],
+            [
+                'status' => \App\Enums\TipoSituacao::SELECIONADA->value,
+                'label' => 'Selecionadas',
+                'color' => 'teal',
+                'icon' => 'check-badge',
+                'textClass' => 'text-teal-600 dark:text-teal-400',
+                'activeClass' => 'ring-2 ring-teal-500 bg-teal-50 dark:bg-teal-950/20 border-teal-500',
+            ],
+            [
+                'status' => \App\Enums\TipoSituacao::APROVADA->value,
+                'label' => 'Aprovadas',
+                'color' => 'emerald',
+                'icon' => 'check-circle',
+                'textClass' => 'text-emerald-600 dark:text-emerald-400',
+                'activeClass' => 'ring-2 ring-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 border-emerald-500',
+            ],
+            [
+                'status' => \App\Enums\TipoSituacao::CANCELADA->value,
+                'label' => 'Canceladas',
+                'color' => 'rose',
+                'icon' => 'x-circle',
+                'textClass' => 'text-rose-600 dark:text-rose-400',
+                'activeClass' => 'ring-2 ring-rose-500 bg-rose-50 dark:bg-rose-950/20 border-rose-500',
+            ],
+        ];
+    @endphp
+
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        @foreach ($statusCards as $card)
+            @php
+                $isActive = $filtroSituacao === $card['status'];
+                $count = $this->contadores[$card['status']] ?? 0;
+            @endphp
+            <div 
+                wire:click="toggleFiltroSituacao('{{ $card['status'] }}')"
+                class="cursor-pointer transition-all duration-200 rounded-xl p-3 flex flex-col border shadow-sm hover:shadow-md hover:-translate-y-0.5 {{ $isActive ? $card['activeClass'] : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700' }}"
+            >
+                <div class="flex items-center gap-2">
+                    <flux:icon name="{{ $card['icon'] }}" variant="outline" class="size-5 {{ $card['textClass'] }} shrink-0" />
+                    <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{{ $card['label'] }}</span>
+                </div>
+                <h4 class="text-xl font-bold text-zinc-900 dark:text-white mt-2">{{ $count }}</h4>
+            </div>
+        @endforeach
     </div>
 
     <flux:table>
