@@ -105,6 +105,21 @@ new class extends Component {
             if (in_array($v->idt_pessoa, $processed)) {
                 return true;
             }
+
+            // Ocultar casal/pessoa caso já tenha 3 ou mais fichas atribuídas no evento selecionado
+            $fichaCount = \App\Models\Ficha::where('idt_evento', $this->eventoId)
+                ->where(function ($q) use ($v) {
+                    $q->where('idt_pessoa_visitacao', $v->idt_pessoa)
+                      ->when($v->idt_parceiro, function ($q2) use ($v) {
+                          $q2->orWhere('idt_pessoa_visitacao', $v->idt_parceiro);
+                      });
+                })
+                ->count();
+
+            if ($fichaCount >= 3) {
+                return true;
+            }
+
             if ($v->idt_parceiro) {
                 $processed[] = $v->idt_parceiro;
             }
@@ -510,25 +525,90 @@ new class extends Component {
     {{-- Modal de Designação de Visitação --}}
     @if (auth()->user()->isAdmin())
         <flux:modal name="modal-visitacao" class="min-w-[20rem] md:min-w-[30rem]">
-            <form wire:submit="designarVisitacao" class="space-y-6">
+            <form 
+                wire:submit="designarVisitacao" 
+                x-data="{
+                    open: false,
+                    selectedId: @entangle('pessoaVisitacaoId'),
+                    selectedLabel: '',
+                    selectedAddress: '',
+                    visitadores: {{ json_encode($visitadores->map(fn($v) => [
+                        'id' => $v->idt_pessoa,
+                        'label' => $v->nom_pessoa . ($v->parceiro ? ' e ' . $v->parceiro->nom_pessoa : ''),
+                        'address' => $v->des_endereco ?: 'Endereço não cadastrado'
+                    ])) }},
+                    init() {
+                        this.updateSelection();
+                        this.$watch('selectedId', () => this.updateSelection());
+                    },
+                    updateSelection() {
+                        let found = this.visitadores.find(v => v.id == this.selectedId);
+                        if (found) {
+                            this.selectedLabel = found.label;
+                            this.selectedAddress = found.address;
+                        } else {
+                            this.selectedLabel = 'Selecione um visitador...';
+                            this.selectedAddress = '';
+                        }
+                    }
+                }"
+                class="space-y-6 transition-all duration-200"
+                :class="open ? 'pb-52' : ''"
+            >
                 <div>
                     <flux:heading size="lg">Designar Visitação</flux:heading>
                     <flux:subheading>Selecione o visitador (ou casal) para as {{ count($selectedFichas) }} ficha(s) selecionada(s).</flux:subheading>
                 </div>
 
-                <div>
+                <div class="relative">
                     <flux:label>Visitador(es)</flux:label>
-                    <select wire:model.live="pessoaVisitacaoId" class="mt-1 block w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2">
-                        <option value="">Selecione um visitador...</option>
-                        @foreach ($visitadores as $visitador)
-                            <option value="{{ $visitador->idt_pessoa }}">
-                                {{ $visitador->nom_pessoa }}
-                                @if ($visitador->parceiro)
-                                    e {{ $visitador->parceiro->nom_pessoa }}
-                                @endif
-                            </option>
-                        @endforeach
-                    </select>
+                    
+                    <!-- Botão do Dropdown -->
+                    <button 
+                        type="button" 
+                        @click="open = !open" 
+                        @click.away="open = false"
+                        class="mt-1 w-full flex items-center justify-between rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-left p-3 cursor-pointer"
+                    >
+                        <div class="flex-1 min-w-0 pr-4">
+                            <div class="font-medium text-sm text-zinc-900 dark:text-zinc-100 truncate text-left" x-text="selectedLabel"></div>
+                            <div x-show="selectedAddress" class="text-xs text-zinc-400 dark:text-zinc-500 truncate text-left mt-0.5" x-text="selectedAddress"></div>
+                        </div>
+                        <flux:icon.chevron-down class="size-4 text-zinc-400 dark:text-zinc-500 shrink-0" />
+                    </button>
+
+                    <!-- Lista de Opções -->
+                    <div 
+                        x-show="open" 
+                        x-transition:enter="transition ease-out duration-100"
+                        x-transition:enter-start="opacity-0 scale-95"
+                        x-transition:enter-end="opacity-100 scale-100"
+                        x-transition:leave="transition ease-in duration-75"
+                        x-transition:leave-start="opacity-100 scale-100"
+                        x-transition:leave-end="opacity-0 scale-95"
+                        class="absolute z-[110] mt-1 w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-xl max-h-60 overflow-y-auto"
+                        style="display: none;"
+                    >
+                        <ul class="p-1 divide-y divide-zinc-100 dark:divide-zinc-700/50">
+                            <template x-for="item in visitadores" :key="item.id">
+                                <li>
+                                    <button 
+                                        type="button"
+                                        @click="selectedId = item.id; open = false;"
+                                        class="w-full text-left p-3 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition flex flex-col cursor-pointer"
+                                        :class="selectedId == item.id ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''"
+                                    >
+                                        <span class="font-semibold text-sm text-zinc-900 dark:text-zinc-100" x-text="item.label"></span>
+                                        <span class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5" x-text="item.address"></span>
+                                    </button>
+                                </li>
+                            </template>
+                            <li x-show="visitadores.length === 0" class="p-4 text-center text-sm text-zinc-500 italic">
+                                Nenhum visitador disponível
+                            </li>
+                        </ul>
+                    </div>
+
                     @error('pessoaVisitacaoId') <span class="text-red-500 text-sm mt-1 block">{{ $message }}</span> @enderror
                 </div>
 
