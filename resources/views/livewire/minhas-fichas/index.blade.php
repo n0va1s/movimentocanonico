@@ -8,47 +8,49 @@ use App\Models\Evento;
 use App\Enums\TipoSituacao;
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\Computed;
 
 new class extends Component {
     use WithPagination;
 
+    public ?Evento $evento = null;
     public ?int $eventoId = null;
     public string $situacao = '';
     public string $search = '';
     public string $visitadorSearch = '';
-    public bool $showEventFilter = false;
     public array $selectedFichas = [];
     public ?int $pessoaVisitacaoId = null;
 
-    public function mount(): void
+    public function mount(?Evento $evento = null): void
     {
         if (!auth()->check() || !auth()->user()->hasRole('admin', 'visit')) {
             abort(403, 'Acesso não autorizado.');
         }
 
-        $user = auth()->user();
-        $movimentoId = $user->idt_movimento;
-        $hoje = now()->startOfDay();
-
-        $primeiroEventoAtivo = Evento::where(function ($q) use ($hoje) {
-                $q->where('dat_inicio', '>=', $hoje)
-                    ->orWhere('dat_termino', '>=', $hoje)
-                    ->orWhereNull('dat_termino');
-            })
-            ->when($movimentoId, function ($q) use ($movimentoId) {
-                $q->where('idt_movimento', $movimentoId);
-            })
-            ->orderBy('dat_inicio', 'asc')
-            ->first();
-
-        if ($primeiroEventoAtivo) {
-            $this->eventoId = $primeiroEventoAtivo->idt_evento;
+        if ($evento && $evento->exists) {
+            $this->evento = $evento;
+            $this->eventoId = $evento->idt_evento;
+        } else {
+            $this->evento = null;
+            $this->eventoId = null;
         }
     }
 
-    public function updatedEventoId(): void
+    public function selectEvento(int $eventoId): void
     {
-        $this->resetPage();
+        $evento = Evento::find($eventoId);
+        if ($evento) {
+            $this->evento = $evento;
+            $this->eventoId = $evento->idt_evento;
+            $this->resetPage();
+            $this->selectedFichas = [];
+        }
+    }
+
+    public function alterarEvento(): void
+    {
+        $this->evento = null;
+        $this->eventoId = null;
     }
 
     public function updatedSituacao(): void
@@ -64,11 +66,6 @@ new class extends Component {
     public function updatedVisitadorSearch(): void
     {
         $this->resetPage();
-    }
-
-    public function toggleEventFilter(): void
-    {
-        $this->showEventFilter = !$this->showEventFilter;
     }
 
     public function alterarSituacao(int $fichaId, string $novaSituacao): void
@@ -236,88 +233,69 @@ new class extends Component {
     {{-- Alerts --}}
     <x-session-alert />
 
-    {{-- Barra de Filtros e Busca (Apenas Admin) --}}
-    @if (auth()->user()->isAdmin())
-        <div class="flex flex-col gap-4">
-            <div class="flex flex-col sm:flex-row gap-3 w-full items-center">
-                {{-- Busca --}}
-                <div class="w-full sm:flex-1 max-w-md">
-                    <flux:input 
-                        wire:model.live.debounce.300ms="search" 
-                        icon="magnifying-glass" 
-                        placeholder="Buscar contatos..." 
-                        class="bg-white dark:bg-zinc-800"
-                    />
-                </div>
-
-                {{-- Filtro de Casal Designado --}}
-                <div class="w-full sm:w-64">
-                    <flux:input 
-                        wire:model.live.debounce.300ms="visitadorSearch" 
-                        icon="users" 
-                        placeholder="Buscar por casal designado..." 
-                        class="bg-white dark:bg-zinc-800"
-                    />
-                </div>
-
-                {{-- Situação --}}
-                <div class="w-full sm:w-60">
-                    <flux:select wire:model.live="situacao" placeholder="Todas as Situações">
-                        <flux:select.option value="">Todas as Situações</flux:select.option>
-                        @foreach ([
-                            App\Enums\TipoSituacao::SELECIONADA, 
-                            App\Enums\TipoSituacao::CONTATO, 
-                            App\Enums\TipoSituacao::AGUARDANDO,
-                            App\Enums\TipoSituacao::VISITADA,
-                            App\Enums\TipoSituacao::CANCELADA
-                        ] as $sit)
-                            <flux:select.option value="{{ $sit->value }}">{{ $sit->label() }}</flux:select.option>
-                        @endforeach
-                    </flux:select>
-                </div>
-
-                {{-- Botão de Eventos --}}
-                <flux:button 
-                    icon="funnel" 
-                    variant="ghost" 
-                    class="shrink-0 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700/50" 
-                    wire:click="toggleEventFilter"
-                    title="Filtrar por Evento"
-                />
-
-                {{-- Botão de Designar Visitação --}}
-                @if (count($selectedFichas) > 0)
-                    <flux:button wire:click="abrirModalVisitacao" icon="user-group" variant="primary" class="shrink-0">
-                        Designar Visitação ({{ count($selectedFichas) }})
-                    </flux:button>
-                @endif
+    @if($evento && $evento->exists)
+        {{-- Cabeçalho do Evento Selecionado --}}
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-700">
+            <div>
+                <flux:heading size="lg">{{ $evento->des_evento }}</flux:heading>
+                <flux:subheading class="uppercase font-bold text-xs text-blue-600 dark:text-blue-400">
+                    Minhas Fichas &bull; {{ $evento->movimento->des_sigla }}
+                </flux:subheading>
             </div>
+            <flux:button variant="ghost" size="sm" icon="arrow-left" wire:click="alterarEvento">
+                Alterar Evento
+            </flux:button>
+        </div>
 
-            {{-- Filtro Avançado de Evento (Expansível) --}}
-            @if ($showEventFilter || !$eventoId)
-                <div class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 flex flex-col gap-2 max-w-md transition duration-200">
-                    <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Filtrar por Evento Ativo</span>
-                    <flux:select wire:model.live="eventoId" placeholder="Selecione um Evento Ativo">
-                        <flux:select.option value="">Selecione um Evento Ativo</flux:select.option>
-                        @foreach ($eventosAtivos as $ev)
-                            <flux:select.option value="{{ $ev->idt_evento }}">{{ $ev->des_evento }}</flux:select.option>
-                        @endforeach
-                    </flux:select>
+        {{-- Barra de Filtros e Busca (Apenas Admin) --}}
+        @if (auth()->user()->isAdmin())
+            <div class="flex flex-col gap-4">
+                <div class="flex flex-col sm:flex-row gap-3 w-full items-center">
+                    {{-- Busca --}}
+                    <div class="w-full sm:flex-1 max-w-md">
+                        <flux:input 
+                            wire:model.live.debounce.300ms="search" 
+                            icon="magnifying-glass" 
+                            placeholder="Buscar contatos..." 
+                            class="bg-white dark:bg-zinc-800"
+                        />
+                    </div>
+
+                    {{-- Filtro de Casal Designado --}}
+                    <div class="w-full sm:w-64">
+                        <flux:input 
+                            wire:model.live.debounce.300ms="visitadorSearch" 
+                            icon="users" 
+                            placeholder="Buscar por casal designado..." 
+                            class="bg-white dark:bg-zinc-800"
+                        />
+                    </div>
+
+                    {{-- Situação --}}
+                    <div class="w-full sm:w-60">
+                        <flux:select wire:model.live="situacao" placeholder="Todas as Situações">
+                            <flux:select.option value="">Todas as Situações</flux:select.option>
+                            @foreach ([
+                                App\Enums\TipoSituacao::SELECIONADA, 
+                                App\Enums\TipoSituacao::CONTATO, 
+                                App\Enums\TipoSituacao::AGUARDANDO,
+                                App\Enums\TipoSituacao::VISITADA,
+                                App\Enums\TipoSituacao::CANCELADA
+                            ] as $sit)
+                                <flux:select.option value="{{ $sit->value }}">{{ $sit->label() }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
+                    </div>
+
+                    {{-- Botão de Designar Visitação --}}
+                    @if (count($selectedFichas) > 0)
+                        <flux:button wire:click="abrirModalVisitacao" icon="user-group" variant="primary" class="shrink-0">
+                            Designar Visitação ({{ count($selectedFichas) }})
+                        </flux:button>
+                    @endif
                 </div>
-            @endif
-        </div>
-    @elseif (!$eventoId)
-        {{-- Selecionar Evento Ativo para Visitador sem Evento pré-selecionado --}}
-        <div class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 flex flex-col gap-2 max-w-md">
-            <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Selecionar Evento Ativo</span>
-            <flux:select wire:model.live="eventoId" placeholder="Selecione um Evento Ativo">
-                <flux:select.option value="">Selecione um Evento Ativo</flux:select.option>
-                @foreach ($eventosAtivos as $ev)
-                    <flux:select.option value="{{ $ev->idt_evento }}">{{ $ev->des_evento }}</flux:select.option>
-                @endforeach
-            </flux:select>
-        </div>
-    @endif
+            </div>
+        @endif
 
     {{-- Grid de Fichas --}}
     @if ($fichas->isNotEmpty())
@@ -524,18 +502,10 @@ new class extends Component {
         <div class="flex flex-col items-center justify-center text-center p-12 bg-white dark:bg-zinc-800 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-600 shadow-sm">
             <flux:icon.document-text class="w-12 h-12 text-zinc-400 dark:text-zinc-500 mb-4" />
             <flux:heading size="lg" class="text-zinc-700 dark:text-zinc-300">
-                @if (!$eventoId)
-                    Selecione um Evento Ativo
-                @else
-                    Nenhuma ficha encontrada
-                @endif
+                Nenhuma ficha encontrada
             </flux:heading>
             <flux:subheading class="mt-1">
-                @if (!$eventoId)
-                    Selecione um dos eventos ativos no filtro acima para visualizar suas fichas designadas.
-                @else
-                    Não existem fichas designadas para a sua conta ou compatíveis com os filtros selecionados.
-                @endif
+                Não existem fichas designadas para a sua conta ou compatíveis com os filtros selecionados.
             </flux:subheading>
         </div>
     @endif
@@ -573,5 +543,55 @@ new class extends Component {
                 </div>
             </form>
         </flux:modal>
+    @endif
+    @else
+        {{-- TELA DE SELEÇÃO DO EVENTO --}}
+        <div class="max-w-7xl mx-auto space-y-6 py-6">
+            @if($eventosAtivos->isEmpty())
+                <div class="p-8 text-center bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-sm italic text-zinc-500">
+                    Nenhum evento ativo cadastrado no momento.
+                </div>
+            @else
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    @foreach($eventosAtivos as $evt)
+                        <article 
+                            wire:click="selectEvento({{ $evt->idt_evento }})"
+                            class="group flex flex-col bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 shadow-sm overflow-hidden hover:shadow-md hover:border-blue-500 hover:ring-1 hover:ring-blue-500 cursor-pointer transition-all duration-300"
+                        >
+                            <div class="px-5 pt-5 flex justify-between items-start">
+                                <span class="px-2 py-1 bg-gray-100 dark:bg-zinc-700 rounded text-[10px] font-black uppercase text-gray-400">
+                                    Nº {{ $evt->num_evento }}
+                                </span>
+                                <x-badge-movimento :sigla="$evt->movimento->des_sigla" />
+                            </div>
+
+                            <div class="p-5 flex-grow">
+                                <h2 class="text-lg font-bold text-gray-800 dark:text-white mb-3 line-clamp-2 min-h-[3rem] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                    {{ $evt->des_evento }}
+                                </h2>
+
+                                <div class="space-y-3">
+                                    <div class="flex items-center text-gray-600 dark:text-gray-300 text-sm">
+                                        <x-heroicon-o-calendar class="w-4 h-4 mr-2 text-blue-500" />
+                                        <span>{{ $evt->getDataInicioFormatada() }} a {{ $evt->getDataTerminoFormatada() }}</span>
+                                    </div>
+
+                                    <div class="flex items-center text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">
+                                        <x-heroicon-o-tag class="w-4 h-4 mr-2 shrink-0" />
+                                        <span class="flex-1">{{ $evt->tip_evento->label() }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <footer class="p-4 bg-gray-50 dark:bg-zinc-800/50 border-t border-gray-100 dark:border-zinc-700 mt-auto">
+                                <flux:button variant="filled" color="blue" class="w-full pointer-events-none group-hover:bg-blue-700 dark:group-hover:bg-blue-600 transition-colors">
+                                    Selecionar Evento
+                                </flux:button>
+                            </footer>
+                        </article>
+                    @endforeach
+                </div>
+            @endif
+        </div>
     @endif
 </div>
