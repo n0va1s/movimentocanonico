@@ -423,7 +423,7 @@ describe('Minhas Fichas - Admin Designation via Component', function () {
                 (string)$this->ficha2->idt_ficha,
                 (string)$ficha3->idt_ficha,
             ])
-            ->assertDispatched('notify');
+            ->assertSee('Você pode selecionar no máximo 3 fichas para designação.');
     });
 
     test('exibe contato do candidato se ele for maior de idade, sem ocultar o responsavel', function () {
