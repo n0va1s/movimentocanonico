@@ -192,6 +192,9 @@ class FichaEccController extends Controller
             'duration_ms' => round((microtime(true) - $start) * 1000, 2),
         ]));
 
+        // Dispara e-mail de recebimento (para candidatos/casal)
+        \App\Events\FichaRecebidaEvent::dispatch($ficha);
+
         $previous = url()->previous();
         if (str_contains($previous, '/fichas/ecc') || (app()->runningUnitTests() && ! str_contains($previous, '/ecc'))) {
             return redirect()->route('ecc.index')->with('success', 'Ficha cadastrada com sucesso!');

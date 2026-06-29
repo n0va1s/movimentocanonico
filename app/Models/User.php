@@ -67,8 +67,9 @@ class User extends Authenticatable
     public function hasRole(string ...$roles): bool
     {
         $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
-
-        return in_array(strtolower($roleValue), array_map('strtolower', $roles));
+        $has = in_array(strtolower($roleValue), array_map('strtolower', $roles));
+        \Illuminate\Support\Facades\Log::info("hasRole check: roleValue={$roleValue} against " . implode(',', $roles) . " => " . ($has ? 'true' : 'false'));
+        return $has;
     }
 
     /**

@@ -171,6 +171,7 @@ class Ficha extends Model
                 return [
                     'nome' => $this->fichaVem->nom_responsavel,
                     'telefone' => $this->fichaVem->tel_responsavel ?: 'Não informado',
+                    'email' => $this->fichaVem->eml_responsavel,
                     'tipo' => 'Responsável'
                 ];
             }
@@ -178,6 +179,7 @@ class Ficha extends Model
                 return [
                     'nome' => $this->fichaVem->nom_mae,
                     'telefone' => $this->fichaVem->tel_mae ?: 'Não informado',
+                    'email' => $this->fichaVem->eml_mae,
                     'tipo' => 'Mãe'
                 ];
             }
@@ -185,6 +187,7 @@ class Ficha extends Model
                 return [
                     'nome' => $this->fichaVem->nom_pai,
                     'telefone' => $this->fichaVem->tel_pai ?: 'Não informado',
+                    'email' => $this->fichaVem->eml_pai,
                     'tipo' => 'Pai'
                 ];
             }
@@ -192,9 +195,12 @@ class Ficha extends Model
 
         if ($this->fichaSGM) {
             if (!empty($this->fichaSGM->nom_falar_com)) {
+                // SGM's 'nom_falar_com' doesn't have an explicit 'eml_falar_com', but it might be tied to 'idt_falar_com'.
+                // If it's empty we can fallback below. For now we just return the basic info.
                 return [
                     'nome' => $this->fichaSGM->nom_falar_com,
                     'telefone' => $this->fichaSGM->tel_falar_com ?: 'Não informado',
+                    'email' => null,
                     'tipo' => 'Responsável'
                 ];
             }
@@ -202,6 +208,7 @@ class Ficha extends Model
                 return [
                     'nome' => $this->fichaSGM->nom_mae,
                     'telefone' => $this->fichaSGM->tel_mae ?: 'Não informado',
+                    'email' => $this->fichaSGM->eml_mae,
                     'tipo' => 'Mãe'
                 ];
             }
@@ -209,6 +216,7 @@ class Ficha extends Model
                 return [
                     'nome' => $this->fichaSGM->nom_pai,
                     'telefone' => $this->fichaSGM->tel_pai ?: 'Não informado',
+                    'email' => $this->fichaSGM->eml_pai,
                     'tipo' => 'Pai'
                 ];
             }
@@ -219,6 +227,7 @@ class Ficha extends Model
                 return [
                     'nome' => $this->fichaEcc->nom_conjuge,
                     'telefone' => $this->fichaEcc->tel_conjuge ?: 'Não informado',
+                    'email' => $this->fichaEcc->eml_conjuge, // ECC conjuge email
                     'tipo' => 'Cônjuge'
                 ];
             }
@@ -227,6 +236,7 @@ class Ficha extends Model
         return [
             'nome' => 'Não informado',
             'telefone' => 'Não informado',
+            'email' => null,
             'tipo' => 'Responsável'
         ];
     }

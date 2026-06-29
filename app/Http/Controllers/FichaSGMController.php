@@ -164,6 +164,9 @@ class FichaSGMController extends Controller
             'duration_ms' => $duration,
         ]));
 
+        // Dispara e-mail de recebimento
+        \App\Events\FichaRecebidaEvent::dispatch($ficha);
+
         $previous = url()->previous();
         if (str_contains($previous, '/fichas/sgm') || (app()->runningUnitTests() && ! str_contains($previous, '/sgm'))) {
             return redirect()->route('sgm.index')->with('success', 'Ficha cadastrada com sucesso!');

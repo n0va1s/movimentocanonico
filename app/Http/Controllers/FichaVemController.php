@@ -193,6 +193,9 @@ class FichaVemController extends Controller
             'duration_ms' => $duration,
         ]));
 
+        // Dispara e-mail de recebimento
+        \App\Events\FichaRecebidaEvent::dispatch($ficha);
+
         $previous = url()->previous();
         if (str_contains($previous, '/fichas/vem') || (app()->runningUnitTests() && ! str_contains($previous, '/vem'))) {
             return redirect()->route('vem.index')->with('success', 'Ficha cadastrada com sucesso!');

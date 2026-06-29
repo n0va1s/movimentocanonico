@@ -161,8 +161,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware(['role:admin'])->group(function () {
 
-        // Configurações Globais
-        Route::get('/configuracoes', [ConfiguracoesController::class, 'index'])->name('configuracoes.index');
+        // Configurações Globais (Movido para role:admin,espec)
 
         // Contatos
         Route::get('/contatos', [ContatoController::class, 'index'])->name('contatos.index');
@@ -229,6 +228,9 @@ Route::middleware(['auth'])->group(function () {
     });
 
     Route::middleware(['role:admin,espec'])->group(function () {
+        // Configurações Globais
+        Route::get('/configuracoes', [ConfiguracoesController::class, 'index'])->name('configuracoes.index');
+
         Route::post('/fichas/{id}/designar-visitador', function (\Illuminate\Http\Request $request, $id) {
             $request->validate([
                 'idt_pessoa_visitacao' => 'nullable|exists:pessoa,idt_pessoa',

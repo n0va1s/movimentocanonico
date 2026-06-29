@@ -32,6 +32,7 @@
                 <td style="padding: 12px; background-color: #ffffff; width: 70%; border: 1px solid #e0e0e0;">
                     {{ $email }}</td>
             </tr>
+            @if(!empty($senha))
             <tr>
                 <td style="padding: 12px; background-color: #f9f9f9; font-weight: bold; border: 1px solid #e0e0e0;">
                     Senha Temporária:</td>
@@ -39,13 +40,25 @@
                     <strong style="color: #c0392b; letter-spacing: 1px;">{{ $senha }}</strong>
                 </td>
             </tr>
+            @endif
         </table>
 
+        @if(!empty($senha))
         <p
             style="font-size: 0.9em; color: #e67e22; padding: 10px; background-color: #fffbe6; border-left: 3px solid #e67e22;">
             <strong>Lembrete Importante:</strong> Sua senha inicial é a sua **data de nascimento** no formato
             **AAAAMMDD** (por exemplo, 19850520). Por favor, altere esta senha após seu primeiro acesso para garantir
             sua segurança.
+        </p>
+        @endif
+
+        <p style="margin-top: 20px; font-size: 1.05em; color: #444;">
+            O <strong>Movimento Canônico</strong> é a principal forma para você participar dos movimentos paroquiais como VEM, Segue-Me e ECC.
+            É muito importante manter seus dados atualizados para serem usados nas montagens.
+        </p>
+
+        <p style="font-size: 1.05em; color: #444;">
+            Além disso, lembramos que é fundamental participar do <strong>Aura</strong>! Você ganhará pontos em cada evento que participar, crescendo junto com nossa comunidade.
         </p>
 
         <div style="text-align: center; margin-top: 30px;">

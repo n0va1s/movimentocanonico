@@ -2,21 +2,17 @@
     <section class="p-6 w-full max-w-[80vw] ml-auto">
         <div class="mb-6">
             <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                {{ $pessoa->exists ? 'Editar Pessoa' : 'Nova Pessoa' }}</h1>
+                {{ $pessoa->exists ? 'Atualizar Seus Dados' : 'Se Cadastrar' }}</h1>
             <p class="text-gray-700 mt-1 dark:text-gray-400">
-                {{ $pessoa->exists ? 'Esses dados serão utilizados no próximo encontro' : 'Cadastre uma nova pessoa' }}
+                {{ $pessoa->exists ? 'Esses dados serão utilizados no próximo encontro' : 'Esses dados serão utilizados no próximo encontro' }}
             </p>
+            @if (!$pessoa->exists)
+                <p class="text-sm text-yellow-600 dark:text-yellow-400 mt-2 flex items-center gap-1">
+                    <x-heroicon-o-information-circle class="w-4 h-4" />
+                    Não é possível cadastrar pessoas que estão com fichas em andamento.
+                </p>
+            @endif
         </div>
-
-        @if (Auth::user()->isAdmin())
-            <div class="flex justify-end mt-4">
-                <a href="{{ route('pessoas.index') }}"
-                    class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-500 focus:ring-2 focus:ring-green-500 focus:outline-none">
-                    <x-heroicon-o-arrow-left class="w-5 h-5 mr-2" />
-                    Pessoas
-                </a>
-            </div>
-        @endif
 
         <div class="mb-6 bg-white dark:bg-zinc-800 rounded-md shadow p-6">
 
