@@ -73,10 +73,7 @@ new class extends Component {
     {
         if (count($this->selectedFichas) > 3) {
             $this->selectedFichas = array_slice($this->selectedFichas, 0, 3);
-            $this->dispatch('notify',
-                message: "Você pode selecionar no máximo 3 fichas para designação.",
-                type: 'erro'
-            );
+            session()->flash('error', 'Você pode selecionar no máximo 3 fichas para designação.');
         }
     }
 
@@ -149,10 +146,7 @@ new class extends Component {
 
         if (count($this->selectedFichas) > 3) {
             $this->selectedFichas = array_slice($this->selectedFichas, 0, 3);
-            $this->dispatch('notify',
-                message: "Você pode selecionar no máximo 3 fichas para designação.",
-                type: 'erro'
-            );
+            session()->flash('error', 'Você pode selecionar no máximo 3 fichas para designação.');
             return;
         }
 
@@ -759,7 +753,7 @@ new class extends Component {
                             </div>
 
                             <footer class="p-4 bg-gray-50 dark:bg-zinc-800/50 border-t border-gray-100 dark:border-zinc-700 mt-auto">
-                                <flux:button variant="filled" color="blue" class="w-full pointer-events-none group-hover:bg-blue-700 dark:group-hover:bg-blue-600 transition-colors">
+                                <flux:button variant="filled" color="blue" class="w-full pointer-events-none group-hover:bg-blue-700 dark:group-hover:bg-blue-600 group-hover:text-white hover:text-white transition-colors">
                                     Selecionar Evento
                                 </flux:button>
                             </footer>
