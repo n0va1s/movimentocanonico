@@ -220,8 +220,20 @@ class FichaVemController extends Controller
             ]);
         }
 
-        $visitadoresRaw = \App\Models\Pessoa::whereHas('usuario', function ($q) {
-            $q->where('role', \App\Models\User::ROLE_VISITACAO);
+        $eventoId = $ficha->idt_evento;
+        $visitadoresRaw = \App\Models\Pessoa::where(function ($query) use ($eventoId) {
+            $query->whereHas('trabalhadores', function ($q) use ($eventoId) {
+                $q->where('idt_evento', $eventoId)
+                  ->whereHas('equipe', function ($qe) {
+                      $qe->where('des_grupo', 'like', '%Visitação%');
+                  });
+            })
+            ->orWhereHas('parceiro.trabalhadores', function ($q) use ($eventoId) {
+                $q->where('idt_evento', $eventoId)
+                  ->whereHas('equipe', function ($qe) {
+                      $qe->where('des_grupo', 'like', '%Visitação%');
+                  });
+            });
         })->with('parceiro')->orderBy('nom_pessoa', 'asc')->get();
 
         $processed = [];
@@ -253,8 +265,20 @@ class FichaVemController extends Controller
 
         $ficha = Ficha::with(['fichaVem', 'fichaSaude', 'foto'])->find($id);
 
-        $visitadoresRaw = \App\Models\Pessoa::whereHas('usuario', function ($q) {
-            $q->where('role', \App\Models\User::ROLE_VISITACAO);
+        $eventoId = $ficha->idt_evento;
+        $visitadoresRaw = \App\Models\Pessoa::where(function ($query) use ($eventoId) {
+            $query->whereHas('trabalhadores', function ($q) use ($eventoId) {
+                $q->where('idt_evento', $eventoId)
+                  ->whereHas('equipe', function ($qe) {
+                      $qe->where('des_grupo', 'like', '%Visitação%');
+                  });
+            })
+            ->orWhereHas('parceiro.trabalhadores', function ($q) use ($eventoId) {
+                $q->where('idt_evento', $eventoId)
+                  ->whereHas('equipe', function ($qe) {
+                      $qe->where('des_grupo', 'like', '%Visitação%');
+                  });
+            });
         })->with('parceiro')->orderBy('nom_pessoa', 'asc')->get();
 
         $processed = [];

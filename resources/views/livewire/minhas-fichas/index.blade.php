@@ -24,20 +24,7 @@ new class extends Component {
     public function mount(?Evento $evento = null): void
     {
         $user = auth()->user();
-        if (!$user) {
-            abort(403, 'Acesso não autorizado.');
-        }
-
-        $temAcesso = $user->isAdmin() || $user->isVisitacao() || (
-            $user->isCoordenador() && \App\Models\Trabalhador::where('idt_pessoa', $user->pessoa?->idt_pessoa)
-                ->where('ind_coordenador', true)
-                ->whereHas('equipe', function ($q) {
-                    $q->where('des_grupo', 'like', '%Visitação%');
-                })
-                ->exists()
-        );
-
-        if (!$temAcesso) {
+        if (!$user || !$user->podeAcessarMinhasFichas()) {
             abort(403, 'Acesso não autorizado.');
         }
 
@@ -236,7 +223,7 @@ new class extends Component {
             return true;
         }
 
-        if (($user->hasRole('coord', 'visit')) && $this->eventoId) {
+        if ($this->eventoId) {
             return \App\Models\Trabalhador::where('idt_evento', $this->eventoId)
                 ->where('idt_pessoa', $user->pessoa?->idt_pessoa)
                 ->where('ind_coordenador', true)
