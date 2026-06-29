@@ -715,5 +715,115 @@ describe('Fichas — fichas.blade.php', function () {
         expect($selected)->toContain((string)$this->fichaNova->idt_ficha)
             ->not->toContain((string)$this->fichaAguardando->idt_ficha);
     });
+
+    test('nao permite selecionar mais do que 3 fichas individualmente', function () {
+        // Cria mais fichas para ter pelo menos 4
+        $ficha3 = \App\Models\Ficha::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'tip_situacao' => \App\Enums\TipoSituacao::NOVA,
+            'nom_candidato' => 'Candidato 3',
+        ]);
+        $ficha4 = \App\Models\Ficha::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'tip_situacao' => \App\Enums\TipoSituacao::NOVA,
+            'nom_candidato' => 'Candidato 4',
+        ]);
+
+        $selected = [
+            (string)$this->fichaNova->idt_ficha,
+            (string)$this->fichaAguardando->idt_ficha,
+            (string)$ficha3->idt_ficha,
+            (string)$ficha4->idt_ficha,
+        ];
+
+        Volt::test('evento.partials.fichas', ['evento' => $this->evento])
+            ->set('selectedFichas', $selected)
+            ->assertSet('selectedFichas', [
+                (string)$this->fichaNova->idt_ficha,
+                (string)$this->fichaAguardando->idt_ficha,
+                (string)$ficha3->idt_ficha,
+            ])
+            ->assertDispatched('notify');
+    });
+
+    test('updatedSelectAll seleciona no maximo 3 fichas e desmarca selectAll', function () {
+        // Cria mais fichas para ter pelo menos 4
+        \App\Models\Ficha::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'tip_situacao' => \App\Enums\TipoSituacao::NOVA,
+        ]);
+        
+        $component = Volt::test('evento.partials.fichas', ['evento' => $this->evento])
+            ->set('selectAll', true);
+
+        $selected = $component->get('selectedFichas');
+        expect(count($selected))->toBe(3);
+        expect($component->get('selectAll'))->toBeFalse();
+        $component->assertDispatched('notify');
+    });
+
+    test('designarVisitacao valida limite de 3 fichas por visitador', function () {
+        $visitador = \App\Models\Pessoa::factory()->create();
+
+        // Já tem 1 ficha designada para este visitador no mesmo evento
+        \App\Models\Ficha::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'idt_pessoa_visitacao' => $visitador->idt_pessoa,
+            'tip_situacao' => \App\Enums\TipoSituacao::SELECIONADA,
+        ]);
+
+        // Cria 3 fichas que tentaremos designar para este visitador
+        $fichasParaDesignar = \App\Models\Ficha::factory()->count(3)->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'tip_situacao' => \App\Enums\TipoSituacao::NOVA,
+        ]);
+
+        $selectedIds = $fichasParaDesignar->pluck('idt_ficha')->map(fn($id) => (string)$id)->toArray();
+
+        // Tenta designar as 3 fichas (total ficaria 4, o que ultrapassa o limite de 3)
+        Volt::test('evento.partials.fichas', ['evento' => $this->evento])
+            ->set('selectedFichas', $selectedIds)
+            ->set('pessoaVisitacaoId', $visitador->idt_pessoa)
+            ->call('designarVisitacao')
+            ->assertHasErrors(['pessoaVisitacaoId'])
+            ->assertNotDispatched('notify');
+
+        // Garante que as fichas continuam sem visitador designado
+        foreach ($fichasParaDesignar as $f) {
+            expect($f->fresh()->idt_pessoa_visitacao)->toBeNull();
+        }
+    });
+
+    test('designarVisitacao permite designar se a soma nao ultrapassa o limite de 3', function () {
+        $visitador = \App\Models\Pessoa::factory()->create();
+
+        // Já tem 1 ficha designada para este visitador no mesmo evento
+        \App\Models\Ficha::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'idt_pessoa_visitacao' => $visitador->idt_pessoa,
+            'tip_situacao' => \App\Enums\TipoSituacao::SELECIONADA,
+        ]);
+
+        // Cria 2 fichas que tentaremos designar para este visitador (total ficaria 3, limite permitido)
+        $fichasParaDesignar = \App\Models\Ficha::factory()->count(2)->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'tip_situacao' => \App\Enums\TipoSituacao::NOVA,
+        ]);
+
+        $selectedIds = $fichasParaDesignar->pluck('idt_ficha')->map(fn($id) => (string)$id)->toArray();
+
+        Volt::test('evento.partials.fichas', ['evento' => $this->evento])
+            ->set('selectedFichas', $selectedIds)
+            ->set('pessoaVisitacaoId', $visitador->idt_pessoa)
+            ->call('designarVisitacao')
+            ->assertHasNoErrors()
+            ->assertDispatched('notify');
+
+        // Garante que as fichas foram devidamente designadas
+        foreach ($fichasParaDesignar as $f) {
+            expect($f->fresh()->idt_pessoa_visitacao)->toBe($visitador->idt_pessoa);
+        }
+    });
 });
+
 
