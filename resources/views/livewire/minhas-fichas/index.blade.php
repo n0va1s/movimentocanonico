@@ -442,8 +442,22 @@ new class extends Component {
                             @endif
                         </div>
 
+                        @php
+                            $isDeMaior = $ficha->dat_nascimento && \Carbon\Carbon::parse($ficha->dat_nascimento)->age >= 18;
+                        @endphp
+
+                        {{-- Telefone do Jovem (se de maior) --}}
+                        @if ($isDeMaior && $ficha->tel_candidato)
+                            <div class="flex items-start gap-2 text-zinc-500 dark:text-zinc-400 text-sm mt-4">
+                                <flux:icon.phone class="size-4 shrink-0 text-zinc-400 dark:text-zinc-500 mt-0.5" />
+                                <a href="https://wa.me/55{{ \App\Services\PhoneService::clean($ficha->tel_candidato) }}" target="_blank" class="hover:underline hover:text-blue-600 dark:hover:text-blue-400 leading-relaxed font-medium">
+                                    {{ $ficha->tel_candidato }}
+                                </a>
+                            </div>
+                        @endif
+
                         {{-- Endereço --}}
-                        <div class="flex items-start gap-2 text-zinc-500 dark:text-zinc-400 text-sm mt-4">
+                        <div class="flex items-start gap-2 text-zinc-500 dark:text-zinc-400 text-sm {{ $isDeMaior && $ficha->tel_candidato ? 'mt-2' : 'mt-4' }}">
                             <flux:icon.map-pin class="size-4 shrink-0 text-zinc-400 dark:text-zinc-500 mt-0.5" />
                             <span class="leading-relaxed">{{ $ficha->des_endereco ?? 'Endereço não informado' }}</span>
                         </div>
@@ -476,7 +490,13 @@ new class extends Component {
                             </div>
                             <div class="text-sm text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 mt-2.5">
                                 <flux:icon.phone class="size-4 text-zinc-400 dark:text-zinc-500" />
-                                <span class="font-medium">{{ $resp['telefone'] }}</span>
+                                @if ($resp['telefone'] && $resp['telefone'] !== 'Não informado')
+                                    <a href="https://wa.me/55{{ \App\Services\PhoneService::clean($resp['telefone']) }}" target="_blank" class="hover:underline hover:text-blue-600 dark:hover:text-blue-400 font-medium">
+                                        {{ $resp['telefone'] }}
+                                    </a>
+                                @else
+                                    <span class="font-medium">{{ $resp['telefone'] }}</span>
+                                @endif
                             </div>
                         </div>
                     </div>
