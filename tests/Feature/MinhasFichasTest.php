@@ -11,6 +11,29 @@ use Livewire\Volt\Volt;
 
 uses(RefreshDatabase::class);
 
+if (!function_exists('createVisitorUser')) {
+    function createVisitorUser(array $attributes = [], ?Evento $evento = null) {
+        $user = User::factory()->create(array_merge(['role' => 'user'], $attributes));
+        $pessoa = $user->pessoa;
+        
+        $movimentoId = $user->idt_movimento ?: ($evento ? $evento->idt_movimento : 2);
+        
+        $equipeVisitacao = \App\Models\TipoEquipe::firstOrCreate([
+            'idt_movimento' => $movimentoId,
+            'des_grupo' => 'Visitação'
+        ]);
+        
+        \App\Models\Trabalhador::create([
+            'idt_pessoa' => $pessoa->idt_pessoa,
+            'idt_evento' => $evento ? $evento->idt_evento : ($attributes['idt_evento'] ?? 41),
+            'idt_equipe' => $equipeVisitacao->idt_equipe,
+            'ind_coordenador' => $attributes['ind_coordenador'] ?? false,
+        ]);
+        
+        return $user;
+    }
+}
+
 beforeEach(function () {
     DB::table('tipo_movimento')->insertOrIgnore([
         ['idt_movimento' => 1, 'nom_movimento' => 'Encontro de Casais com Cristo', 'des_sigla' => 'ECC', 'dat_inicio' => '1980-01-01', 'created_at' => now(), 'updated_at' => now()],
@@ -53,7 +76,7 @@ describe('Minhas Fichas Access Authorization', function () {
     });
 
     test('user with role visitacao gets 200', function () {
-        $user = User::factory()->create(['role' => 'visit', 'idt_movimento' => 2]);
+        $user = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
         $this->actingAs($user)
             ->get(route('minhas-fichas.index'))
             ->assertStatus(200);
@@ -70,11 +93,11 @@ describe('Minhas Fichas Access Authorization', function () {
 describe('Minhas Fichas Scoping and Filtering', function () {
     test('visitor only sees fichas assigned to them and matching their movement', function () {
         // Create visitor
-        $visitorUser = User::factory()->create(['role' => 'visit', 'idt_movimento' => 2]);
+        $visitorUser = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
         $visitorPessoa = $visitorUser->pessoa;
 
         // Other visitor
-        $otherUser = User::factory()->create(['role' => 'visit', 'idt_movimento' => 2]);
+        $otherUser = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
         $otherPessoa = $otherUser->pessoa;
 
         // Assigned Ficha (VEM)
@@ -124,10 +147,10 @@ describe('Minhas Fichas Scoping and Filtering', function () {
     });
 
     test('visitor can see fichas assigned to their spouse/partner', function () {
-        $visitorUserA = User::factory()->create(['role' => 'visit', 'idt_movimento' => 2]);
+        $visitorUserA = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
         $visitorPessoaA = $visitorUserA->pessoa;
 
-        $visitorUserB = User::factory()->create(['role' => 'visit', 'idt_movimento' => 2]);
+        $visitorUserB = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
         $visitorPessoaB = $visitorUserB->pessoa;
 
         $visitorPessoaA->update(['idt_parceiro' => $visitorPessoaB->idt_pessoa]);
@@ -146,7 +169,7 @@ describe('Minhas Fichas Scoping and Filtering', function () {
     });
 
     test('ficha disappears from the visitor list when marked as VISITADA', function () {
-        $visitorUser = User::factory()->create(['role' => 'visit', 'idt_movimento' => 2]);
+        $visitorUser = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
         $visitorPessoa = $visitorUser->pessoa;
 
         $ficha = Ficha::factory()->create([
@@ -171,7 +194,7 @@ describe('Minhas Fichas Scoping and Filtering', function () {
         $adminUser = User::factory()->create(['role' => 'admin']);
         $adminPessoa = $adminUser->pessoa;
 
-        $visitorUser = User::factory()->create(['role' => 'visit', 'idt_movimento' => 2]);
+        $visitorUser = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
         $visitorPessoa = $visitorUser->pessoa;
 
         // Ficha assigned to Admin
@@ -197,7 +220,7 @@ describe('Minhas Fichas Scoping and Filtering', function () {
     });
 
     test('visitor can filter fichas by active event', function () {
-        $visitorUser = User::factory()->create(['role' => 'visit', 'idt_movimento' => 2]);
+        $visitorUser = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
         $visitorPessoa = $visitorUser->pessoa;
 
         // Create a second active event for movement 2
@@ -238,7 +261,7 @@ describe('Minhas Fichas Scoping and Filtering', function () {
 
 describe('Minhas Fichas Actions', function () {
     beforeEach(function () {
-        $this->visitorUser = User::factory()->create(['role' => 'visit', 'idt_movimento' => 2]);
+        $this->visitorUser = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
         $this->visitorPessoa = $this->visitorUser->pessoa;
         $this->ficha = Ficha::factory()->create([
             'idt_evento' => $this->eventoVem->idt_evento,
@@ -275,7 +298,7 @@ describe('Minhas Fichas Actions', function () {
 
 describe('Minhas Fichas Visitor Designation', function () {
     beforeEach(function () {
-        $this->visitorUser = User::factory()->create(['role' => 'visit', 'idt_movimento' => 2]);
+        $this->visitorUser = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
         $this->visitorPessoa = $this->visitorUser->pessoa;
         $this->ficha = Ficha::factory()->create([
             'idt_evento' => $this->eventoVem->idt_evento,
@@ -327,7 +350,7 @@ describe('Minhas Fichas Visitor Designation', function () {
 describe('Minhas Fichas - Admin Designation via Component', function () {
     beforeEach(function () {
         $this->admin = User::factory()->create(['role' => 'admin']);
-        $this->visitor = User::factory()->create(['role' => 'visit', 'idt_movimento' => 2]);
+        $this->visitor = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
         
         // Fichas
         $this->ficha1 = Ficha::factory()->create([

@@ -25,8 +25,6 @@ class User extends Authenticatable
 
     const ROLE_ESPEC = 'espec';
 
-    const ROLE_VISITACAO = 'visit';
-
     const ROLE_SALES = 'sales';
 
     public function isAdmin(): bool
@@ -52,9 +50,11 @@ class User extends Authenticatable
 
     public function isVisitacao(): bool
     {
-        $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
+        if ($this->isAdmin()) {
+            return false;
+        }
 
-        return strtolower($roleValue) === self::ROLE_VISITACAO;
+        return $this->podeAcessarMinhasFichas();
     }
 
     public function isSales(): bool
@@ -67,7 +67,15 @@ class User extends Authenticatable
     public function hasRole(string ...$roles): bool
     {
         $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
-        $has = in_array(strtolower($roleValue), array_map('strtolower', $roles));
+        $roleValueStr = strtolower($roleValue);
+        $mappedRoles = array_map('strtolower', $roles);
+        
+        $has = in_array($roleValueStr, $mappedRoles);
+        
+        if (!$has && in_array('visit', $mappedRoles) && $this->podeAcessarMinhasFichas()) {
+            $has = true;
+        }
+
         \Illuminate\Support\Facades\Log::info("hasRole check: roleValue={$roleValue} against " . implode(',', $roles) . " => " . ($has ? 'true' : 'false'));
         return $has;
     }
@@ -99,6 +107,19 @@ class User extends Authenticatable
         return Trabalhador::where('idt_evento', $idtEvento)
             ->where('idt_pessoa', $pessoa->idt_pessoa)
             ->when($this->isCoordenador(), fn ($q) => $q->where('ind_coordenador', true))
+            ->exists();
+    }
+
+    public function podeAcessarMinhasFichas(): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return Trabalhador::where('idt_pessoa', $this->pessoa?->idt_pessoa)
+            ->whereHas('equipe', function ($q) {
+                $q->where('des_grupo', 'like', '%Visitação%');
+            })
             ->exists();
     }
 
