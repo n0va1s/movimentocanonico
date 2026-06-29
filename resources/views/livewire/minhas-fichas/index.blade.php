@@ -22,6 +22,7 @@ new class extends Component {
         }
 
         $user = auth()->user();
+<<<<<<< HEAD
         $movimentoId = $user->idt_movimento;
         $hoje = now()->startOfDay();
 
@@ -38,6 +39,18 @@ new class extends Component {
 
         if ($primeiroEventoAtivo) {
             $this->eventoId = $primeiroEventoAtivo->idt_evento;
+=======
+        if (!$user || !$user->podeAcessarMinhasFichas()) {
+            abort(403, 'Acesso não autorizado.');
+        }
+
+        if ($evento && $evento->exists) {
+            $this->evento = $evento;
+            $this->eventoId = $evento->idt_evento;
+        } else {
+            $this->evento = null;
+            $this->eventoId = null;
+>>>>>>> d81e7f8 (feat: implement visitation management module for event participants with assignment and filtering capabilities)
         }
     }
 
@@ -62,6 +75,154 @@ new class extends Component {
         }
     }
 
+<<<<<<< HEAD
+=======
+    private function getVisitadores()
+    {
+        if (!$this->eventoId) {
+            return collect();
+        }
+
+        $visitadoresRaw = \App\Models\Pessoa::where(function ($query) {
+            $query->whereHas('trabalhadores', function ($q) {
+                $q->where('idt_evento', $this->eventoId)
+                  ->whereHas('equipe', function ($qe) {
+                      $qe->where('des_grupo', 'like', '%Visitação%');
+                  });
+            })
+            ->orWhereHas('parceiro.trabalhadores', function ($q) {
+                $q->where('idt_evento', $this->eventoId)
+                  ->whereHas('equipe', function ($qe) {
+                      $qe->where('des_grupo', 'like', '%Visitação%');
+                  });
+            });
+        })->with('parceiro')->orderBy('nom_pessoa', 'asc')->get();
+
+        $processed = [];
+        return $visitadoresRaw->reject(function ($v) use (&$processed) {
+            if (in_array($v->idt_pessoa, $processed)) {
+                return true;
+            }
+
+            $partnerId = $v->idt_parceiro ?: \App\Models\Pessoa::where('idt_parceiro', $v->idt_pessoa)->value('idt_pessoa');
+
+            // Ocultar casal/pessoa caso já tenha 3 ou mais fichas atribuídas no evento selecionado
+            $fichaCount = \App\Models\Ficha::where('idt_evento', $this->eventoId)
+                ->where(function ($q) use ($v, $partnerId) {
+                    $q->where('idt_pessoa_visitacao', $v->idt_pessoa)
+                      ->when($partnerId, function ($q2) use ($partnerId) {
+                          $q2->orWhere('idt_pessoa_visitacao', $partnerId);
+                      });
+                })
+                ->count();
+
+            if ($fichaCount >= 3) {
+                return true;
+            }
+
+            if ($partnerId) {
+                $processed[] = $partnerId;
+            }
+            return false;
+        });
+    }
+
+    public function abrirModalVisitacao(): void
+    {
+        if (count($this->selectedFichas) === 0) {
+            return;
+        }
+
+        if (count($this->selectedFichas) > 3) {
+            $this->selectedFichas = array_slice($this->selectedFichas, 0, 3);
+            $this->dispatch('notify',
+                message: "Você pode selecionar no máximo 3 fichas para designação.",
+                type: 'erro'
+            );
+            return;
+        }
+
+        $this->pessoaVisitacaoId = null;
+        $this->modal('modal-visitacao')->show();
+    }
+
+    public function designarVisitacao(): void
+    {
+        abort_if(!$this->podeDesignar(), 403);
+
+        $this->validate([
+            'pessoaVisitacaoId' => 'required|exists:pessoa,idt_pessoa',
+        ]);
+
+        $v = \App\Models\Pessoa::with('parceiro')->findOrFail($this->pessoaVisitacaoId);
+
+        $partnerId = $v->idt_parceiro ?: \App\Models\Pessoa::where('idt_parceiro', $v->idt_pessoa)->value('idt_pessoa');
+
+        $currentCount = \App\Models\Ficha::where('idt_evento', $this->eventoId)
+            ->where(function ($q) use ($v, $partnerId) {
+                $q->where('idt_pessoa_visitacao', $v->idt_pessoa)
+                  ->when($partnerId, function ($q2) use ($partnerId) {
+                      $q2->orWhere('idt_pessoa_visitacao', $partnerId);
+                  });
+            })
+            ->whereNotIn('idt_ficha', $this->selectedFichas)
+            ->count();
+
+        $selectedCount = count($this->selectedFichas);
+        $totalCountAfterDesignation = $currentCount + $selectedCount;
+
+        if ($totalCountAfterDesignation > 3) {
+            $nomeCasal = $v->nom_pessoa . ($v->parceiro ? ' e ' . $v->parceiro->nom_pessoa : '');
+            $restantes = 3 - $currentCount;
+
+            if ($restantes <= 0) {
+                $msg = "O visitador/casal {$nomeCasal} já possui o limite de 3 fichas designadas.";
+            } else {
+                $msg = "Não é possível designar as {$selectedCount} fichas para {$nomeCasal}. O limite é de 3 fichas por visitador/casal, e eles já possuem {$currentCount} ficha(s) designada(s) (máximo disponível: {$restantes}).";
+            }
+
+            $this->addError('pessoaVisitacaoId', $msg);
+            return;
+        }
+
+        \App\Models\Ficha::whereIn('idt_ficha', $this->selectedFichas)
+            ->update([
+                'idt_pessoa_visitacao' => $this->pessoaVisitacaoId,
+                'tip_situacao' => \App\Enums\TipoSituacao::SELECIONADA->value,
+            ]);
+
+        $this->modal('modal-visitacao')->close();
+        $this->selectedFichas = [];
+        $this->pessoaVisitacaoId = null;
+
+        session()->flash('success', 'Visitação designada com sucesso e fichas marcadas como Selecionada.');
+    }
+
+    public function podeDesignar(): bool
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return false;
+        }
+
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        if ($this->eventoId) {
+            return \App\Models\Trabalhador::where('idt_evento', $this->eventoId)
+                ->where('idt_pessoa', $user->pessoa?->idt_pessoa)
+                ->where('ind_coordenador', true)
+                ->whereHas('equipe', function ($q) {
+                    $q->where('des_grupo', 'like', '%Visitação%');
+                })
+                ->exists();
+        }
+
+        return false;
+    }
+
+>>>>>>> d81e7f8 (feat: implement visitation management module for event participants with assignment and filtering capabilities)
     public function with(): array
     {
         $user = auth()->user();

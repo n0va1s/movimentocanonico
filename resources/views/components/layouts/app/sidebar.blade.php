@@ -52,7 +52,7 @@
                     :current="request()->routeIs('pessoas.edit')" wire:navigate>
                     {{ __('Meus Dados') }}
                 </flux:navlist.item>
-                @if (Auth::user() && Auth::user()->hasRole('admin', 'visit'))
+                @if (Auth::user() && Auth::user()->podeAcessarMinhasFichas())
                     <flux:navlist.item icon="document-text" :href="route('minhas-fichas.index')"
                         :current="request()->routeIs('minhas-fichas.index')" wire:navigate>
                         {{ __('Minhas Fichas') }}
