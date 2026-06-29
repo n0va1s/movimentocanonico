@@ -68,6 +68,17 @@ new class extends Component {
         $this->resetPage();
     }
 
+    public function updatedSelectedFichas($value): void
+    {
+        if (count($this->selectedFichas) > 3) {
+            $this->selectedFichas = array_slice($this->selectedFichas, 0, 3);
+            $this->dispatch('notify',
+                message: "Você pode selecionar no máximo 3 fichas para designação.",
+                type: 'erro'
+            );
+        }
+    }
+
     public function alterarSituacao(int $fichaId, string $novaSituacao): void
     {
         try {
@@ -106,12 +117,14 @@ new class extends Component {
                 return true;
             }
 
+            $partnerId = $v->idt_parceiro ?: \App\Models\Pessoa::where('idt_parceiro', $v->idt_pessoa)->value('idt_pessoa');
+
             // Ocultar casal/pessoa caso já tenha 3 ou mais fichas atribuídas no evento selecionado
             $fichaCount = \App\Models\Ficha::where('idt_evento', $this->eventoId)
-                ->where(function ($q) use ($v) {
+                ->where(function ($q) use ($v, $partnerId) {
                     $q->where('idt_pessoa_visitacao', $v->idt_pessoa)
-                      ->when($v->idt_parceiro, function ($q2) use ($v) {
-                          $q2->orWhere('idt_pessoa_visitacao', $v->idt_parceiro);
+                      ->when($partnerId, function ($q2) use ($partnerId) {
+                          $q2->orWhere('idt_pessoa_visitacao', $partnerId);
                       });
                 })
                 ->count();
@@ -120,8 +133,8 @@ new class extends Component {
                 return true;
             }
 
-            if ($v->idt_parceiro) {
-                $processed[] = $v->idt_parceiro;
+            if ($partnerId) {
+                $processed[] = $partnerId;
             }
             return false;
         });
@@ -132,6 +145,16 @@ new class extends Component {
         if (count($this->selectedFichas) === 0) {
             return;
         }
+
+        if (count($this->selectedFichas) > 3) {
+            $this->selectedFichas = array_slice($this->selectedFichas, 0, 3);
+            $this->dispatch('notify',
+                message: "Você pode selecionar no máximo 3 fichas para designação.",
+                type: 'erro'
+            );
+            return;
+        }
+
         $this->pessoaVisitacaoId = null;
         $this->modal('modal-visitacao')->show();
     }
@@ -143,6 +166,37 @@ new class extends Component {
         $this->validate([
             'pessoaVisitacaoId' => 'required|exists:pessoa,idt_pessoa',
         ]);
+
+        $v = \App\Models\Pessoa::with('parceiro')->findOrFail($this->pessoaVisitacaoId);
+
+        $partnerId = $v->idt_parceiro ?: \App\Models\Pessoa::where('idt_parceiro', $v->idt_pessoa)->value('idt_pessoa');
+
+        $currentCount = \App\Models\Ficha::where('idt_evento', $this->eventoId)
+            ->where(function ($q) use ($v, $partnerId) {
+                $q->where('idt_pessoa_visitacao', $v->idt_pessoa)
+                  ->when($partnerId, function ($q2) use ($partnerId) {
+                      $q2->orWhere('idt_pessoa_visitacao', $partnerId);
+                  });
+            })
+            ->whereNotIn('idt_ficha', $this->selectedFichas)
+            ->count();
+
+        $selectedCount = count($this->selectedFichas);
+        $totalCountAfterDesignation = $currentCount + $selectedCount;
+
+        if ($totalCountAfterDesignation > 3) {
+            $nomeCasal = $v->nom_pessoa . ($v->parceiro ? ' e ' . $v->parceiro->nom_pessoa : '');
+            $restantes = 3 - $currentCount;
+
+            if ($restantes <= 0) {
+                $msg = "O visitador/casal {$nomeCasal} já possui o limite de 3 fichas designadas.";
+            } else {
+                $msg = "Não é possível designar as {$selectedCount} fichas para {$nomeCasal}. O limite é de 3 fichas por visitador/casal, e eles já possuem {$currentCount} ficha(s) designada(s) (máximo disponível: {$restantes}).";
+            }
+
+            $this->addError('pessoaVisitacaoId', $msg);
+            return;
+        }
 
         \App\Models\Ficha::whereIn('idt_ficha', $this->selectedFichas)
             ->update([
@@ -360,6 +414,7 @@ new class extends Component {
                                 type="checkbox" 
                                 wire:model.live="selectedFichas" 
                                 value="{{ $ficha->idt_ficha }}" 
+                                wire:key="'checkbox-minhas-fichas-'.$ficha->idt_ficha"
                                 class="w-5 h-5 rounded border-zinc-300 text-blue-600 shadow-sm focus:ring-blue-500 cursor-pointer"
                             />
                         </div>
@@ -526,33 +581,22 @@ new class extends Component {
     @endif
 
     {{-- Modal de Designação de Visitação --}}
-    @if (auth()->user()->isAdmin())
+    @if (auth()->user()->isAdmin() && count($selectedFichas) > 0)
         <flux:modal name="modal-visitacao" class="min-w-[20rem] md:min-w-[30rem]">
             <form 
                 wire:submit="designarVisitacao" 
                 x-data="{
                     open: false,
                     selectedId: @entangle('pessoaVisitacaoId'),
-                    selectedLabel: '',
+                    selectedLabel: 'Selecione um visitador...',
                     selectedAddress: '',
-                    visitadores: {{ json_encode($visitadores->map(fn($v) => [
-                        'id' => $v->idt_pessoa,
-                        'label' => $v->nom_pessoa . ($v->parceiro ? ' e ' . $v->parceiro->nom_pessoa : ''),
-                        'address' => $v->des_endereco ?: 'Endereço não cadastrado'
-                    ])) }},
                     init() {
-                        this.updateSelection();
-                        this.$watch('selectedId', () => this.updateSelection());
-                    },
-                    updateSelection() {
-                        let found = this.visitadores.find(v => v.id == this.selectedId);
-                        if (found) {
-                            this.selectedLabel = found.label;
-                            this.selectedAddress = found.address;
-                        } else {
-                            this.selectedLabel = 'Selecione um visitador...';
-                            this.selectedAddress = '';
-                        }
+                        this.$watch('selectedId', (val) => {
+                            if (!val) {
+                                this.selectedLabel = 'Selecione um visitador...';
+                                this.selectedAddress = '';
+                            }
+                        });
                     }
                 }"
                 class="space-y-6 transition-all duration-200"
@@ -593,22 +637,28 @@ new class extends Component {
                         style="display: none;"
                     >
                         <ul class="p-1 divide-y divide-zinc-100 dark:divide-zinc-700/50">
-                            <template x-for="item in visitadores" :key="item.id">
+                            @foreach ($visitadores as $v)
+                                @php
+                                    $label = $v->nom_pessoa . ($v->parceiro ? ' e ' . $v->parceiro->nom_pessoa : '');
+                                    $address = $v->des_endereco ?: 'Endereço não cadastrado';
+                                @endphp
                                 <li>
                                     <button 
                                         type="button"
-                                        @click="selectedId = item.id; open = false;"
+                                        @click="selectedId = {{ $v->idt_pessoa }}; selectedLabel = '{{ addslashes($label) }}'; selectedAddress = '{{ addslashes($address) }}'; open = false;"
                                         class="w-full text-left p-3 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition flex flex-col cursor-pointer"
-                                        :class="selectedId == item.id ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''"
+                                        :class="selectedId == {{ $v->idt_pessoa }} ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''"
                                     >
-                                        <span class="font-semibold text-sm text-zinc-900 dark:text-zinc-100" x-text="item.label"></span>
-                                        <span class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5" x-text="item.address"></span>
+                                        <span class="font-semibold text-sm text-zinc-900 dark:text-zinc-100">{{ $label }}</span>
+                                        <span class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{{ $address }}</span>
                                     </button>
                                 </li>
-                            </template>
-                            <li x-show="visitadores.length === 0" class="p-4 text-center text-sm text-zinc-500 italic">
-                                Nenhum visitador disponível
-                            </li>
+                            @endforeach
+                            @if ($visitadores->isEmpty())
+                                <li class="p-4 text-center text-sm text-zinc-500 italic">
+                                    Nenhum visitador disponível
+                                </li>
+                            @endif
                         </ul>
                     </div>
 

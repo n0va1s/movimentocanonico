@@ -116,7 +116,7 @@ describe('Minhas Fichas Scoping and Filtering', function () {
 
         // Act & Assert using Volt
         $this->actingAs($visitorUser);
-        Volt::test('minhas-fichas.index')
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
             ->assertSee('Assigned Candidate VEM')
             ->assertDontSee('Other Visitor Candidate VEM')
             ->assertDontSee('Unassigned Candidate VEM')
@@ -141,7 +141,7 @@ describe('Minhas Fichas Scoping and Filtering', function () {
         ]);
 
         $this->actingAs($visitorUserA);
-        Volt::test('minhas-fichas.index')
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
             ->assertSee('Spouse Assigned Candidate');
     });
 
@@ -158,12 +158,12 @@ describe('Minhas Fichas Scoping and Filtering', function () {
 
         $this->actingAs($visitorUser);
         
-        Volt::test('minhas-fichas.index')
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
             ->assertSee('Visitada Candidate');
-
+ 
         $ficha->update(['tip_situacao' => TipoSituacao::VISITADA]);
-
-        Volt::test('minhas-fichas.index')
+ 
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
             ->assertDontSee('Visitada Candidate');
     });
 
@@ -191,7 +191,7 @@ describe('Minhas Fichas Scoping and Filtering', function () {
         ]);
 
         $this->actingAs($adminUser);
-        Volt::test('minhas-fichas.index')
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
             ->assertSee('Ficha for Admin')
             ->assertSee('Ficha for Visitor');
     });
@@ -224,9 +224,9 @@ describe('Minhas Fichas Scoping and Filtering', function () {
         ]);
 
         $this->actingAs($visitorUser);
-
+ 
         // By default, the first active event (eventoVem) is selected
-        Volt::test('minhas-fichas.index')
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
             ->assertSee('Candidate in Event One')
             ->assertDontSee('Candidate in Event Two')
             // Change the filter to the second event
@@ -249,26 +249,26 @@ describe('Minhas Fichas Actions', function () {
     });
 
     test('can change status to Fiz Contato (F)', function () {
-        Volt::test('minhas-fichas.index')
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
             ->call('alterarSituacao', $this->ficha->idt_ficha, 'F')
             ->assertHasNoErrors();
-
+ 
         expect($this->ficha->fresh()->tip_situacao)->toBe(TipoSituacao::CONTATO);
     });
-
+ 
     test('can change status to Aguardando Resposta (W)', function () {
-        Volt::test('minhas-fichas.index')
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
             ->call('alterarSituacao', $this->ficha->idt_ficha, 'W')
             ->assertHasNoErrors();
-
+ 
         expect($this->ficha->fresh()->tip_situacao)->toBe(TipoSituacao::AGUARDANDO);
     });
-
+ 
     test('can change status to Cancelada (C)', function () {
-        Volt::test('minhas-fichas.index')
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
             ->call('alterarSituacao', $this->ficha->idt_ficha, 'C')
             ->assertHasNoErrors();
-
+ 
         expect($this->ficha->fresh()->tip_situacao)->toBe(TipoSituacao::CANCELADA);
     });
 });
@@ -343,7 +343,7 @@ describe('Minhas Fichas - Admin Designation via Component', function () {
     test('visitor cannot see selection checkboxes or designation panel', function () {
         $this->actingAs($this->visitor);
         
-        Volt::test('minhas-fichas.index')
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
             ->assertDontSee('wire:model.live="selectedFichas"')
             ->assertDontSee('Designar Visitação');
     });
@@ -351,7 +351,7 @@ describe('Minhas Fichas - Admin Designation via Component', function () {
     test('admin can select fichas and assign visitor', function () {
         $this->actingAs($this->admin);
         
-        $component = Volt::test('minhas-fichas.index')
+        $component = Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
             ->assertDontSee('Designar Visitação')
             ->set('selectedFichas', [(string)$this->ficha1->idt_ficha, (string)$this->ficha2->idt_ficha])
             ->assertSee('Designar Visitação')
@@ -367,11 +367,67 @@ describe('Minhas Fichas - Admin Designation via Component', function () {
     test('designarVisitacao throws 403 for non-admin users', function () {
         $this->actingAs($this->visitor);
         
-        Volt::test('minhas-fichas.index')
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
             ->set('selectedFichas', [(string)$this->ficha1->idt_ficha])
             ->set('pessoaVisitacaoId', $this->visitor->pessoa->idt_pessoa)
             ->call('designarVisitacao')
             ->assertForbidden();
+    });
+
+    test('nao permite selecionar mais do que 3 fichas individualmente no index', function () {
+        $this->actingAs($this->admin);
+        
+        $ficha3 = Ficha::factory()->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'nom_candidato' => 'Ficha Teste Três',
+        ]);
+        $ficha4 = Ficha::factory()->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'nom_candidato' => 'Ficha Teste Quatro',
+        ]);
+
+        $selected = [
+            (string)$this->ficha1->idt_ficha,
+            (string)$this->ficha2->idt_ficha,
+            (string)$ficha3->idt_ficha,
+            (string)$ficha4->idt_ficha,
+        ];
+
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+            ->set('selectedFichas', $selected)
+            ->assertSet('selectedFichas', [
+                (string)$this->ficha1->idt_ficha,
+                (string)$this->ficha2->idt_ficha,
+                (string)$ficha3->idt_ficha,
+            ])
+            ->assertDispatched('notify');
+    });
+
+    test('designarVisitacao no index valida limite de 3 fichas por visitador', function () {
+        $this->actingAs($this->admin);
+        $visitador = Pessoa::factory()->create();
+
+        // Já tem 1 ficha designada para este visitador no mesmo evento
+        Ficha::factory()->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'idt_pessoa_visitacao' => $visitador->idt_pessoa,
+            'tip_situacao' => TipoSituacao::SELECIONADA,
+        ]);
+
+        // Cria 3 fichas que tentaremos designar para este visitador
+        $fichasParaDesignar = Ficha::factory()->count(3)->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+        ]);
+
+        $selectedIds = $fichasParaDesignar->pluck('idt_ficha')->map(fn($id) => (string)$id)->toArray();
+
+        // Tenta designar as 3 fichas (total ficaria 4, o que ultrapassa o limite de 3)
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+            ->set('selectedFichas', $selectedIds)
+            ->set('pessoaVisitacaoId', $visitador->idt_pessoa)
+            ->call('designarVisitacao')
+            ->assertHasErrors(['pessoaVisitacaoId'])
+            ->assertNotDispatched('notify');
     });
 });
 
