@@ -253,7 +253,7 @@ Route::middleware(['auth'])->group(function () {
         })->name('fichas.designar-visitador');
     });
 
-    Route::middleware(['role:admin,visit'])->group(function () {
+    Route::middleware(['role:admin,visit,coord'])->group(function () {
         Volt::route('/minhas-fichas/{evento?}', 'minhas-fichas.index')->name('minhas-fichas.index');
     });
 
