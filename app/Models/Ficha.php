@@ -164,7 +164,18 @@ class Ficha extends Model
         };
     }
 
-    public function getResponsavelInfoAttribute(): array
+    public function getShowRoute(): string
+    {
+        $movimentoId = (int) ($this->evento?->idt_movimento);
+        return match ($movimentoId) {
+            TipoMovimento::ECC => route('ecc.show', $this->idt_ficha),
+            TipoMovimento::VEM => route('vem.show', $this->idt_ficha),
+            TipoMovimento::SGM => route('sgm.show', $this->idt_ficha),
+            default => '#',
+        };
+    }
+
+    public function getResponsavelInfoAttribute(): ?array
     {
         if ($this->fichaVem) {
             if (!empty($this->fichaVem->nom_responsavel)) {
@@ -214,20 +225,6 @@ class Ficha extends Model
             }
         }
 
-        if ($this->fichaEcc) {
-            if (!empty($this->fichaEcc->nom_conjuge)) {
-                return [
-                    'nome' => $this->fichaEcc->nom_conjuge,
-                    'telefone' => $this->fichaEcc->tel_conjuge ?: 'Não informado',
-                    'tipo' => 'Cônjuge'
-                ];
-            }
-        }
-
-        return [
-            'nome' => 'Não informado',
-            'telefone' => 'Não informado',
-            'tipo' => 'Responsável'
-        ];
+        return null;
     }
 }

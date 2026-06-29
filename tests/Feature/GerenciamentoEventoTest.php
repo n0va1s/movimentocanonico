@@ -630,3 +630,81 @@ describe('Gerenciamento de Evento — Abas e Mais Opções', function () {
             ->assertDontSee("setTab('mercadinho')", false);
     });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fichas — componente Livewire Volt (Dashboard e Filtros)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Fichas — fichas.blade.php', function () {
+
+    beforeEach(function () {
+        $this->actingAs($this->admin);
+
+        // Limpa fichas antigas para evitar poluição nos testes
+        \App\Models\Ficha::where('idt_evento', $this->evento->idt_evento)->delete();
+
+        // Cria algumas fichas com diferentes situações
+        $this->fichaNova = \App\Models\Ficha::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'tip_situacao' => \App\Enums\TipoSituacao::NOVA,
+            'nom_candidato' => 'Candidato Novo',
+        ]);
+
+        $this->fichaAguardando = \App\Models\Ficha::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'tip_situacao' => \App\Enums\TipoSituacao::AGUARDANDO,
+            'nom_candidato' => 'Candidato Aguardando',
+        ]);
+        
+        $this->fichaAprovada = \App\Models\Ficha::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'tip_situacao' => \App\Enums\TipoSituacao::APROVADA,
+            'nom_candidato' => 'Candidato Aprovado',
+        ]);
+    });
+
+    test('exibe a contagem correta de cada situação no dashboard', function () {
+        $component = Volt::test('evento.partials.fichas', ['evento' => $this->evento]);
+        
+        $contadores = $component->get('contadores');
+        
+        expect($contadores[\App\Enums\TipoSituacao::NOVA->value])->toBe(1)
+            ->and($contadores[\App\Enums\TipoSituacao::AGUARDANDO->value])->toBe(1)
+            ->and($contadores[\App\Enums\TipoSituacao::APROVADA->value])->toBe(1)
+            ->and($contadores[\App\Enums\TipoSituacao::CANCELADA->value])->toBe(0);
+    });
+
+    test('clicar em um card de status filtra a listagem de fichas', function () {
+        $component = Volt::test('evento.partials.fichas', ['evento' => $this->evento]);
+        
+        // Inicialmente mostra todas
+        $component->assertSee('Candidato Novo')
+            ->assertSee('Candidato Aguardando')
+            ->assertSee('Candidato Aprovado');
+
+        // Filtra por novas
+        $component->call('toggleFiltroSituacao', \App\Enums\TipoSituacao::NOVA->value)
+            ->assertSee('Candidato Novo')
+            ->assertDontSee('Candidato Aguardando')
+            ->assertDontSee('Candidato Aprovado');
+            
+        expect($component->get('filtroSituacao'))->toBe(\App\Enums\TipoSituacao::NOVA->value);
+    });
+
+    test('clicar novamente no card ativo remove o filtro', function () {
+        $component = Volt::test('evento.partials.fichas', ['evento' => $this->evento])
+            ->call('toggleFiltroSituacao', \App\Enums\TipoSituacao::NOVA->value)
+            ->assertDontSee('Candidato Aprovado');
+
+        // Clica de novo no mesmo status
+        $component->call('toggleFiltroSituacao', \App\Enums\TipoSituacao::NOVA->value)
+            ->assertSee('Candidato Novo')
+            ->assertSee('Candidato Aprovado');
+            
+        expect($component->get('filtroSituacao'))->toBeNull();
+    });
+
+
+});
+
+
