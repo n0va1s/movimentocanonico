@@ -403,6 +403,67 @@ describe('Minhas Fichas - Admin Designation via Component', function () {
             ->assertDispatched('notify');
     });
 
+    test('exibe contato do candidato se ele for maior de idade, sem ocultar o responsavel', function () {
+        $this->actingAs($this->admin);
+
+        // Ficha com candidato maior de idade (nascido em 2000, logo >= 18 anos)
+        $fichaDeMaior = Ficha::factory()->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'nom_candidato' => 'Candidato Maior de Idade',
+            'dat_nascimento' => '2000-01-01',
+            'tel_candidato' => '(11) 99999-9999',
+            'eml_candidato' => 'maior@example.com',
+            'tip_situacao' => TipoSituacao::SELECIONADA
+        ]);
+
+        // Cria a relação de responsável no FichaVem
+        \App\Models\FichaVem::factory()->create([
+            'idt_ficha' => $fichaDeMaior->idt_ficha,
+            'nom_responsavel' => 'Responsavel Do Maior',
+            'tel_responsavel' => '(11) 88888-8888',
+        ]);
+
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+            ->assertSee('Candidato Maior de Idade')
+            ->assertSee('(11) 99999-9999')
+            ->assertSee('href="https://wa.me/5511999999999"', false)
+            ->assertDontSee('maior@example.com') // Email não deve ser exibido
+            ->assertSee('Responsavel Do Maior')
+            ->assertSee('(11) 88888-8888')
+            ->assertSee('href="https://wa.me/5511888888888"', false);
+    });
+
+    test('nao exibe contato do candidato se ele for menor de idade, mas exibe o do responsavel', function () {
+        $this->actingAs($this->admin);
+
+        // Ficha com candidato menor de idade (nascido em 2015, logo < 18 anos)
+        $fichaMenor = Ficha::factory()->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'nom_candidato' => 'Candidato Menor de Idade',
+            'dat_nascimento' => '2015-01-01',
+            'tel_candidato' => '(11) 99999-9999',
+            'eml_candidato' => 'menor@example.com',
+            'tip_situacao' => TipoSituacao::SELECIONADA
+        ]);
+
+        // Cria a relação de responsável no FichaVem
+        \App\Models\FichaVem::factory()->create([
+            'idt_ficha' => $fichaMenor->idt_ficha,
+            'nom_responsavel' => 'Responsavel Do Menor',
+            'tel_responsavel' => '(11) 88888-8888',
+        ]);
+
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+            ->assertSee('Candidato Menor de Idade')
+            ->assertSee('Responsavel Do Menor')
+            ->assertSee('(11) 88888-8888')
+            ->assertSee('href="https://wa.me/5511888888888"', false)
+            ->assertDontSee('Contato do Candidato')
+            ->assertDontSee('(11) 99999-9999')
+            ->assertDontSee('href="https://wa.me/5511999999999"', false)
+            ->assertDontSee('menor@example.com');
+    });
+
     test('designarVisitacao no index valida limite de 3 fichas por visitador', function () {
         $this->actingAs($this->admin);
         $visitador = Pessoa::factory()->create();
