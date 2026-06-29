@@ -12,7 +12,6 @@ new class extends Component {
 
     public Evento $evento;
     public string $search = '';
-    public string $situacao = '';
     public string $generoFiltro = '';
     public bool $vinculoFiltroParoquiano = false;
     public bool $vinculoFiltroRegiao = false;
@@ -31,6 +30,7 @@ new class extends Component {
     {
         $this->resetPage();
     }
+
 
     // Reseta a paginação quando o gênero muda
     public function updatedGeneroFiltro(): void
@@ -93,7 +93,6 @@ new class extends Component {
             $this->selectedFichas = [];
         }
     }
-
     public function toggleFiltroSituacao(?string $status): void
     {
         if ($this->filtroSituacao === $status) {
@@ -102,131 +101,6 @@ new class extends Component {
             $this->filtroSituacao = $status;
         }
         $this->resetPage();
-        
-        $this->selectedFichas = [];
-        $this->selectAll = false;
-    }
-
-    public function abrirModalVisitacao(): void
-    {
-        if (count($this->selectedFichas) === 0) {
-            return;
-        }
-
-        if (count($this->selectedFichas) > 3) {
-            $this->selectedFichas = array_slice($this->selectedFichas, 0, 3);
-            $this->dispatch('notify',
-                message: "Você pode selecionar no máximo 3 fichas para designação.",
-                type: 'erro'
-            );
-            return;
-        }
-
-        $this->pessoaVisitacaoId = null;
-        $this->modal('modal-visitacao')->show();
-    }
-
-    public function designarVisitacao(): void
-    {
-        $this->validate([
-            'pessoaVisitacaoId' => 'required|exists:pessoa,idt_pessoa',
-        ]);
-
-        $v = \App\Models\Pessoa::with('parceiro')->findOrFail($this->pessoaVisitacaoId);
-
-        $partnerId = $v->idt_parceiro ?: \App\Models\Pessoa::where('idt_parceiro', $v->idt_pessoa)->value('idt_pessoa');
-
-        $currentCount = \App\Models\Ficha::where('idt_evento', $this->evento->idt_evento)
-            ->where(function ($q) use ($v, $partnerId) {
-                $q->where('idt_pessoa_visitacao', $v->idt_pessoa)
-                  ->when($partnerId, function ($q2) use ($partnerId) {
-                      $q2->orWhere('idt_pessoa_visitacao', $partnerId);
-                  });
-            })
-            ->whereNotIn('idt_ficha', $this->selectedFichas)
-            ->count();
-
-        $selectedCount = count($this->selectedFichas);
-        $totalCountAfterDesignation = $currentCount + $selectedCount;
-
-        if ($totalCountAfterDesignation > 3) {
-            $nomeCasal = $v->nom_pessoa . ($v->parceiro ? ' e ' . $v->parceiro->nom_pessoa : '');
-            $restantes = 3 - $currentCount;
-
-            if ($restantes <= 0) {
-                $msg = "O visitador/casal {$nomeCasal} já possui o limite de 3 fichas designadas.";
-            } else {
-                $msg = "Não é possível designar as {$selectedCount} fichas para {$nomeCasal}. O limite é de 3 fichas por visitador/casal, e eles já possuem {$currentCount} ficha(s) designada(s) (máximo disponível: {$restantes}).";
-            }
-
-            $this->addError('pessoaVisitacaoId', $msg);
-            return;
-        }
-
-        \App\Models\Ficha::whereIn('idt_ficha', $this->selectedFichas)
-            ->update([
-                'idt_pessoa_visitacao' => $this->pessoaVisitacaoId,
-                'tip_situacao' => \App\Enums\TipoSituacao::SELECIONADA->value,
-            ]);
-
-        $this->modal('modal-visitacao')->close();
-        $this->selectedFichas = [];
-        $this->selectAll = false;
-
-        $this->dispatch('notify',
-            message: "Visitação designada com sucesso e fichas marcadas como Selecionada.",
-            type: 'sucesso'
-        );
-    }
-
-    private function getVisitadores()
-    {
-        if (!$this->evento?->idt_evento) {
-            return collect();
-        }
-
-        $visitadoresRaw = \App\Models\Pessoa::where(function ($query) {
-            $query->whereHas('trabalhadores', function ($q) {
-                $q->where('idt_evento', $this->evento->idt_evento)
-                  ->whereHas('equipe', function ($qe) {
-                      $qe->where('des_grupo', 'like', '%Visitação%');
-                  });
-            })
-            ->orWhereHas('parceiro.trabalhadores', function ($q) {
-                $q->where('idt_evento', $this->evento->idt_evento)
-                  ->whereHas('equipe', function ($qe) {
-                      $qe->where('des_grupo', 'like', '%Visitação%');
-                  });
-            });
-        })->with('parceiro')->orderBy('nom_pessoa', 'asc')->get();
-
-        $processed = [];
-        return $visitadoresRaw->reject(function ($v) use (&$processed) {
-            if (in_array($v->idt_pessoa, $processed)) {
-                return true;
-            }
-
-            $partnerId = $v->idt_parceiro ?: \App\Models\Pessoa::where('idt_parceiro', $v->idt_pessoa)->value('idt_pessoa');
-
-            // Ocultar casal/pessoa caso já tenha 3 ou mais fichas atribuídas no evento atual
-            $fichaCount = \App\Models\Ficha::where('idt_evento', $this->evento->idt_evento)
-                ->where(function ($q) use ($v, $partnerId) {
-                    $q->where('idt_pessoa_visitacao', $v->idt_pessoa)
-                      ->when($partnerId, function ($q2) use ($partnerId) {
-                          $q2->orWhere('idt_pessoa_visitacao', $partnerId);
-                      });
-                })
-                ->count();
-
-            if ($fichaCount >= 3) {
-                return true;
-            }
-
-            if ($partnerId) {
-                $processed[] = $partnerId;
-            }
-            return false;
-        });
     }
 
     public function atualizarSituacao(int $fichaId, string $situacaoValor): void
@@ -261,7 +135,7 @@ new class extends Component {
     }
 
     /**
-     * Resolve as rotas de show, edit e destroy de acordo com o movimento do evento.
+     * Resolve as rotas de show, edit de acordo com o movimento do evento.
      */
     private function rotasPorMovimento(\App\Models\Ficha $ficha): array
     {
@@ -450,7 +324,6 @@ new class extends Component {
                     });
                 })
                 ->paginate(10),
-            'visitadores' => $this->getVisitadores(),
         ];
     }
 }; ?>
@@ -467,6 +340,7 @@ new class extends Component {
             </div>
             <flux:subheading>Analise e aprove os candidatos para este evento.</flux:subheading>
         </div>
+
 
         <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto items-end md:items-center">
             @if(count($selectedFichas) > 0)
@@ -579,9 +453,7 @@ new class extends Component {
 
     <flux:table>
         <flux:table.columns>
-            <flux:table.column class="w-10">
-                <flux:checkbox wire:model.live="selectAll" wire:key="checkbox-select-all" />
-            </flux:table.column>
+
             <flux:table.column>Candidato</flux:table.column>
             <flux:table.column>Data Nasc</flux:table.column>
             <flux:table.column>Endereço</flux:table.column>
@@ -604,9 +476,7 @@ new class extends Component {
                     $isRegiao = preg_match('/Lago Norte|SHIN|Setor de Mans.es|Taquari|Varj.o/iu', (string) $ficha->des_endereco);
                 @endphp
             <flux:table.row :key="'ficha-'.$ficha->idt_ficha">
-                <flux:table.cell>
-                    <flux:checkbox wire:model.live="selectedFichas" value="{{ $ficha->idt_ficha }}" wire:key="'checkbox-'.$ficha->idt_ficha" />
-                </flux:table.cell>
+
                 <flux:table.cell>
                     <div class="font-medium text-zinc-900 dark:text-white flex items-center gap-1.5">
                         <span>{{ $ficha->nom_candidato }}</span>
@@ -762,96 +632,5 @@ new class extends Component {
         {{ $fichas->links(data: ['scrollTo' => false]) }}
     </div>
 
-    {{-- Modal de Designação de Visitação --}}
-    <flux:modal name="modal-visitacao" class="min-w-[20rem] md:min-w-[30rem]">
-        <form 
-            wire:submit="designarVisitacao" 
-            x-data="{
-                open: false,
-                selectedId: @entangle('pessoaVisitacaoId'),
-                selectedLabel: 'Selecione um visitador...',
-                selectedAddress: '',
-                init() {
-                    this.$watch('selectedId', (val) => {
-                        if (!val) {
-                            this.selectedLabel = 'Selecione um visitador...';
-                            this.selectedAddress = '';
-                        }
-                    });
-                }
-            }"
-            class="space-y-6 transition-all duration-200"
-            :class="open ? 'pb-52' : ''"
-        >
-            <div>
-                <flux:heading size="lg">Designar Visitação</flux:heading>
-                <flux:subheading>Selecione o visitador (ou casal) para as {{ count($selectedFichas) }} ficha(s) selecionada(s).</flux:subheading>
-            </div>
 
-            <div class="relative">
-                <flux:label>Visitador(es)</flux:label>
-                
-                <!-- Botão do Dropdown -->
-                <button 
-                    type="button" 
-                    @click="open = !open" 
-                    @click.away="open = false"
-                    class="mt-1 w-full flex items-center justify-between rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-left p-3 cursor-pointer"
-                >
-                    <div class="flex-1 min-w-0 pr-4">
-                        <div class="font-medium text-sm text-zinc-900 dark:text-zinc-100 truncate text-left" x-text="selectedLabel"></div>
-                        <div x-show="selectedAddress" class="text-xs text-zinc-400 dark:text-zinc-500 truncate text-left mt-0.5" x-text="selectedAddress"></div>
-                    </div>
-                    <flux:icon.chevron-down class="size-4 text-zinc-400 dark:text-zinc-500 shrink-0" />
-                </button>
-
-                <!-- Lista de Opções -->
-                <div 
-                    x-show="open" 
-                    x-transition:enter="transition ease-out duration-100"
-                    x-transition:enter-start="opacity-0 scale-95"
-                    x-transition:enter-end="opacity-100 scale-100"
-                    x-transition:leave="transition ease-in duration-75"
-                    x-transition:leave-start="opacity-100 scale-100"
-                    x-transition:leave-end="opacity-0 scale-95"
-                    class="absolute z-[110] mt-1 w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-xl max-h-60 overflow-y-auto"
-                    style="display: none;"
-                >
-                    <ul class="p-1 divide-y divide-zinc-100 dark:divide-zinc-700/50">
-                        @foreach ($visitadores as $v)
-                            @php
-                                $label = $v->nom_pessoa . ($v->parceiro ? ' e ' . $v->parceiro->nom_pessoa : '');
-                                $address = $v->des_endereco ?: 'Endereço não cadastrado';
-                            @endphp
-                            <li>
-                                <button 
-                                    type="button"
-                                    @click="selectedId = {{ $v->idt_pessoa }}; selectedLabel = '{{ addslashes($label) }}'; selectedAddress = '{{ addslashes($address) }}'; open = false;"
-                                    class="w-full text-left p-3 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition flex flex-col cursor-pointer"
-                                    :class="selectedId == {{ $v->idt_pessoa }} ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''"
-                                >
-                                    <span class="font-semibold text-sm text-zinc-900 dark:text-zinc-100">{{ $label }}</span>
-                                    <span class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{{ $address }}</span>
-                                </button>
-                            </li>
-                        @endforeach
-                        @if ($visitadores->isEmpty())
-                            <li class="p-4 text-center text-sm text-zinc-500 italic">
-                                Nenhum visitador disponível
-                            </li>
-                        @endif
-                    </ul>
-                </div>
-
-                @error('pessoaVisitacaoId') <span class="text-red-500 text-sm mt-1 block">{{ $message }}</span> @enderror
-            </div>
-
-            <div class="flex gap-2 justify-end">
-                <flux:modal.close>
-                    <flux:button variant="ghost">Cancelar</flux:button>
-                </flux:modal.close>
-                <flux:button type="submit" variant="primary">Confirmar</flux:button>
-            </div>
-        </form>
-    </flux:modal>
 </div>
