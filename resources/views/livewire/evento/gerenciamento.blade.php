@@ -42,7 +42,6 @@ new class extends Component {
         $todasAbas = [
             'resumo'       => ['icon' => 'chart-bar',      'label' => 'Resumo'],
             'fichas'       => ['icon' => 'document-text', 'label' => 'Fichas',        'encontro_only' => true],
-            'designacao'   => ['icon' => 'user-plus',     'label' => 'Visitação',     'encontro_only' => true],
             'participantes'=> ['icon' => 'user-group',    'label' => 'Participantes'],
             'restricoes'   => ['icon' => 'shield-check',  'label' => 'Restrições'],
             'voluntarios'  => ['icon' => 'hand-raised',   'label' => 'Voluntários',   'encontro_only' => true],
@@ -167,7 +166,6 @@ new class extends Component {
             @switch($activeTab)
                 @case('resumo') <livewire:evento.partials.resumo :evento="$evento" /> @break
                 @case('fichas') <livewire:evento.partials.fichas :evento="$evento" /> @break
-                @case('designacao') <livewire:evento.partials.designacao :evento="$evento" /> @break
                 @case('participantes') <livewire:evento.partials.participantes :evento="$evento" /> @break
                 @case('voluntarios') <livewire:evento.partials.voluntarios :evento="$evento" /> @break
                 @case('trabalhadores') <livewire:evento.partials.trabalhadores :evento="$evento" /> @break
