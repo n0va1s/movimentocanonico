@@ -16,10 +16,6 @@
 
         <div class="mb-6 bg-white dark:bg-zinc-800 rounded-md shadow p-6">
 
-            <h2 class="text-xl font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                <x-heroicon-o-user-plus class="text-blue-600 w-6 h-6" /> Dados da Pessoa
-            </h2>
-
             <form method="POST"
                 action="{{ $pessoa->exists ? route('pessoas.update', $pessoa) : route('pessoas.store') }}"
                 enctype="multipart/form-data" class="space-y-6">

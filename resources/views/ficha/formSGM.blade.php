@@ -202,6 +202,9 @@
                             <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold text-white {{ $style['bg'] }} shadow-sm">
                                 <x-heroicon-s-check class="w-4 h-4" />
                                 {{ $situacao->label() }}
+                                @if($situacao->mail()[0] === 'Sim')
+                                    <x-heroicon-o-envelope class="w-4 h-4" title="Envia e-mail ao ser alterado para esta situação" />
+                                @endif
                             </span>
                         @else
                             <form method="POST" action="{{ route('sgm.situacao', $ficha->idt_ficha) }}" class="inline">
@@ -214,7 +217,7 @@
                                     @elseif($situacao->value === 'S')
                                         <x-heroicon-o-check-circle class="w-4 h-4" />
                                     @elseif($situacao->value === 'E')
-                                        <x-heroicon-o-envelope class="w-4 h-4" />
+                                        <x-heroicon-o-paper-airplane class="w-4 h-4" />
                                     @elseif($situacao->value === 'R')
                                         <x-heroicon-o-document-check class="w-4 h-4" />
                                     @elseif($situacao->value === 'P')
@@ -231,6 +234,9 @@
                                         <x-heroicon-o-check-circle class="w-4 h-4" />
                                     @endif
                                     {{ $situacao->label() }}
+                                    @if($situacao->mail()[0] === 'Sim')
+                                        <x-heroicon-o-envelope class="w-4 h-4" title="Envia e-mail ao ser alterado para esta situação" />
+                                    @endif
                                 </button>
                             </form>
                         @endif
