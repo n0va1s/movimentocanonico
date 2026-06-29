@@ -340,8 +340,8 @@ new class extends Component {
             </flux:button>
         </div>
 
-        {{-- Barra de Filtros e Busca (Apenas Admin) --}}
-        @if (auth()->user()->isAdmin())
+        {{-- Barra de Filtros e Busca --}}
+        @if ($this->podeDesignar())
             <div class="flex flex-col gap-4">
                 <div class="flex flex-col sm:flex-row gap-3 w-full items-center">
                     {{-- Busca --}}
