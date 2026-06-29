@@ -67,6 +67,14 @@ Route::get('/encerrar-eventos', function () {
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::post('/', [HomeController::class, 'contato'])->name('home.contato');
+Route::get('/fichas/{ficha}/autorizar', function (App\Models\Ficha $ficha) {
+    if ($ficha->tip_situacao === App\Enums\TipoSituacao::ENVIADA) {
+        $ficha->tip_situacao = App\Enums\TipoSituacao::RECEBIDA;
+        $ficha->save();
+        return redirect()->route('home')->with('success', 'Inscrição autorizada com sucesso!');
+    }
+    return redirect()->route('home')->with('info', 'Esta inscrição já foi processada ou não está aguardando autorização.');
+})->name('fichas.autorizar')->middleware('signed');
 
 // ---------------------------------------------------------------------------
 // Área autenticada — todos os perfis

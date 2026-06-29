@@ -87,37 +87,37 @@ class Ficha extends Model
 
     public function evento()
     {
-        return $this->belongsTo(Evento::class, 'idt_evento');
+        return $this->belongsTo(Evento::class, 'idt_evento', 'idt_evento');
     }
 
     public function pessoa()
     {
-        return $this->belongsTo(Pessoa::class, 'idt_pessoa');
+        return $this->belongsTo(Pessoa::class, 'idt_pessoa', 'idt_pessoa');
     }
 
     public function fichaVem()
     {
-        return $this->hasOne(FichaVem::class, 'idt_ficha');
+        return $this->hasOne(FichaVem::class, 'idt_ficha', 'idt_ficha');
     }
 
     public function fichaEcc()
     {
-        return $this->hasOne(FichaEcc::class, 'idt_ficha');
+        return $this->hasOne(FichaEcc::class, 'idt_ficha', 'idt_ficha');
     }
 
     public function fichaSGM()
     {
-        return $this->hasOne(FichaSGM::class, 'idt_ficha');
+        return $this->hasOne(FichaSGM::class, 'idt_ficha', 'idt_ficha');
     }
 
     public function fichaSaude()
     {
-        return $this->hasMany(FichaSaude::class, 'idt_ficha');
+        return $this->hasMany(FichaSaude::class, 'idt_ficha', 'idt_ficha');
     }
 
     public function foto()
     {
-        return $this->hasOne(FichaFoto::class, 'idt_ficha');
+        return $this->hasOne(FichaFoto::class, 'idt_ficha', 'idt_ficha');
     }
 
     public function visitador()

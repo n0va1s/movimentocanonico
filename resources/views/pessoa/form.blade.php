@@ -282,10 +282,16 @@
 
                             @foreach ($restricoes as $restricao)
                                 @php
-                                    $checked = in_array($restricao->idt_restricao, $restricoesSelecionadas);
+                                    $id = $restricao->idt_restricao;
+                                    if (old('_token')) {
+                                        $checked = is_array(old('restricoes')) && array_key_exists($id, old('restricoes'));
+                                    } else {
+                                        $checked = in_array($id, $restricoesSelecionadas);
+                                    }
+                                    
                                     $complemento = old(
-                                        "complementos.{$restricao->idt_restricao}",
-                                        $complementos[$restricao->idt_restricao] ?? '',
+                                        "complementos.{$id}",
+                                        $complementos[$id] ?? '',
                                     );
                                 @endphp
 

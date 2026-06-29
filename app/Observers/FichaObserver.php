@@ -19,8 +19,12 @@ class FichaObserver
      */
     public function updated(Ficha $ficha): void
     {
-        if ($ficha->wasChanged('tip_situacao') && $ficha->tip_situacao === \App\Enums\TipoSituacao::APROVADA) {
-            \App\Events\FichaAprovadaEvent::dispatch($ficha);
+        if ($ficha->wasChanged('tip_situacao')) {
+            if ($ficha->tip_situacao === \App\Enums\TipoSituacao::APROVADA) {
+                \App\Events\FichaAprovadaEvent::dispatch($ficha);
+            } elseif ($ficha->tip_situacao === \App\Enums\TipoSituacao::ENVIADA) {
+                \App\Events\FichaEnviadaEvent::dispatch($ficha);
+            }
         }
     }
 
