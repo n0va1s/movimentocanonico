@@ -490,5 +490,60 @@ describe('Minhas Fichas - Admin Designation via Component', function () {
             ->assertHasErrors(['pessoaVisitacaoId'])
             ->assertNotDispatched('notify');
     });
+
+    test('coordenador da visitacao no evento ativo pode designar fichas', function () {
+        $coordUser = User::factory()->create(['role' => 'coord', 'idt_movimento' => 2]);
+        $coordPessoa = $coordUser->pessoa;
+
+        // Equipe de visitação
+        $equipeVisitacao = \App\Models\TipoEquipe::create([
+            'idt_movimento' => 2,
+            'des_grupo' => 'Visitação'
+        ]);
+
+        // Vincula como trabalhador coordenador no evento
+        \App\Models\Trabalhador::create([
+            'idt_pessoa' => $coordPessoa->idt_pessoa,
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'idt_equipe' => $equipeVisitacao->idt_equipe,
+            'ind_coordenador' => true,
+        ]);
+
+        $this->actingAs($coordUser);
+
+        // Deve conseguir ver a listagem e designar
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+            ->set('selectedFichas', [(string)$this->ficha1->idt_ficha, (string)$this->ficha2->idt_ficha])
+            ->assertSee('Designar Visitação')
+            ->set('pessoaVisitacaoId', $this->visitor->pessoa->idt_pessoa)
+            ->call('designarVisitacao')
+            ->assertHasNoErrors();
+
+        expect($this->ficha1->fresh()->idt_pessoa_visitacao)->toBe($this->visitor->pessoa->idt_pessoa);
+    });
+
+    test('coordenador de outra equipe nao pode designar fichas', function () {
+        $coordUser = User::factory()->create(['role' => 'coord', 'idt_movimento' => 2]);
+        $coordPessoa = $coordUser->pessoa;
+
+        // Equipe diferente (ex: Cozinha)
+        $equipeCozinha = \App\Models\TipoEquipe::create([
+            'idt_movimento' => 2,
+            'des_grupo' => 'Cozinha'
+        ]);
+
+        // Vincula como trabalhador coordenador no evento
+        \App\Models\Trabalhador::create([
+            'idt_pessoa' => $coordPessoa->idt_pessoa,
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'idt_equipe' => $equipeCozinha->idt_equipe,
+            'ind_coordenador' => true,
+        ]);
+
+        $this->actingAs($coordUser);
+
+        $this->get(route('minhas-fichas.index', ['evento' => $this->eventoVem]))
+            ->assertForbidden();
+    });
 });
 

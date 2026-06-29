@@ -23,7 +23,21 @@ new class extends Component {
 
     public function mount(?Evento $evento = null): void
     {
-        if (!auth()->check() || !auth()->user()->hasRole('admin', 'visit')) {
+        $user = auth()->user();
+        if (!$user) {
+            abort(403, 'Acesso não autorizado.');
+        }
+
+        $temAcesso = $user->isAdmin() || $user->isVisitacao() || (
+            $user->isCoordenador() && \App\Models\Trabalhador::where('idt_pessoa', $user->pessoa?->idt_pessoa)
+                ->where('ind_coordenador', true)
+                ->whereHas('equipe', function ($q) {
+                    $q->where('des_grupo', 'like', '%Visitação%');
+                })
+                ->exists()
+        );
+
+        if (!$temAcesso) {
             abort(403, 'Acesso não autorizado.');
         }
 
@@ -161,7 +175,7 @@ new class extends Component {
 
     public function designarVisitacao(): void
     {
-        abort_if(!auth()->user()->isAdmin(), 403);
+        abort_if(!$this->podeDesignar(), 403);
 
         $this->validate([
             'pessoaVisitacaoId' => 'required|exists:pessoa,idt_pessoa',
@@ -211,6 +225,30 @@ new class extends Component {
         session()->flash('success', 'Visitação designada com sucesso e fichas marcadas como Selecionada.');
     }
 
+    public function podeDesignar(): bool
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return false;
+        }
+
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        if (($user->hasRole('coord', 'visit')) && $this->eventoId) {
+            return \App\Models\Trabalhador::where('idt_evento', $this->eventoId)
+                ->where('idt_pessoa', $user->pessoa?->idt_pessoa)
+                ->where('ind_coordenador', true)
+                ->whereHas('equipe', function ($q) {
+                    $q->where('des_grupo', 'like', '%Visitação%');
+                })
+                ->exists();
+        }
+
+        return false;
+    }
+
     public function with(): array
     {
         $user = auth()->user();
@@ -235,8 +273,8 @@ new class extends Component {
         $fichasQuery = Ficha::with(['fichaVem', 'fichaEcc', 'fichaSGM', 'evento', 'visitador', 'visitador.parceiro']);
 
         // A ficha só pode aparecer para a pessoa logada se for o visitador designado (ou seu parceiro/cônjuge),
-        // exceto se for administrador (admin), caso em que vê todas as fichas de visitação do evento.
-        if (!$user->isAdmin()) {
+        // exceto se for administrador (admin) ou se puder designar, caso em que vê todas as fichas de visitação do evento.
+        if (!$this->podeDesignar()) {
             if (!$pessoaId) {
                 $fichasQuery->whereRaw('1 = 0');
             } else {
@@ -408,7 +446,7 @@ new class extends Component {
                     };
                 @endphp
                 <div class="relative bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 p-5 shadow-sm hover:shadow-md transition duration-200 flex flex-col h-full justify-between">
-                    @if (auth()->user()->isAdmin())
+                    @if ($this->podeDesignar())
                         <div class="absolute top-4 right-4 z-10" wire:click.stop>
                             <input 
                                 type="checkbox" 
@@ -464,7 +502,7 @@ new class extends Component {
                         </div>
 
                         {{-- Informações extras para admin --}}
-                        @if (auth()->user()->isAdmin() && $ficha->visitador)
+                        @if ($this->podeDesignar() && $ficha->visitador)
                             @php
                                 $v = $ficha->visitador;
                                 $nomeLabel = $v->nom_pessoa;
@@ -601,7 +639,7 @@ new class extends Component {
     @endif
 
     {{-- Modal de Designação de Visitação --}}
-    @if (auth()->user()->isAdmin() && count($selectedFichas) > 0)
+    @if ($this->podeDesignar() && count($selectedFichas) > 0)
         <flux:modal name="modal-visitacao" class="min-w-[20rem] md:min-w-[30rem]">
             <form 
                 wire:submit="designarVisitacao" 
