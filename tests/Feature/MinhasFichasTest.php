@@ -68,8 +68,8 @@ describe('Minhas Fichas Access Authorization', function () {
             ->assertForbidden();
     });
 
-    test('user with role espec gets 403', function () {
-        $user = User::factory()->create(['role' => 'espec']);
+    test('user with role dirig gets 403', function () {
+        $user = User::factory()->create(['role' => 'dirig']);
         $this->actingAs($user)
             ->get(route('minhas-fichas.index'))
             ->assertForbidden();
@@ -146,8 +146,6 @@ describe('Minhas Fichas Scoping and Filtering', function () {
             ->assertDontSee('ECC Candidate');
     });
 
-<<<<<<< HEAD
-=======
     test('visitor can see fichas assigned to their spouse/partner', function () {
         $visitorUserA = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
         $visitorPessoaA = $visitorUserA->pessoa;
@@ -169,8 +167,6 @@ describe('Minhas Fichas Scoping and Filtering', function () {
         Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
             ->assertSee('Spouse Assigned Candidate');
     });
-
->>>>>>> d81e7f8 (feat: implement visitation management module for event participants with assignment and filtering capabilities)
     test('ficha disappears from the visitor list when marked as VISITADA', function () {
         $visitorUser = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
         $visitorPessoa = $visitorUser->pessoa;
@@ -193,7 +189,7 @@ describe('Minhas Fichas Scoping and Filtering', function () {
             ->assertDontSee('Visitada Candidate');
     });
 
-    test('admin only sees fichas where they are the designated visitor', function () {
+    test('admin can see all event fichas in index for designation purposes', function () {
         $adminUser = User::factory()->create(['role' => 'admin']);
         $adminPessoa = $adminUser->pessoa;
 
@@ -217,9 +213,9 @@ describe('Minhas Fichas Scoping and Filtering', function () {
         ]);
 
         $this->actingAs($adminUser);
-        Volt::test('minhas-fichas.index')
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
             ->assertSee('Ficha for Admin')
-            ->assertDontSee('Ficha for Visitor');
+            ->assertSee('Ficha for Visitor');
     });
 
     test('visitor can filter fichas by active event', function () {
@@ -320,9 +316,9 @@ describe('Minhas Fichas Visitor Designation', function () {
         expect($this->ficha->fresh()->idt_pessoa_visitacao)->toBe($this->visitorPessoa->idt_pessoa);
     });
 
-    test('specialist (espec) can assign a visitor to a ficha', function () {
-        $espec = User::factory()->create(['role' => 'espec', 'idt_movimento' => 2]);
-        $this->actingAs($espec)
+    test('dirigente (dirig) can assign a visitor to a ficha', function () {
+        $dirig = User::factory()->create(['role' => 'dirig', 'idt_movimento' => 2]);
+        $this->actingAs($dirig)
             ->post(route('fichas.designar-visitador', $this->ficha->idt_ficha), [
                 'idt_pessoa_visitacao' => $this->visitorPessoa->idt_pessoa
             ])
@@ -349,9 +345,6 @@ describe('Minhas Fichas Visitor Designation', function () {
             ->assertForbidden();
     });
 });
-<<<<<<< HEAD
-=======
-
 describe('Minhas Fichas - Admin Designation via Component', function () {
     beforeEach(function () {
         $this->admin = User::factory()->create(['role' => 'admin']);
@@ -574,5 +567,3 @@ describe('Minhas Fichas - Admin Designation via Component', function () {
             ->assertForbidden();
     });
 });
-
->>>>>>> d81e7f8 (feat: implement visitation management module for event participants with assignment and filtering capabilities)

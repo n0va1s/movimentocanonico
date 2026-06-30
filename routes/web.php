@@ -93,7 +93,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/termo-sgm', fn () => view('termos.termoSGM'))->name('termo.sgm');
     Route::get('/termo-vem', fn () => view('termos.termoVEM'))->name('termo.vem');
 
-    Route::middleware(['role:admin,coord,espec,sales'])->group(function () {
+    Route::middleware(['role:admin,coord,dirig,sales'])->group(function () {
         Route::get('/minha-equipe', [TrabalhadorController::class, 'minhaEquipe'])->name('trabalhadores.minha-equipe');
     });
     Route::get('/trabalhadores/create', [TrabalhadorController::class, 'create'])->name('trabalhadores.create');
@@ -125,13 +125,13 @@ Route::middleware(['auth'])->group(function () {
     // Gerenciamento de evento: admin + coord + espec
     // -----------------------------------------------------------------------
 
-    Route::middleware(['role:admin,espec'])->group(function () {
+    Route::middleware(['role:admin,dirig'])->group(function () {
         Volt::route('eventos/{evento}/gerenciamento', 'evento.gerenciamento')
             ->name('eventos.gerenciamento')
             ->withTrashed();
     });
 
-    Route::middleware(['role:admin,coord,espec'])->group(function () {
+    Route::middleware(['role:admin,coord,dirig'])->group(function () {
         // Módulo de Mensagens
         Volt::route('mensagens', 'mensagens.index')->name('mensagens.index');
         Volt::route('mensagens/criar', 'mensagens.create')->name('mensagens.create');
@@ -141,7 +141,8 @@ Route::middleware(['auth'])->group(function () {
     // -----------------------------------------------------------------------
     // Importação de Planilhas (Definido antes do wildcard /eventos/{evento} para evitar 404)
     // -----------------------------------------------------------------------
-    Route::middleware(['role:admin,espec'])->group(function () {
+    Route::middleware(['role:admin,dirig'])->group(function () {
+        Route::get('/configuracoes', [ConfiguracoesController::class, 'index'])->name('configuracoes.index');
         Route::get('/eventos/importar', [ImportController::class, 'index'])->name('eventos.importar');
         Route::post('/eventos/importar/participantes', [ImportController::class, 'importarParticipantes'])->name('eventos.importar.participantes');
         Route::post('/eventos/importar/trabalhadores', [ImportController::class, 'importarTrabalhadores'])->name('eventos.importar.trabalhadores');
@@ -154,9 +155,6 @@ Route::middleware(['auth'])->group(function () {
     // -----------------------------------------------------------------------
 
     Route::middleware(['role:admin'])->group(function () {
-
-        // Configurações Globais
-        Route::get('/configuracoes', [ConfiguracoesController::class, 'index'])->name('configuracoes.index');
 
         // Contatos
         Route::get('/contatos', [ContatoController::class, 'index'])->name('contatos.index');
@@ -182,9 +180,9 @@ Route::middleware(['auth'])->group(function () {
 
     });
 
-    Route::middleware(['role:admin,espec,visit'])->group(function () {
+    Route::middleware(['role:admin,dirig,visit'])->group(function () {
 
-        Route::middleware(['espec.movimento:2'])->group(function () {
+        Route::middleware(['dirig.movimento:2'])->group(function () {
             // Fichas VEM — listagem, aprovação e CRUD
             Route::get('/fichas/vem', [FichaVemController::class, 'index'])->name('vem.index');
             Route::get('fichas/vem/{id}/approve', [FichaVemController::class, 'approve'])->name('vem.approve');
@@ -197,7 +195,7 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/fichas/vem/{vem}', [FichaVemController::class, 'destroy'])->name('vem.destroy');
         });
 
-        Route::middleware(['espec.movimento:1'])->group(function () {
+        Route::middleware(['dirig.movimento:1'])->group(function () {
             // Fichas ECC — listagem, aprovação e CRUD
             Route::get('/fichas/ecc', [FichaEccController::class, 'index'])->name('ecc.index');
             Route::get('fichas/ecc/{id}/approve', [FichaEccController::class, 'approve'])->name('ecc.approve');
@@ -210,7 +208,7 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/fichas/ecc/{ecc}', [FichaEccController::class, 'destroy'])->name('ecc.destroy');
         });
 
-        Route::middleware(['espec.movimento:3'])->group(function () {
+        Route::middleware(['dirig.movimento:3'])->group(function () {
             // Fichas SGM — listagem, aprovação e CRUD
             Route::get('/fichas/sgm', [FichaSGMController::class, 'index'])->name('sgm.index');
             Route::get('fichas/sgm/{id}/approve', [FichaSGMController::class, 'approve'])->name('sgm.approve');
@@ -224,7 +222,7 @@ Route::middleware(['auth'])->group(function () {
         });
     });
 
-    Route::middleware(['role:admin,espec'])->group(function () {
+    Route::middleware(['role:admin,dirig'])->group(function () {
         Route::post('/fichas/{id}/designar-visitador', function (\Illuminate\Http\Request $request, $id) {
             $request->validate([
                 'idt_pessoa_visitacao' => 'nullable|exists:pessoa,idt_pessoa',

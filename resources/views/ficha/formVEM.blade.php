@@ -135,7 +135,7 @@
             </div>
         @endif
 
-        @if (Auth::user()?->hasRole('admin', 'espec', 'coord') && $ficha->exists)
+        @if (Auth::user()?->hasRole('admin', 'dirig', 'coord') && $ficha->exists)
             <div class="bg-white dark:bg-zinc-800 rounded-xl shadow border border-gray-200 dark:border-zinc-700 p-4 sm:p-6 mb-6">
                 <p class="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-3">Mudar Situação para:</p>
                 <div class="flex flex-wrap gap-2">
@@ -186,7 +186,7 @@
                         @endif
                     @endforeach
                 </div>
-                @if(Auth::user()?->hasRole('admin', 'espec'))
+                @if(Auth::user()?->hasRole('admin', 'dirig'))
                     <div class="mt-4 border-t border-gray-100 dark:border-zinc-700 pt-4">
                         <form method="POST" action="{{ route('fichas.designar-visitador', $ficha->idt_ficha) }}">
                             @csrf

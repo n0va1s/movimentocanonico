@@ -34,7 +34,7 @@ class EventoController extends Controller
         $tip_evento = $request->input('tip_evento') ?? $request->input('eventTypeFilter');
 
         $status = $request->input('status') ?? 'ativos';
-        $isStaff = Auth::user() && (Auth::user()->isAdmin() || Auth::user()->isEspec());
+        $isStaff = Auth::user() && (Auth::user()->isAdmin() || Auth::user()->isDirig());
 
         if ($status === 'encerrados' && $isStaff) {
             $query = Evento::onlyTrashed();

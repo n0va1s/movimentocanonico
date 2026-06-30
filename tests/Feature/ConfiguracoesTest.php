@@ -23,9 +23,9 @@ test('admin can access configuracoes index and see all authorized cards', functi
         ->assertSee('Fichas ECC');
 });
 
-test('especialista can access configuracoes index and only see the 4 authorized cards', function () {
-    $espec = User::factory()->create(['role' => 'espec']);
-    $this->actingAs($espec)
+test('dirigente can access configuracoes index and only see the 4 authorized cards', function () {
+    $dirig = User::factory()->create(['role' => 'dirig']);
+    $this->actingAs($dirig)
         ->get(route('configuracoes.index'))
         ->assertStatus(200)
         ->assertViewIs('configuracoes.index')

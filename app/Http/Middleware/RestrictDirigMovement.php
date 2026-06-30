@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class RestrictEspecMovement
+class RestrictDirigMovement
 {
     /**
      * Handle an incoming request.
@@ -17,7 +17,7 @@ class RestrictEspecMovement
     {
         $user = auth()->user();
 
-        if ($user && ($user->isEspec() || $user->isVisitacao())) {
+        if ($user && ($user->isDirig() || $user->isVisitacao())) {
             if (is_null($user->idt_movimento) || (int) $user->idt_movimento !== $movimento) {
                 abort(403, 'Acesso não autorizado para este movimento.');
             }

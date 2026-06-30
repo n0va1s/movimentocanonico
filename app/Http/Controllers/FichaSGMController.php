@@ -231,11 +231,6 @@ class FichaSGMController extends Controller
 
         $ficha = Ficha::with(['fichaSGM', 'fichaSaude', 'foto'])->findOrFail($id);
 
-<<<<<<< HEAD
-        $visitadores = \App\Models\Pessoa::whereHas('usuario', function ($q) {
-            $q->where('role', \App\Models\User::ROLE_VISITACAO);
-        })->orderBy('nom_pessoa', 'asc')->get();
-=======
         $eventoId = $ficha->idt_evento;
         $visitadoresRaw = \App\Models\Pessoa::where(function ($query) use ($eventoId) {
             $query->whereHas('trabalhadores', function ($q) use ($eventoId) {
@@ -262,7 +257,6 @@ class FichaSGMController extends Controller
             }
             return false;
         });
->>>>>>> d81e7f8 (feat: implement visitation management module for event participants with assignment and filtering capabilities)
 
         return view('ficha.formSGM', array_merge($this->fichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,

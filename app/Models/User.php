@@ -23,7 +23,7 @@ class User extends Authenticatable
 
     const ROLE_COORDENADOR = 'coord';
 
-    const ROLE_ESPEC = 'espec';
+    const ROLE_DIRIG = 'dirig';
 
     const ROLE_SALES = 'sales';
 
@@ -41,11 +41,11 @@ class User extends Authenticatable
         return strtolower($roleValue) === self::ROLE_COORDENADOR;
     }
 
-    public function isEspec(): bool
+    public function isDirig(): bool
     {
         $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
 
-        return strtolower($roleValue) === self::ROLE_ESPEC;
+        return strtolower($roleValue) === self::ROLE_DIRIG;
     }
 
     public function isVisitacao(): bool
@@ -93,7 +93,7 @@ class User extends Authenticatable
             return true;
         }
 
-        if ($this->isEspec()) {
+        if ($this->isDirig()) {
             $evento = \App\Models\Evento::find($idtEvento);
             if (! $evento || is_null($this->idt_movimento) || (int) $evento->idt_movimento !== (int) $this->idt_movimento) {
                 return false;

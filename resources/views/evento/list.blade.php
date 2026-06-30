@@ -17,7 +17,7 @@
         </header>
 
         {{-- Abas Ativos / Encerrados para Admin e Espec --}}
-        @if (Auth::user()?->isAdmin() || Auth::user()?->isEspec())
+        @if (Auth::user()?->isAdmin() || Auth::user()?->isDirig())
             <div class="border-b border-gray-200 dark:border-zinc-700 mb-6">
                 <nav class="-mb-px flex space-x-8" aria-label="Tabs">
                     <a href="{{ route('eventos.index', array_merge(request()->except('page'), ['status' => 'ativos'])) }}" 
@@ -153,7 +153,7 @@
                             <div class="flex items-center text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">
                                 <x-heroicon-o-tag class="w-4 h-4 mr-2 shrink-0" />
                                 <span class="flex-1">{{ $evento->tip_evento->label() }}</span>
-                                @if (Auth::user()?->isAdmin() || (Auth::user()?->isEspec() && (int) Auth::user()->idt_movimento === (int) $evento->idt_movimento))
+                                @if (Auth::user()?->isAdmin() || (Auth::user()?->isDirig() && (int) Auth::user()->idt_movimento === (int) $evento->idt_movimento))
                                     @can('acessar-gerenciamento-evento', $evento)
                                         <a href="{{ route('eventos.gerenciamento', $evento) }}"
                                            title="Gerenciamento"

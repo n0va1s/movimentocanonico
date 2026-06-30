@@ -26,7 +26,7 @@ class DashboardController extends Controller
         // Otimização 1: Eager Loading com colunas específicas para reduzir memória
         $proximoseventos = Evento::with(['movimento:idt_movimento,des_sigla'])
             ->where('dat_inicio', '>=', now())
-            ->when(auth()->user()->isEspec(), function ($q) {
+            ->when(auth()->user()->isDirig(), function ($q) {
                 $q->where('idt_movimento', auth()->user()->idt_movimento);
             })
             ->orderBy('dat_inicio', 'asc')
@@ -36,12 +36,12 @@ class DashboardController extends Controller
 
         // Otimização 3: Queries de contagem simples
         $qtdEventosAtivos = Evento::where('dat_termino', '>=', today())
-            ->when(auth()->user()->isEspec(), function ($q) {
+            ->when(auth()->user()->isDirig(), function ($q) {
                 $q->where('idt_movimento', auth()->user()->idt_movimento);
             })
             ->count();
 
-        $qtdFichasCadastradas = Ficha::when(auth()->user()->isEspec(), function ($q) {
+        $qtdFichasCadastradas = Ficha::when(auth()->user()->isDirig(), function ($q) {
             $q->whereHas('evento', function ($eq) {
                 $eq->where('idt_movimento', auth()->user()->idt_movimento);
             });
@@ -49,7 +49,7 @@ class DashboardController extends Controller
 
         // Otimização 4: Se o banco crescer muito, considere Cache::remember nestes contadores de distinct
         $qtdParticipantesCadastrados = Participante::distinct('idt_pessoa')
-            ->when(auth()->user()->isEspec(), function ($q) {
+            ->when(auth()->user()->isDirig(), function ($q) {
                 $q->whereHas('evento', function ($eq) {
                     $eq->where('idt_movimento', auth()->user()->idt_movimento);
                 });
@@ -57,7 +57,7 @@ class DashboardController extends Controller
             ->count('idt_pessoa');
 
         $qtdTrabalhadoresCadastrados = Trabalhador::distinct('idt_pessoa')
-            ->when(auth()->user()->isEspec(), function ($q) {
+            ->when(auth()->user()->isDirig(), function ($q) {
                 $q->whereHas('evento', function ($eq) {
                     $eq->where('idt_movimento', auth()->user()->idt_movimento);
                 });

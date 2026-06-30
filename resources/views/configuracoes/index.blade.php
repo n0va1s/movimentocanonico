@@ -91,7 +91,7 @@
             </a>
 
             <!-- Card 7: Fichas VEM -->
-            @if (Auth::user()->isAdmin() || (Auth::user()->isEspec() && Auth::user()->idt_movimento === \App\Models\TipoMovimento::VEM))
+            @if (Auth::user()->isAdmin() || (Auth::user()->isDirig() && Auth::user()->idt_movimento === \App\Models\TipoMovimento::VEM))
             <a href="{{ route('vem.index') }}"
                 class="block bg-white dark:bg-zinc-600 rounded-xl shadow hover:shadow-lg transition p-6 text-center">
                 <div class="flex flex-col items-center justify-center h-full">
@@ -103,7 +103,7 @@
             @endif
 
             <!-- Card 8: Fichas SGM -->
-            @if (Auth::user()->isAdmin() || (Auth::user()->isEspec() && Auth::user()->idt_movimento === \App\Models\TipoMovimento::SegueMe))
+            @if (Auth::user()->isAdmin() || (Auth::user()->isDirig() && Auth::user()->idt_movimento === \App\Models\TipoMovimento::SegueMe))
             <a href="{{ route('sgm.index') }}"
                 class="block bg-white dark:bg-zinc-600 rounded-xl shadow hover:shadow-lg transition p-6 text-center">
                 <div class="flex flex-col items-center justify-center h-full">
@@ -115,7 +115,7 @@
             @endif
 
             <!-- Card 9: Fichas ECC -->
-            @if (Auth::user()->isAdmin() || (Auth::user()->isEspec() && Auth::user()->idt_movimento === \App\Models\TipoMovimento::ECC))
+            @if (Auth::user()->isAdmin() || (Auth::user()->isDirig() && Auth::user()->idt_movimento === \App\Models\TipoMovimento::ECC))
             <a href="{{ route('ecc.index') }}"
                 class="block bg-white dark:bg-zinc-600 rounded-xl shadow hover:shadow-lg transition p-6 text-center">
                 <div class="flex flex-col items-center justify-center h-full">

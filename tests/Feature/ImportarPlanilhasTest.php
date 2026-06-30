@@ -18,8 +18,8 @@ beforeEach(function () {
 
     // Cria usuários com perfis variados
     $this->admin = User::factory()->create(['role' => 'admin']);
-    $this->espec = User::factory()->create([
-        'role' => 'espec',
+    $this->dirig = User::factory()->create([
+        'role' => 'dirig',
         'idt_movimento' => $this->movimento->idt_movimento,
     ]);
     $this->coord = User::factory()->create(['role' => 'coord']); // Não deve ter acesso

@@ -28,7 +28,7 @@ class ImportController extends Controller
                 ->orWhere('dat_termino', '>=', $hoje)
                 ->orWhereNull('dat_termino');
         })
-            ->when(auth()->user()->isEspec(), function ($q) {
+            ->when(auth()->user()->isDirig(), function ($q) {
                 $q->where('idt_movimento', auth()->user()->idt_movimento);
             })
             ->with('movimento')
@@ -57,7 +57,7 @@ class ImportController extends Controller
             set_time_limit(180);
             $evento = Evento::findOrFail($request->evento_id);
 
-            if (auth()->user()->isEspec() && (is_null(auth()->user()->idt_movimento) || (int) $evento->idt_movimento !== (int) auth()->user()->idt_movimento)) {
+            if (auth()->user()->isDirig() && (is_null(auth()->user()->idt_movimento) || (int) $evento->idt_movimento !== (int) auth()->user()->idt_movimento)) {
                 abort(403, 'Acesso não autorizado para este movimento.');
             }
 
@@ -108,7 +108,7 @@ class ImportController extends Controller
             set_time_limit(180);
             $evento = Evento::findOrFail($request->evento_id);
 
-            if (auth()->user()->isEspec() && (is_null(auth()->user()->idt_movimento) || (int) $evento->idt_movimento !== (int) auth()->user()->idt_movimento)) {
+            if (auth()->user()->isDirig() && (is_null(auth()->user()->idt_movimento) || (int) $evento->idt_movimento !== (int) auth()->user()->idt_movimento)) {
                 abort(403, 'Acesso não autorizado para este movimento.');
             }
 

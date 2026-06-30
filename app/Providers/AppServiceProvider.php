@@ -45,7 +45,7 @@ class AppServiceProvider extends ServiceProvider
                 return true;
             }
 
-            if ($user->isEspec()) {
+            if ($user->isDirig()) {
                 return ! is_null($user->idt_movimento) && (int) $evento->idt_movimento === (int) $user->idt_movimento;
             }
 
@@ -64,7 +64,7 @@ class AppServiceProvider extends ServiceProvider
                     return true;
                 }
 
-                if ($user->isEspec()) {
+                if ($user->isDirig()) {
                     return ! is_null($user->idt_movimento) && (int) $evento->idt_movimento === (int) $user->idt_movimento;
                 }
 

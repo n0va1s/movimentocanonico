@@ -24,8 +24,8 @@ beforeEach(function () {
     // Usuários por perfil
     $this->admin = User::factory()->create(['role' => 'admin']);
     $this->coord = User::factory()->create(['role' => 'coord']);
-    $this->espec = User::factory()->create([
-        'role' => 'espec',
+    $this->dirig = User::factory()->create([
+        'role' => 'dirig',
         'idt_movimento' => $this->movimento->idt_movimento,
     ]);
     $this->user = User::factory()->create(['role' => 'user']);
@@ -33,7 +33,7 @@ beforeEach(function () {
     // Pessoas vinculadas
     $pessoaAdmin = $this->admin->pessoa;
     $pessoaCoord = $this->coord->pessoa;
-    $pessoaEspec = $this->espec->pessoa;
+    $pessoaDirig = $this->dirig->pessoa;
     $pessoaUser = $this->user->pessoa;
 
     // Evento do tipo ENCONTRO (habilita todas as abas)
@@ -55,7 +55,7 @@ beforeEach(function () {
     ]);
 
     Trabalhador::factory()->create([
-        'idt_pessoa' => $pessoaEspec->idt_pessoa,
+        'idt_pessoa' => $pessoaDirig->idt_pessoa,
         'idt_evento' => $this->evento->idt_evento,
         'idt_equipe' => $this->equipe->idt_equipe,
         'ind_presente' => false,

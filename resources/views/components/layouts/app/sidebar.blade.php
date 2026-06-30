@@ -21,7 +21,7 @@
                     wire:navigate>
                     {{ __('Painel') }}
                 </flux:navlist.item>
-                @if (Auth::user() && Auth::user()->hasRole('admin', 'espec'))
+                @if (Auth::user() && Auth::user()->hasRole('admin', 'dirig'))
                     <flux:navlist.item icon="cog" :href="route('configuracoes.index')"
                         :current="request()->routeIs('configuracoes.index')" wire:navigate>
                         {{ __('Configurações') }}
@@ -41,7 +41,7 @@
                     :current="request()->routeIs('eventos.index')" wire:navigate>
                     {{ __('Eventos') }}
                 </flux:navlist.item>
-                @if (Auth::user() && Auth::user()->hasRole('admin', 'espec', 'coord'))
+                @if (Auth::user() && Auth::user()->hasRole('admin', 'dirig', 'coord'))
                     <flux:navlist.item icon="chat-bubble-left-right" :href="route('mensagens.index')"
                         :current="request()->routeIs('mensagens.*')" wire:navigate>
                         {{ __('Mensagens') }}
@@ -64,7 +64,7 @@
                         {{ __('Mercadinho') }}
                     </flux:navlist.item>
                 @endif
-                @if (Auth::user() && Auth::user()->hasRole('admin', 'coord', 'espec', 'sales'))
+                @if (Auth::user() && Auth::user()->hasRole('admin', 'coord', 'dirig', 'sales'))
                     <flux:navlist.item icon="user-group" :href="route('trabalhadores.minha-equipe')"
                         :current="request()->routeIs('trabalhadores.minha-equipe')" wire:navigate>
                         {{ __('Minha Equipe') }}

@@ -125,7 +125,7 @@ describe('TipoPerfilController::change', function () {
         expect($usuarioAlvo->fresh()->idt_movimento)->toBe($movimento->idt_movimento);
     });
 
-    test('admin consegue alterar o perfil para espec e selecionar um movimento', function () {
+    test('admin consegue alterar o perfil para dirig e selecionar um movimento', function () {
         $movimento = \App\Models\TipoMovimento::factory()->create();
         $usuarioAlvo = User::factory()->create([
             'role' => 'user',
@@ -135,7 +135,7 @@ describe('TipoPerfilController::change', function () {
         $this->actingAs($this->admin)
             ->post(route('role.change'), [
                 'role' => [
-                    $usuarioAlvo->id => 'espec',
+                    $usuarioAlvo->id => 'dirig',
                 ],
                 'movimento' => [
                     $usuarioAlvo->id => $movimento->idt_movimento,
@@ -144,7 +144,7 @@ describe('TipoPerfilController::change', function () {
             ->assertRedirect(route('eventos.index'))
             ->assertSessionHas('success');
 
-        expect($usuarioAlvo->fresh()->role)->toBe('espec');
+        expect($usuarioAlvo->fresh()->role)->toBe('dirig');
         expect($usuarioAlvo->fresh()->idt_movimento)->toBe($movimento->idt_movimento);
     });
 

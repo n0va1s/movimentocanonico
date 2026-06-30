@@ -1074,12 +1074,12 @@ describe('EventoService — confirmarParticipacao', function () {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EventoController — Espec e Movimentos Adicionais
+// EventoController — Dirig e Movimentos Adicionais
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('EventoController — Espec e Movimentos Adicionais', function () {
+describe('EventoController — Dirig e Movimentos Adicionais', function () {
 
-    test('especialista vê eventos de todos os movimentos na listagem geral', function () {
+    test('dirigente vê eventos de todos os movimentos na listagem geral', function () {
         $movVem = TipoMovimento::where('des_sigla', 'VEM')->first();
         $movEcc = TipoMovimento::where('des_sigla', 'ECC')->first();
         $movSgm = TipoMovimento::where('des_sigla', 'Segue-Me')->first();
@@ -1088,12 +1088,12 @@ describe('EventoController — Espec e Movimentos Adicionais', function () {
         $eventoEcc = Evento::factory()->create(['idt_movimento' => $movEcc->idt_movimento, 'des_evento' => 'Evento ECC Teste']);
         $eventoSgm = Evento::factory()->create(['idt_movimento' => $movSgm->idt_movimento, 'des_evento' => 'Evento SGM Teste']);
 
-        $espec = User::factory()->create([
-            'role' => 'espec',
+        $dirig = User::factory()->create([
+            'role' => 'dirig',
             'idt_movimento' => $movVem->idt_movimento,
         ]);
 
-        $response = $this->actingAs($espec)->get(route('eventos.index'));
+        $response = $this->actingAs($dirig)->get(route('eventos.index'));
 
         $response->assertOk();
         $eventos = $response->viewData('eventos');
@@ -1103,52 +1103,52 @@ describe('EventoController — Espec e Movimentos Adicionais', function () {
             ->toContain('Evento SGM Teste');
     });
 
-    test('especialista vê o botão de gerenciar somente nos eventos do seu próprio movimento mesmo que não esteja trabalhando nele', function () {
+    test('dirigente vê o botão de gerenciar somente nos eventos do seu próprio movimento mesmo que não esteja trabalhando nele', function () {
         $movVem = TipoMovimento::where('des_sigla', 'VEM')->first();
         $movEcc = TipoMovimento::where('des_sigla', 'ECC')->first();
 
-        $espec = User::factory()->create([
-            'role' => 'espec',
+        $dirig = User::factory()->create([
+            'role' => 'dirig',
             'idt_movimento' => $movVem->idt_movimento,
         ]);
         
         $eventoVem = Evento::factory()->create(['idt_movimento' => $movVem->idt_movimento, 'des_evento' => 'Meu Movimento']);
         $eventoEcc = Evento::factory()->create(['idt_movimento' => $movEcc->idt_movimento, 'des_evento' => 'Outro Movimento']);
 
-        $response = $this->actingAs($espec)->get(route('eventos.index'));
+        $response = $this->actingAs($dirig)->get(route('eventos.index'));
         $response->assertOk();
 
         $response->assertSee(route('eventos.gerenciamento', $eventoVem));
         $response->assertDontSee(route('eventos.gerenciamento', $eventoEcc));
     });
 
-    test('especialista vê na sua timeline eventos de todos os movimentos que participou/trabalhou', function () {
+    test('dirigente vê na sua timeline eventos de todos os movimentos que participou/trabalhou', function () {
         $movVem = TipoMovimento::where('des_sigla', 'VEM')->first();
         $movEcc = TipoMovimento::where('des_sigla', 'ECC')->first();
 
-        $espec = User::factory()->create([
-            'role' => 'espec',
+        $dirig = User::factory()->create([
+            'role' => 'dirig',
             'idt_movimento' => $movVem->idt_movimento,
         ]);
         
-        $pessoaEspec = $espec->pessoa;
+        $pessoaDirig = $dirig->pessoa;
 
         $eventoVem = Evento::factory()->create(['idt_movimento' => $movVem->idt_movimento, 'des_evento' => 'Trabalho VEM', 'dat_inicio' => '2024-03-10']);
         $eventoEcc = Evento::factory()->create(['idt_movimento' => $movEcc->idt_movimento, 'des_evento' => 'Participacao ECC', 'dat_inicio' => '2024-05-15']);
 
         $equipe = TipoEquipe::first();
         Trabalhador::factory()->create([
-            'idt_pessoa' => $pessoaEspec->idt_pessoa,
+            'idt_pessoa' => $pessoaDirig->idt_pessoa,
             'idt_evento' => $eventoVem->idt_evento,
             'idt_equipe' => $equipe->idt_equipe,
         ]);
 
         Participante::factory()->create([
-            'idt_pessoa' => $pessoaEspec->idt_pessoa,
+            'idt_pessoa' => $pessoaDirig->idt_pessoa,
             'idt_evento' => $eventoEcc->idt_evento,
         ]);
 
-        $response = $this->actingAs($espec)->get(route('timeline.index'));
+        $response = $this->actingAs($dirig)->get(route('timeline.index'));
         $response->assertOk();
 
         $response->assertSee('Trabalho VEM');
@@ -1180,7 +1180,7 @@ describe('Eventos Encerrados e Expiração', function () {
             ->toBe($eventoExpirado->dat_termino->format('Y-m-d'));
     });
 
-    test('admin e espec podem ver eventos encerrados passando status=encerrados', function () {
+    test('admin e dirig podem ver eventos encerrados passando status=encerrados', function () {
         $eventoAtivo = Evento::factory()->create([
             'des_evento' => 'Evento Ativo Lindo',
         ]);
@@ -1203,9 +1203,9 @@ describe('Eventos Encerrados e Expiração', function () {
         $response->assertDontSee('Evento Ativo Lindo');
         $response->assertSee('Evento Encerrado Antigo');
 
-        // 3. Espec acessando com status=encerrados
-        $espec = User::factory()->create(['role' => 'espec', 'idt_movimento' => $this->movimento->idt_movimento]);
-        $response = $this->actingAs($espec)->get(route('eventos.index', ['status' => 'encerrados']));
+        // 3. Dirig acessando com status=encerrados
+        $dirig = User::factory()->create(['role' => 'dirig', 'idt_movimento' => $this->movimento->idt_movimento]);
+        $response = $this->actingAs($dirig)->get(route('eventos.index', ['status' => 'encerrados']));
         $response->assertOk();
         $response->assertDontSee('Evento Ativo Lindo');
         $response->assertSee('Evento Encerrado Antigo');
