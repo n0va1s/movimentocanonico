@@ -44,11 +44,7 @@ class FichaEccController extends Controller
 
         $hoje = now()->startOfDay();
         $eventos = Evento::where('idt_movimento', TipoMovimento::ECC)
-            ->where(function ($q) use ($hoje) {
-                $q->where('dat_inicio', '>=', $hoje)
-                    ->orWhere('dat_termino', '>=', $hoje)
-                    ->orWhereNull('dat_termino');
-            })
+            ->ativos()
             ->orderBy('dat_inicio', 'asc')
             ->get();
 
@@ -80,7 +76,7 @@ class FichaEccController extends Controller
         Log::info('Acesso ao formulário de criação de ficha ECC', $this->getLogContext(request()));
 
         $ficha = new Ficha;
-        $eventos = Evento::getByTipo(TipoMovimento::ECC, 'E', 3);
+        $eventos = Evento::porTipo(TipoMovimento::ECC, 'E', 3)->get();
 
         return view('ficha.formECC', array_merge(
             $this->fichaService::dadosFixosFicha($ficha),

@@ -103,7 +103,7 @@ class HomeController extends Controller
 
         $ficha = new Ficha;
         $ficha->idt_movimento = TipoMovimento::VEM;
-        $eventos = Evento::getByTipo(TipoMovimento::VEM, 'E', 3);
+        $eventos = Evento::porTipo(TipoMovimento::VEM, 'E', 3)->get();
 
         $duration = round((microtime(true) - $start) * 1000, 2);
         Log::notice('Contato registrado com sucesso', array_merge($context, [
@@ -125,7 +125,7 @@ class HomeController extends Controller
 
         $ficha = new Ficha;
         $ficha->idt_movimento = TipoMovimento::ECC;
-        $eventos = Evento::getByTipo(TipoMovimento::ECC, 'E', 3);
+        $eventos = Evento::porTipo(TipoMovimento::ECC, 'E', 3)->get();
 
         return view('ficha.formECC', array_merge(FichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,
@@ -139,7 +139,7 @@ class HomeController extends Controller
         $ficha = new Ficha;
         $ficha->idt_movimento = TipoMovimento::SGM;
         $ficha->setRelation('fichaSGM', new FichaSGM);
-        $eventos = Evento::getByTipo(TipoMovimento::SGM, 'E', 3);
+        $eventos = Evento::porTipo(TipoMovimento::SGM, 'E', 3)->get();
 
         return view('ficha.formSGM', array_merge(FichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,

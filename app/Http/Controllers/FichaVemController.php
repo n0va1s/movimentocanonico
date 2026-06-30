@@ -50,11 +50,7 @@ class FichaVemController extends Controller
 
         $hoje = now()->startOfDay();
         $eventos = Evento::where('idt_movimento', TipoMovimento::VEM)
-            ->where(function ($q) use ($hoje) {
-                $q->where('dat_inicio', '>=', $hoje)
-                    ->orWhere('dat_termino', '>=', $hoje)
-                    ->orWhereNull('dat_termino');
-            })
+            ->ativos()
             ->orderBy('dat_inicio', 'asc')
             ->get();
 
@@ -97,7 +93,7 @@ class FichaVemController extends Controller
         Log::info('Acesso ao formulário de criação de ficha VEM', $context);
 
         $ficha = new Ficha;
-        $eventos = Evento::getByTipo(TipoMovimento::VEM, 'E', 3);
+        $eventos = Evento::porTipo(TipoMovimento::VEM, 'E', 3)->get();
 
         return view('ficha.formVEM', array_merge($this->fichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,

@@ -52,11 +52,7 @@ class FichaSGMController extends Controller
 
         $hoje = now()->startOfDay();
         $eventos = Evento::where('idt_movimento', TipoMovimento::SGM)
-            ->where(function ($q) use ($hoje) {
-                $q->where('dat_inicio', '>=', $hoje)
-                    ->orWhere('dat_termino', '>=', $hoje)
-                    ->orWhereNull('dat_termino');
-            })
+            ->ativos()
             ->orderBy('dat_inicio', 'asc')
             ->get();
 
@@ -100,7 +96,7 @@ class FichaSGMController extends Controller
         $ficha->idt_movimento = TipoMovimento::SGM;
         $ficha->setRelation('fichaSGM', new FichaSGM);
 
-        $eventos = Evento::getByTipo(TipoMovimento::SGM, 'E', 3);
+        $eventos = Evento::porTipo(TipoMovimento::SGM, 'E', 3)->get();
 
         return view('ficha.formSGM', array_merge($this->fichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,
