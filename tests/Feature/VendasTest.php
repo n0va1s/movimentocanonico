@@ -523,4 +523,60 @@ test('gestor pode visualizar relatorio de vendas ordenado por quantidade', funct
               ->assertSee('Pão de Queijo');
 });
 
+test('trabalhadores da equipe vendinha ou mini-mercado herdam permissao do mercadinho', function () {
+    // 1. Criar usuário comum (role user)
+    $userVendinha = User::factory()->create(['role' => 'user']);
+    $userMiniMercado = User::factory()->create(['role' => 'user']);
+    $userComum = User::factory()->create(['role' => 'user']);
+
+    // 2. Criar equipes
+    $equipeVendinha = \App\Models\TipoEquipe::create([
+        'idt_movimento' => $this->movimento->idt_movimento,
+        'des_grupo' => 'Equipe Vendinha de Doces'
+    ]);
+
+    $equipeMiniMercado = \App\Models\TipoEquipe::create([
+        'idt_movimento' => $this->movimento->idt_movimento,
+        'des_grupo' => 'Mini-mercado Paroquial'
+    ]);
+
+    $equipeCozinha = \App\Models\TipoEquipe::create([
+        'idt_movimento' => $this->movimento->idt_movimento,
+        'des_grupo' => 'Equipe da Cozinha'
+    ]);
+
+    // 3. Vincular usuários como trabalhadores nessas equipes
+    \App\Models\Trabalhador::create([
+        'idt_pessoa' => $userVendinha->pessoa->idt_pessoa,
+        'idt_evento' => $this->evento->idt_evento,
+        'idt_equipe' => $equipeVendinha->idt_equipe,
+    ]);
+
+    \App\Models\Trabalhador::create([
+        'idt_pessoa' => $userMiniMercado->pessoa->idt_pessoa,
+        'idt_evento' => $this->evento->idt_evento,
+        'idt_equipe' => $equipeMiniMercado->idt_equipe,
+    ]);
+
+    \App\Models\Trabalhador::create([
+        'idt_pessoa' => $userComum->pessoa->idt_pessoa,
+        'idt_evento' => $this->evento->idt_evento,
+        'idt_equipe' => $equipeCozinha->idt_equipe,
+    ]);
+
+    // 4. Asserções
+    expect($userVendinha->pertenceAoMercadinho())->toBeTrue();
+    expect($userVendinha->hasRole('sales'))->toBeTrue();
+    expect($userVendinha->isSales())->toBeTrue();
+
+    expect($userMiniMercado->pertenceAoMercadinho())->toBeTrue();
+    expect($userMiniMercado->hasRole('sales'))->toBeTrue();
+    expect($userMiniMercado->isSales())->toBeTrue();
+
+    expect($userComum->pertenceAoMercadinho())->toBeFalse();
+    expect($userComum->hasRole('sales'))->toBeFalse();
+    expect($userComum->isSales())->toBeFalse();
+});
+
+
 

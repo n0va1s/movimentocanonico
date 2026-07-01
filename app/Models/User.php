@@ -59,6 +59,10 @@ class User extends Authenticatable
 
     public function isSales(): bool
     {
+        if ($this->pertenceAoMercadinho()) {
+            return true;
+        }
+
         $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
 
         return strtolower($roleValue) === self::ROLE_SALES;
@@ -76,6 +80,10 @@ class User extends Authenticatable
         }
 
         if (in_array('visit', $mappedRoles) && $this->podeAcessarMinhasFichas()) {
+            return true;
+        }
+
+        if (in_array('sales', $mappedRoles) && $this->pertenceAoMercadinho()) {
             return true;
         }
 
@@ -121,6 +129,26 @@ class User extends Authenticatable
         return Trabalhador::where('idt_pessoa', $this->pessoa?->idt_pessoa)
             ->whereHas('equipe', function ($q) {
                 $q->where('des_grupo', 'like', '%Visitação%');
+            })
+            ->exists();
+    }
+
+    public function pertenceAoMercadinho(): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return Trabalhador::where('idt_pessoa', $this->pessoa?->idt_pessoa)
+            ->whereHas('equipe', function ($q) {
+                $q->where(function ($query) {
+                    $query->where('des_grupo', 'like', '%vendinha%')
+                        ->orWhere('des_grupo', 'like', '%mini-mercado%')
+                        ->orWhere('des_grupo', 'like', '%Vendinha%')
+                        ->orWhere('des_grupo', 'like', '%Mini-mercado%')
+                        ->orWhere('des_grupo', 'like', '%VENDINHA%')
+                        ->orWhere('des_grupo', 'like', '%MINI-MERCADO%');
+                });
             })
             ->exists();
     }
