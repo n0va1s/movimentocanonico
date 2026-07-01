@@ -322,45 +322,47 @@ new class extends Component {
 
     @if($evento && $evento->exists)
         {{-- Cabeçalho do Evento Selecionado --}}
-        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-700">
-            <div>
-                <flux:heading size="lg">{{ $evento->des_evento }}</flux:heading>
-                <flux:subheading class="uppercase font-bold text-xs text-blue-600 dark:text-blue-400">
-                    Minhas Fichas &bull; {{ $evento->movimento->des_sigla }}
-                </flux:subheading>
+        <div class="flex flex-row justify-between items-center gap-4 bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-700">
+            <div class="text-left">
+                <flux:heading size="lg" class="mb-1.5">{{ $evento->des_evento }}</flux:heading>
+                <x-badge-movimento :sigla="$evento->movimento->des_sigla" />
             </div>
-            <flux:button variant="ghost" size="sm" icon="arrow-left" wire:click="alterarEvento">
+            <flux:button variant="ghost" size="sm" icon="arrow-left" wire:click="alterarEvento" class="h-11 shrink-0">
                 Alterar Evento
             </flux:button>
         </div>
 
         {{-- Barra de Filtros e Busca --}}
         @if ($this->podeDesignar())
-            <div class="flex flex-col gap-4">
-                <div class="flex flex-col sm:flex-row gap-3 w-full items-center">
+            <div class="flex flex-col gap-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 w-full">
                     {{-- Busca --}}
-                    <div class="w-full sm:flex-1 max-w-md">
+                    <div class="sm:col-span-2 lg:col-span-1">
                         <flux:input 
                             wire:model.live.debounce.300ms="search" 
                             icon="magnifying-glass" 
-                            placeholder="Buscar contatos..." 
-                            class="bg-white dark:bg-zinc-800"
+                            placeholder="Buscar candidatos..." 
+                            class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                     </div>
 
                     {{-- Filtro de Casal Designado --}}
-                    <div class="w-full sm:w-64">
+                    <div>
                         <flux:input 
                             wire:model.live.debounce.300ms="visitadorSearch" 
                             icon="users" 
                             placeholder="Buscar por casal designado..." 
-                            class="bg-white dark:bg-zinc-800"
+                            class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                     </div>
 
                     {{-- Situação --}}
-                    <div class="w-full sm:w-60">
-                        <flux:select wire:model.live="situacao" placeholder="Todas as Situações">
+                    <div>
+                        <flux:select 
+                            wire:model.live="situacao" 
+                            placeholder="Todas as Situações"
+                            class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
                             <flux:select.option value="">Todas as Situações</flux:select.option>
                             @foreach ([
                                 App\Enums\TipoSituacao::SELECIONADA, 
@@ -373,14 +375,16 @@ new class extends Component {
                             @endforeach
                         </flux:select>
                     </div>
+                </div>
 
-                    {{-- Botão de Designar Visitação --}}
-                    @if (count($selectedFichas) > 0)
-                        <flux:button wire:click="abrirModalVisitacao" icon="user-group" variant="primary" class="shrink-0">
+                {{-- Botão de Designar Visitação --}}
+                @if (count($selectedFichas) > 0)
+                    <div class="flex justify-end mt-2">
+                        <flux:button wire:click="abrirModalVisitacao" icon="user-group" variant="primary" class="shrink-0 w-full sm:w-auto h-11 justify-center">
                             Designar Visitação ({{ count($selectedFichas) }})
                         </flux:button>
-                    @endif
-                </div>
+                    </div>
+                @endif
             </div>
         @endif
 

@@ -451,10 +451,11 @@ new class extends Component {
         {{-- Cabeçalho do Evento Selecionado --}}
         <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-700">
             <div>
-                <flux:heading size="lg">{{ $evento->des_evento }}</flux:heading>
-                <flux:subheading class="uppercase font-bold text-xs text-blue-600 dark:text-blue-400">
-                    Mercadinho &bull; {{ $evento->movimento->des_sigla }}
-                </flux:subheading>
+                <flux:heading size="lg" class="mb-1.5">{{ $evento->des_evento }}</flux:heading>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Mercadinho</span>
+                    <x-badge-movimento :sigla="$evento->movimento->des_sigla" />
+                </div>
             </div>
             <flux:button variant="ghost" size="sm" icon="arrow-left" wire:click="alterarEvento">
                 Voltar
