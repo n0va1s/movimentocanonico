@@ -23,11 +23,7 @@ class ImportController extends Controller
         $hoje = now()->startOfDay();
 
         // Encontra eventos ativos (em andamento ou futuros)
-        $eventosAtivos = Evento::where(function ($q) use ($hoje) {
-            $q->where('dat_inicio', '>=', $hoje)
-                ->orWhere('dat_termino', '>=', $hoje)
-                ->orWhereNull('dat_termino');
-        })
+        $eventosAtivos = Evento::ativos()
             ->when(auth()->user()->isEspec(), function ($q) {
                 $q->where('idt_movimento', auth()->user()->idt_movimento);
             })

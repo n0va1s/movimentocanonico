@@ -57,7 +57,29 @@ class FichaEccRequest extends FichaRequest
                 'string',
                 'max:20',
                 new Cpf,
-                Rule::unique('ficha_ecc', 'num_cpf_conjuge')->ignore($fichaId, 'idt_ficha'),
+                function ($attribute, $value, $fail) use ($fichaId) {
+                    if (!$value) return;
+
+                    $eventoId = $this->input('idt_evento');
+                    if (!$eventoId) return;
+
+                    $evento = \App\Models\Evento::find($eventoId);
+                    if (!$evento) return;
+
+                    $exists = \App\Models\FichaEcc::where('num_cpf_conjuge', $value)
+                        ->where('idt_ficha', '!=', $fichaId ?? 0)
+                        ->whereHas('ficha', function ($query) use ($evento) {
+                            $query->where('tip_situacao', '!=', \App\Enums\TipoSituacao::CANCELADA)
+                                  ->whereHas('evento', function ($q) use ($evento) {
+                                      $q->where('idt_movimento', $evento->idt_movimento);
+                                  });
+                        })
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('Este CPF de cônjuge já está cadastrado em uma ficha ativa neste movimento.');
+                    }
+                },
             ],
             'nom_conjuge' => 'required|string|max:255',
             'nom_apelido_conjuge' => 'nullable|string|max:100',

@@ -35,7 +35,7 @@ class DashboardController extends Controller
             ->get();
 
         // Otimização 3: Queries de contagem simples
-        $qtdEventosAtivos = Evento::where('dat_termino', '>=', today())
+        $qtdEventosAtivos = Evento::ativos()
             ->when(auth()->user()->isEspec(), function ($q) {
                 $q->where('idt_movimento', auth()->user()->idt_movimento);
             })

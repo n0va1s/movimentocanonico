@@ -43,6 +43,12 @@ class PessoaController extends Controller
             'trabalhadores.equipe:idt_equipe,des_grupo',
         ])->findOrFail($id);
 
+        // Se não for admin, ele só pode ver o PRÓPRIO perfil.
+        $user = auth()->user();
+        if (! $user->isAdmin() && optional($user->pessoa)->idt_pessoa !== $pessoa->idt_pessoa) {
+            abort(403, 'Você não tem permissão para visualizar estes dados.');
+        }
+
         $duration = round((microtime(true) - $start) * 1000, 2);
         Log::notice('Visualização de pessoa', array_merge($context, [
             'pessoa_id' => $id,
@@ -66,15 +72,18 @@ class PessoaController extends Controller
             'des_restricao',
         )->get();
 
-        $meuId = auth()->user()->pessoa->idt_pessoa;
+        $meuId = auth()->user()->pessoa ? auth()->user()->pessoa->idt_pessoa : null;
 
         $pessoasDisponiveis = Pessoa::query()
-            ->where(function ($query) use ($meuId) {
-                $query->whereNull('idt_parceiro')
-                    ->orWhere('idt_parceiro', $meuId);
+            ->when($meuId, function ($query, $meuId) {
+                return $query->where(function ($q) use ($meuId) {
+                    $q->whereNull('idt_parceiro')
+                        ->orWhere('idt_parceiro', $meuId);
+                })->where('idt_pessoa', '!=', $meuId);
+            }, function ($query) {
+                return $query->whereNull('idt_parceiro');
             })
             // ->whereIn('tip_estado_civil', ['C', 'E', 'U'])
-            ->where('idt_pessoa', '!=', $meuId)
             ->orderBy('nom_pessoa')
             ->pluck('nom_pessoa', 'idt_pessoa');
 
@@ -101,13 +110,43 @@ class PessoaController extends Controller
             'email' => $request->input('eml_pessoa'),
         ]));
 
-        // Pega o ID do usuário conforme o email informado no cadastro da pessoa
-        $data = $request->validated();
-        $user = $this->userService::getUsuarioByEmail($request->input('eml_pessoa'));
-        if ($user) {
-            $data['idt_usuario'] = $user->id;
+        $cpf = $request->input('num_cpf_pessoa') ? preg_replace('/\D/', '', $request->input('num_cpf_pessoa')) : null;
+
+        if (!auth()->user()->isAdmin() && $cpf) {
+            $temFichaNaoAprovada = \App\Models\Ficha::where('num_cpf_candidato', $cpf)
+                ->whereNotIn('tip_situacao', [\App\Enums\TipoSituacao::APROVADA, \App\Enums\TipoSituacao::CANCELADA])
+                ->exists();
+
+            if ($temFichaNaoAprovada) {
+                return redirect()->route('dashboard')->with('info', 'Você já possui uma ficha de inscrição em andamento. Por favor, aguarde a aprovação da sua ficha.');
+            }
         }
-        $pessoa = Pessoa::create($data);
+
+        $pessoaExistente = $cpf ? Pessoa::where('num_cpf_pessoa', $cpf)->first() : null;
+        $data = $request->validated();
+
+        if ($pessoaExistente) {
+            if (!auth()->user()->isAdmin() && $pessoaExistente->idt_usuario && $pessoaExistente->idt_usuario !== auth()->id()) {
+                return redirect()->back()->with('error', 'Este CPF já está vinculado a outro usuário.');
+            }
+
+            if (!auth()->user()->isAdmin()) {
+                $data['idt_usuario'] = auth()->id();
+            }
+
+            $pessoaExistente->update($data);
+            $pessoa = $pessoaExistente;
+        } else {
+            if (auth()->user()->isAdmin()) {
+                $user = $this->userService::getUsuarioByEmail($request->input('eml_pessoa'));
+                if ($user) {
+                    $data['idt_usuario'] = $user->id;
+                }
+            } else {
+                $data['idt_usuario'] = auth()->id();
+            }
+            $pessoa = Pessoa::create($data);
+        }
 
         // Foto
         if ($request->hasFile('med_foto')) {
@@ -130,6 +169,8 @@ class PessoaController extends Controller
         // Saude
         $countRestricoes = 0;
         if ($request->input('ind_restricao') == 1) {
+            // Limpa as antigas para evitar duplicidade na vinculação
+            $pessoa->restricoes()->detach();
             foreach ($request->input('restricoes', []) as $idt_restricao => $value) {
                 if ($value) {
                     $pessoa->restricoes()->attach($idt_restricao, [
@@ -141,13 +182,17 @@ class PessoaController extends Controller
         }
 
         $duration = round((microtime(true) - $start) * 1000, 2);
-        Log::notice('Pessoa criada com sucesso', array_merge($context, [
+        Log::notice('Pessoa salva com sucesso', array_merge($context, [
             'pessoa_id' => $pessoa->idt_pessoa,
             'restricoes_registradas' => $countRestricoes,
             'duration_ms' => $duration,
         ]));
 
-        return redirect()->route('pessoas.index')->with('success', 'Pessoa criada com sucesso.');
+        if (auth()->user()->isAdmin()) {
+            return redirect()->route('pessoas.index')->with('success', 'Pessoa cadastrada/atualizada com sucesso.');
+        }
+
+        return redirect()->route('dashboard')->with('success', 'Cadastro localizado e vinculado à sua conta com sucesso!');
     }
 
     public function edit($id): View
@@ -164,7 +209,7 @@ class PessoaController extends Controller
         // Usuários não-admin só podem editar a própria pessoa
         $user = auth()->user();
         if (! $user->isAdmin() && optional($user->pessoa)->idt_pessoa !== $pessoa->idt_pessoa) {
-            abort(403);
+            abort(403, 'Você não tem permissão para editar estes dados.');
         }
 
         $restricoes = TipoRestricao::select(
@@ -207,7 +252,7 @@ class PessoaController extends Controller
         // Usuários não-admin só podem editar a própria pessoa
         $user = auth()->user();
         if (! $user->isAdmin() && optional($user->pessoa)->idt_pessoa !== $pessoa->idt_pessoa) {
-            abort(403);
+            abort(403, 'Você não tem permissão para editar estes dados.');
         }
 
         $user2 = $this->userService::getUsuarioByEmail($request->input('eml_pessoa'));

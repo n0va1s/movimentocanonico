@@ -42,6 +42,7 @@ class Pessoa extends Model
         'tip_habilidade',
         'nom_profissao',
         'ind_restricao',
+        'qtd_pontos_total',
     ];
 
     protected $casts = [
@@ -109,12 +110,12 @@ class Pessoa extends Model
 
     public function participantes()
     {
-        return $this->hasMany(Participante::class, 'idt_pessoa');
+        return $this->hasMany(Participante::class, 'idt_pessoa', 'idt_pessoa');
     }
 
     public function trabalhadores()
     {
-        return $this->hasMany(Trabalhador::class, 'idt_pessoa');
+        return $this->hasMany(Trabalhador::class, 'idt_pessoa', 'idt_pessoa');
     }
 
     public function contas()
@@ -124,7 +125,7 @@ class Pessoa extends Model
 
     public function voluntarios()
     {
-        return $this->hasMany(Voluntario::class, 'idt_pessoa');
+        return $this->hasMany(Voluntario::class, 'idt_pessoa', 'idt_pessoa');
     }
 
 

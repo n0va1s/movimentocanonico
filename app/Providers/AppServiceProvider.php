@@ -25,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gamificacao::observe(GamificacaoObserver::class);
+        \App\Models\Ficha::observe(\App\Observers\FichaObserver::class);
 
         $this->registrarGates();
     }

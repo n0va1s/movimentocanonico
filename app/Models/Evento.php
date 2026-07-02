@@ -141,25 +141,39 @@ class Evento extends Model
     }
 
     /**
-     * Retorna collection de eventos por tipo de movimento e tipo de evento
-     *
-     * @param  int  $tipMovimento  // Constantes da classe TipoMovimento
-     * @param  string  $tipEvento  // E - evento anual, P - pós-encontro, D - desafio
-     * @return int|null $limite // quantidade de linha retornadas
+     * Scope para buscar apenas eventos ativos.
+     * Como o model usa SoftDeletes, os eventos ativos são os que não estão na lixeira (deleted_at null).
      */
-    public static function getByTipo(int $tipMovimento, string $tipEvento, ?int $limite = null)
+    public function scopeAtivos(Builder $query)
     {
-        $query = self::where('idt_movimento', $tipMovimento)
-            ->where('tip_evento', $tipEvento)
-            ->orderBy('dat_inicio', 'asc');
-
-        if ($limite) {
-            return $query->limit($limite)->get();
-        }
-
-        return $query->get();
+        return $query->withoutTrashed();
     }
 
+    /**
+     * Scope para buscar apenas eventos inativos.
+     * Corresponde aos eventos que já foram movidos para a lixeira (deleted_at not null).
+     */
+    public function scopeInativos(Builder $query)
+    {
+        return $query->onlyTrashed();
+    }
+
+    /**
+     * Scope para filtrar por tipo de movimento e tipo de evento.
+     * Substitui o antigo método estático getByTipo().
+     */
+    public function scopePorTipo(Builder $query, int $tipMovimento, string $tipEvento, ?int $limite = null)
+    {
+        $query->where('idt_movimento', $tipMovimento)
+              ->where('tip_evento', $tipEvento)
+              ->orderBy('dat_inicio', 'asc');
+
+        if ($limite) {
+            $query->limit($limite);
+        }
+
+        return $query;
+    }
     public function getDataInicioFormatada()
     {
         return $this->dat_inicio
