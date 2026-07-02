@@ -924,7 +924,25 @@
                 </div>
 
                 {{-- ===== SAÚDE E RESTRIÇÕES ===== --}}
-                <div x-data="{ mostrarRestricoes: {{ old('ind_restricao', $ficha->ind_restricao ?? false) ? 'true' : 'false' }} }">
+                <div x-data="{
+                        mostrarRestricoes: {{ old('ind_restricao', $ficha->ind_restricao ?? false) ? 'true' : 'false' }},
+                        temRestricaoSelecionada: true,
+                        verificarRestricoes() {
+                            if (!this.mostrarRestricoes) {
+                                this.temRestricaoSelecionada = true;
+                                return;
+                            }
+                            const container = this.$refs.restricoesContainer;
+                            if (!container) return;
+                            const checkboxes = container.querySelectorAll('input[type=\'checkbox\'][name^=\'restricoes\']:checked');
+                            const inputs = Array.from(container.querySelectorAll('input[type=\'text\'][name^=\'complementos\']')).filter(i => i.value.trim() !== '');
+                            this.temRestricaoSelecionada = checkboxes.length > 0 || inputs.length > 0;
+                        }
+                    }"
+                    @change="verificarRestricoes"
+                    @input="verificarRestricoes"
+                    x-init="setTimeout(() => verificarRestricoes(), 100)"
+                >
                     <label
                         class="flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-colors
                         border-amber-300 bg-amber-50 hover:bg-amber-100
@@ -951,11 +969,22 @@
                     </label>
 
                     <div x-show="mostrarRestricoes" x-transition
+                        x-ref="restricoesContainer"
                         class="mt-3 bg-gray-50 dark:bg-zinc-700 rounded-md p-4" role="region"
                         aria-label="Restrições e Alergias">
                         <h3 class="text-base sm:text-lg font-medium mb-3 text-gray-900 dark:text-gray-100">
                             Restrições e Alergias
                         </h3>
+
+                        <div x-show="mostrarRestricoes && !temRestricaoSelecionada" x-transition
+                            class="mb-4 flex items-center gap-2 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 px-4 py-3"
+                            role="alert">
+                            <x-heroicon-o-exclamation-triangle class="w-5 h-5 text-amber-500 shrink-0" aria-hidden="true" />
+                            <p class="text-sm text-amber-700 dark:text-amber-400">
+                                Nenhuma restrição ou alergia foi informada.. Desmarque a opção Informações de Saúde por favor
+                            </p>
+                        </div>
+
                         <div class="space-y-4">
                             @php
                                 $restricoesSelecionadas = $ficha->fichaSaude->pluck('idt_restricao')->toArray();
