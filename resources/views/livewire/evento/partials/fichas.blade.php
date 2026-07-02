@@ -69,75 +69,26 @@ new class extends Component {
 
     public function exportar(): StreamedResponse
     {
-        $eventoId = $this->evento->idt_evento;
-
-        $rows = DB::select("
-            SELECT
-                f.idt_ficha,
-                f.tip_genero,
-                f.nom_candidato,
-                f.nom_apelido,
-                f.dat_nascimento,
-                f.tel_candidato,
-                f.eml_candidato,
-                f.des_endereco,
-                f.tam_camiseta,
-                f.tip_como_soube,
-                f.ind_restricao,
-                fv.des_onde_estuda,
-                fv.des_mora_quem,
-                r.des_responsavel AS falar_com,
-                fv.nom_pai,
-                fv.tel_pai,
-                fv.nom_mae,
-                fv.tel_mae,
-                f.ind_catolico,
-                fv.ind_batizado,
-                fv.ind_primeira_comunhao,
-                fv.ind_crismado,
-                fv.nom_paroquia,
-                tr.des_restricao,
-                s.txt_complemento
-            FROM ficha f
-            INNER JOIN ficha_vem fv ON f.idt_ficha = fv.idt_ficha
-            LEFT JOIN ficha_saude s ON f.idt_ficha = s.idt_ficha
-            LEFT JOIN tipo_responsavel r ON fv.idt_falar_com = r.idt_responsavel
-            LEFT JOIN tipo_restricao tr ON s.idt_restricao = tr.idt_restricao
-            WHERE f.deleted_at IS NULL
-              AND f.idt_evento = ?
-        ", [$eventoId]);
+        $fichas = \App\Models\Ficha::with(['visitador', 'fichaVem', 'fichaEcc', 'fichaSGM'])
+            ->where('idt_evento', $this->evento->idt_evento)
+            ->get();
 
         $cabecalho = [
-            'ID',
-            'Gênero',
             'Nome',
-            'Apelido',
+            'Sexo',
             'Data de Nascimento',
-            'Telefone',
-            'E-mail',
             'Endereço',
+            'Casal Visitação',
+            'Situação',
             'Tamanho Camiseta',
-            'Como Soube',
-            'Possui Restrição',
-            'Onde Estuda',
-            'Mora com Quem',
-            'Falar Com',
-            'Nome do Pai',
-            'Telefone do Pai',
-            'Nome da Mãe',
-            'Telefone da Mãe',
-            'Católico',
-            'Batizado',
-            'Primeira Comunhão',
-            'Crismado',
-            'Paróquia',
-            'Tipo de Restrição',
-            'Complemento Restrição',
+            'Restrição de Saúde',
+            'Paroquiano',
+            'Região',
         ];
 
         $nomeArquivo = 'fichas_' . \Str::slug($this->evento->nom_evento ?? 'evento') . '_' . now()->format('Y-m-d') . '.csv';
 
-        $response = new StreamedResponse(function () use ($rows, $cabecalho) {
+        $response = new StreamedResponse(function () use ($fichas, $cabecalho) {
             $handle = fopen('php://output', 'w');
 
             // BOM para o Excel reconhecer UTF-8 corretamente
@@ -145,33 +96,33 @@ new class extends Component {
 
             fputcsv($handle, $cabecalho, ';');
 
-            foreach ($rows as $row) {
+            foreach ($fichas as $ficha) {
+                // Recuperar nome da paróquia dependendo estritamente do movimento do evento
+                $movimentoId = (int) $ficha->evento->idt_movimento;
+                $nomParoquia = match ($movimentoId) {
+                    \App\Models\TipoMovimento::VEM => $ficha->fichaVem?->nom_paroquia,
+                    \App\Models\TipoMovimento::ECC => $ficha->fichaEcc?->nom_paroquia,
+                    \App\Models\TipoMovimento::SGM => $ficha->fichaSGM?->nom_paroquia,
+                    default => '',
+                } ?? '';
+
+                // Paroquiano: PNSL ou Nossa Senhora do Lago
+                $isParoquiano = preg_match('/PNSL|Nossa Senhora do Lago/i', (string) $nomParoquia) ? 'Sim' : 'Não';
+
+                // Região: Lago Norte, SHIN, Setor de Mansões, Taquari, Varjão
+                $isRegiao = preg_match('/Lago Norte|SHIN|Setor de Mans.es|Taquari|Varj.o/iu', (string) $ficha->des_endereco) ? 'Sim' : 'Não';
+
                 fputcsv($handle, [
-                    $row->idt_ficha,
-                    $row->tip_genero,
-                    $row->nom_candidato,
-                    $row->nom_apelido,
-                    $row->dat_nascimento,
-                    $row->tel_candidato,
-                    $row->eml_candidato,
-                    $row->des_endereco,
-                    $row->tam_camiseta,
-                    $row->tip_como_soube,
-                    $row->ind_restricao ? 'Sim' : 'Não',
-                    $row->des_onde_estuda,
-                    $row->des_mora_quem,
-                    $row->falar_com,
-                    $row->nom_pai,
-                    $row->tel_pai,
-                    $row->nom_mae,
-                    $row->tel_mae,
-                    $row->ind_catolico ? 'Sim' : 'Não',
-                    $row->ind_batizado ? 'Sim' : 'Não',
-                    $row->ind_primeira_comunhao ? 'Sim' : 'Não',
-                    $row->ind_crismado ? 'Sim' : 'Não',
-                    $row->nom_paroquia,
-                    $row->des_restricao,
-                    $row->txt_complemento,
+                    $ficha->nom_candidato,
+                    $ficha->tip_genero ? $ficha->tip_genero->value : '',
+                    $ficha->dat_nascimento ? $ficha->dat_nascimento->format('d/m/Y') : '',
+                    $ficha->des_endereco,
+                    $ficha->visitador ? $ficha->visitador->nom_pessoa : '',
+                    $ficha->tip_situacao ? $ficha->tip_situacao->label() : '',
+                    $ficha->tam_camiseta ? $ficha->tam_camiseta->value : '',
+                    $ficha->ind_restricao ? 'Sim' : 'Não',
+                    $isParoquiano,
+                    $isRegiao,
                 ], ';');
             }
 
