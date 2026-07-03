@@ -6,14 +6,29 @@ use App\Models\TipoEquipe;
 use App\Models\Trabalhador;
 use App\Models\Participante;
 use App\Models\TipoMovimento;
+use App\Models\User;
+use Laravel\Sanctum\Sanctum;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\Fluent\AssertableJson;
 
 beforeEach(function () {
     createMovimentos(); // Cria os tipos de movimento base e equipes padrão
+    $this->user = createUser();
+});
+
+test('retorna 401 para qualquer rota da API sem token de autenticação', function () {
+    $movimento = TipoMovimento::first();
+    $evento = Evento::factory()->create(['idt_movimento' => $movimento->idt_movimento]);
+
+    $response = $this->getJson("/api/eventos/{$evento->idt_evento}/pessoas");
+    $response->assertStatus(401);
+
+    $responseShow = $this->getJson("/api/eventos/{$evento->idt_evento}/pessoas/1");
+    $responseShow->assertStatus(401);
 });
 
 test('retorna 404 com mensagem amigável quando pessoa não existe no show', function () {
+    Sanctum::actingAs($this->user);
     $movimento = TipoMovimento::first();
     $evento = Evento::factory()->create(['idt_movimento' => $movimento->idt_movimento]);
 
@@ -27,6 +42,7 @@ test('retorna 404 com mensagem amigável quando pessoa não existe no show', fun
 });
 
 test('retorna 404 com mensagem amigável quando a pessoa existe mas não tem vínculo com o evento', function () {
+    Sanctum::actingAs($this->user);
     $movimento = TipoMovimento::first();
     $evento = Evento::factory()->create(['idt_movimento' => $movimento->idt_movimento]);
     $pessoa = Pessoa::factory()->create(['idt_parceiro' => null]);
@@ -41,6 +57,7 @@ test('retorna 404 com mensagem amigável quando a pessoa existe mas não tem ví
 });
 
 test('lista apenas pessoas vinculadas ao evento (trabalhador ou participante)', function () {
+    Sanctum::actingAs($this->user);
     $movimento = TipoMovimento::first();
     $evento1 = Evento::factory()->create(['idt_movimento' => $movimento->idt_movimento]);
     $evento2 = Evento::factory()->create(['idt_movimento' => $movimento->idt_movimento]);
@@ -115,6 +132,7 @@ test('lista apenas pessoas vinculadas ao evento (trabalhador ou participante)', 
 });
 
 test('retorna detalhes de uma única pessoa vinculada ao evento no show', function () {
+    Sanctum::actingAs($this->user);
     $movimento = TipoMovimento::first();
     $evento = Evento::factory()->create(['idt_movimento' => $movimento->idt_movimento]);
 
@@ -153,6 +171,7 @@ test('retorna detalhes de uma única pessoa vinculada ao evento no show', functi
 });
 
 test('aplica filtros incrementais de data_inicio e data_fim corretos na listagem', function () {
+    Sanctum::actingAs($this->user);
     $movimento = TipoMovimento::first();
     $evento = Evento::factory()->create(['idt_movimento' => $movimento->idt_movimento]);
 
