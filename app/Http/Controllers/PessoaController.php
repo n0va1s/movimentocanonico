@@ -188,11 +188,7 @@ class PessoaController extends Controller
             'duration_ms' => $duration,
         ]));
 
-        if (auth()->user()->isAdmin()) {
-            return redirect()->route('pessoas.index')->with('success', 'Pessoa cadastrada/atualizada com sucesso.');
-        }
-
-        return redirect()->route('dashboard')->with('success', 'Cadastro localizado e vinculado à sua conta com sucesso!');
+        return back()->with('success', 'Cadastro localizado e vinculado à sua conta com sucesso!');
     }
 
     public function edit($id): View
@@ -319,7 +315,7 @@ class PessoaController extends Controller
             'duration_ms' => $duration,
         ]));
 
-        return redirect()->route('dashboard')->with('success', 'Dados atualizados com sucesso.');
+        return back()->with('success', 'Dados atualizados com sucesso.');
     }
 
     public function destroy($id): RedirectResponse
@@ -340,9 +336,7 @@ class PessoaController extends Controller
             // Cascade
             Pessoa::findOrFail($id)->delete();
 
-            return redirect()
-                ->route('pessoas.index')
-                ->with('success', 'Pessoa excluída com sucesso!');
+            return back()->with('success', 'Pessoa excluída com sucesso!');
         } catch (QueryException $e) {
             $duration = round((microtime(true) - $start) * 1000, 2);
             Log::error('Erro de Query ao excluir pessoa', array_merge($context, [
@@ -354,14 +348,12 @@ class PessoaController extends Controller
             ]));
 
             if ($e->getCode() === '23000') {
-                return redirect()
-                    ->route('pessoas.index')
+                return back()
                     ->with('error', 'Não é possível excluir esta pessoa. È preciso apagar os dados associados.');
             }
 
             // Se for outro erro de banco
-            return redirect()
-                ->route('pessoas.index')
+            return back()
                 ->with('error', 'Erro ao tentar excluir a pessoa.');
         }
     }

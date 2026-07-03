@@ -77,7 +77,7 @@ class FichaEccRequest extends FichaRequest
                         ->exists();
 
                     if ($exists) {
-                        $fail('Este CPF de cônjuge já está cadastrado em uma ficha ativa neste movimento.');
+                        $fail($this->messages()['num_cpf_conjuge.unique'] ?? 'Este CPF de cônjuge já está cadastrado em uma ficha ativa neste movimento.');
                     }
                 },
             ],
@@ -120,7 +120,6 @@ class FichaEccRequest extends FichaRequest
             'med_conjuge.image' => 'O arquivo da foto do cônjuge deve ser uma imagem.',
             'med_conjuge.max' => 'A foto do cônjuge não pode ultrapassar 4MB.',
 
-            // ── Cônjuge ──
             'num_cpf_conjuge.required' => 'O CPF do cônjuge é obrigatório.',
             'num_cpf_conjuge.string' => 'O CPF do cônjuge deve ser um texto.',
             'num_cpf_conjuge.max' => 'O CPF do cônjuge deve ter no máximo 20 caracteres.',

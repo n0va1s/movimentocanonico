@@ -72,12 +72,12 @@ new class extends Component {
             $this->editingProduct->update(array_merge($validated, [
                 'usu_alteracao' => Auth::id(),
             ]));
-            session()->flash('success', 'Produto atualizado com sucesso!');
+            \Flux::toast(__('messages.alerts.success.product_updated'), variant: 'success');
         } else {
             Produto::create(array_merge($validated, [
                 'usu_inclusao' => Auth::id(),
             ]));
-            session()->flash('success', 'Produto cadastrado com sucesso!');
+            \Flux::toast(__('messages.alerts.success.product_created'), variant: 'success');
         }
 
         $this->showModal = false;
@@ -89,7 +89,7 @@ new class extends Component {
             'usu_alteracao' => Auth::id(),
         ]);
         $produto->delete();
-        session()->flash('success', 'Produto removido com sucesso!');
+        \Flux::toast(__('messages.alerts.success.product_deleted'), variant: 'success');
     }
 }; ?>
 

@@ -1,6 +1,5 @@
 <x-layouts.app title="Evento">
     <section class="p-6 w-full max-w-7xl mx-auto">
-        <x-session-alert />
 
         {{-- Cabeçalho --}}
         <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">

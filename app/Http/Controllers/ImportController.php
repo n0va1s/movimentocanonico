@@ -76,7 +76,7 @@ class ImportController extends Controller
                 "• Erros/Avisos: {$stats['errors']}\n".
                 'O relatório detalhado está disponível em: storage/logs/import_participantes.log';
 
-            return redirect()->route('eventos.importar')->with('success', $successMsg);
+            return  back()->with('success', $successMsg);
 
         } catch (\Throwable $e) {
             Log::error('Erro ao importar participantes no controller: '.$e->getMessage());
@@ -127,7 +127,7 @@ class ImportController extends Controller
                 "• Erros/Avisos: {$stats['errors']}\n".
                 'O relatório detalhado está disponível em: storage/logs/import_trabalhadores.log';
 
-            return redirect()->route('eventos.importar')->with('success', $successMsg);
+            return back()->with('success', $successMsg);
 
         } catch (\Throwable $e) {
             Log::error('Erro ao importar trabalhadores no controller: '.$e->getMessage());

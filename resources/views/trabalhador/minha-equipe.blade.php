@@ -1,7 +1,6 @@
 <x-layouts.app :title="'Minha Equipe'">
     <section class="p-6 w-full max-w-5xl mx-auto">
 
-        <x-session-alert />
 
         {{-- CABEÇALHO --}}
         <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">

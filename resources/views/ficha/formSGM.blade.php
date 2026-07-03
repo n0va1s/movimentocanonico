@@ -273,6 +273,7 @@
 
         {{-- ===== FORMULÁRIO ===== --}}
         @if ($eventos->count() > 0)
+
             <form method="POST" enctype="multipart/form-data" @submit="setTimeout(() => enviando = true, 50)"
                 action="{{ $ficha->exists ? route('sgm.update', $ficha) : route('sgm.store') }}" class="space-y-8">
                 @csrf
@@ -797,25 +798,34 @@
                                     <input type="checkbox" name="ind_batismo" value="1"
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_batismo', optional($ficha->fichaSgm)->ind_batismo) ? 'checked' : '' }}
-                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_batismo') border-red-500 @enderror">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">Batismo</span>
                                 </label>
+                                @error('ind_batismo')
+                                    <p class="text-sm text-red-600" role="alert">{{ $message }}</p>
+                                @enderror
                                 <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_eucaristia" value="0">
                                     <input type="checkbox" name="ind_eucaristia" value="1"
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_eucaristia', optional($ficha->fichaSgm)->ind_eucaristia) ? 'checked' : '' }}
-                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_eucaristia') border-red-500 @enderror">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">Eucaristia</span>
                                 </label>
+                                @error('ind_eucaristia')
+                                    <p class="text-sm text-red-600" role="alert">{{ $message }}</p>
+                                @enderror
                                 <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_crisma" value="0">
                                     <input type="checkbox" name="ind_crisma" value="1"
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_crisma', optional($ficha->fichaSgm)->ind_crisma) ? 'checked' : '' }}
-                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_crisma') border-red-500 @enderror">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">Crisma</span>
                                 </label>
+                                @error('ind_crisma')
+                                    <p class="text-sm text-red-600" role="alert">{{ $message }}</p>
+                                @enderror
                             </div>
                         </div>
 
@@ -954,6 +964,9 @@
                         <x-heroicon-o-heart class="w-6 h-6 text-amber-400 dark:text-amber-500 ml-auto shrink-0"
                             aria-hidden="true" />
                     </label>
+                    @error('ind_restricao')
+                        <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                    @enderror
 
                     <div x-show="mostrarRestricoes" x-transition
                         x-ref="restricoesContainer"
@@ -968,7 +981,7 @@
                             role="alert">
                             <x-heroicon-o-exclamation-triangle class="w-5 h-5 text-amber-500 shrink-0" aria-hidden="true" />
                             <p class="text-sm text-amber-700 dark:text-amber-400">
-                                Nenhuma restrição ou alergia foi informada.. Desmarque a opção Informações de Saúde por favor
+                                {{ __('messages.alerts.warning.no_allergies') }}
                             </p>
                         </div>
 

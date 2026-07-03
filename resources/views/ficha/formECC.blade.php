@@ -29,6 +29,7 @@
                 'eml_filho'            => $f->eml_filho,
                 'dat_nascimento_filho' => $f->dat_nascimento_filho?->format('Y-m-d'),
             ])->toArray() ?? [])) }},
+            serverErrors: {{ Js::from($errors->messages()) }},
         }">
 
         {{-- ===== CABEÇALHO ===== --}}
@@ -184,6 +185,7 @@
         @endif
 
         @if ($eventos->count() > 0)
+
             <form method="POST" enctype="multipart/form-data"
                 @submit="setTimeout(() => enviando = true, 50)"
                 action="{{ $ficha->exists ? route('ecc.update', $ficha) : route('ecc.store') }}" 
@@ -375,10 +377,13 @@
                                 <input type="checkbox" name="ind_catolico" value="1"
                                     x-bind:disabled="bloqueado"
                                     {{ old('ind_catolico', $ficha->ind_catolico) ? 'checked' : '' }}
-                                    class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_catolico') border-red-500 @enderror">
                                 <span class="font-medium text-gray-700 dark:text-gray-300 text-sm sm:text-base">É católico(a)?</span>
                             </label>
                         </div>
+                        @error('ind_catolico')
+                            <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                        @enderror
 
                         {{-- Habilidade Principal --}}
                         <div>
@@ -610,10 +615,13 @@
                                 <input type="checkbox" name="ind_catolico_conjuge" value="1"
                                     x-bind:disabled="bloqueado"
                                     {{ old('ind_catolico_conjuge', $ficha->fichaEcc?->ind_catolico_conjuge) ? 'checked' : '' }}
-                                    class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_catolico_conjuge') border-red-500 @enderror">
                                 <span class="font-medium text-gray-700 dark:text-gray-300 text-sm sm:text-base">É católico(a)?</span>
                             </label>
                         </div>
+                        @error('ind_catolico_conjuge')
+                            <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                        @enderror
 
                         {{-- Habilidade Principal cônjuge --}}
                         <div>
@@ -862,7 +870,9 @@
                                                 x-bind:disabled="bloqueado" maxlength="14" autocomplete="off"
                                                 :value="filhos[index]?.num_cpf_filho ?? ''"
                                                 placeholder="000.000.000-00"
+                                                :class="serverErrors['filhos.' + index + '.num_cpf_filho'] ? 'border-red-500' : ''"
                                                 class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                            <p x-show="serverErrors['filhos.' + index + '.num_cpf_filho']" x-text="serverErrors['filhos.' + index + '.num_cpf_filho']?.[0]" class="mt-1 text-sm text-red-600" role="alert"></p>
                                         </div>
 
                                         {{-- Nome filho --}}
@@ -875,7 +885,9 @@
                                                 x-bind:disabled="bloqueado" maxlength="255" autocomplete="off"
                                                 :value="filhos[index]?.nom_filho ?? ''"
                                                 placeholder="Nome completo"
+                                                :class="serverErrors['filhos.' + index + '.nom_filho'] ? 'border-red-500' : ''"
                                                 class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                            <p x-show="serverErrors['filhos.' + index + '.nom_filho']" x-text="serverErrors['filhos.' + index + '.nom_filho']?.[0]" class="mt-1 text-sm text-red-600" role="alert"></p>
                                         </div>
 
                                         {{-- Telefone filho --}}
@@ -888,7 +900,9 @@
                                                 x-bind:disabled="bloqueado" maxlength="20" autocomplete="off"
                                                 :value="filhos[index]?.tel_filho ?? ''"
                                                 placeholder="(61) 90000-0000"
+                                                :class="serverErrors['filhos.' + index + '.tel_filho'] ? 'border-red-500' : ''"
                                                 class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                            <p x-show="serverErrors['filhos.' + index + '.tel_filho']" x-text="serverErrors['filhos.' + index + '.tel_filho']?.[0]" class="mt-1 text-sm text-red-600" role="alert"></p>
                                         </div>
 
                                         {{-- Email filho --}}
@@ -901,7 +915,9 @@
                                                 x-bind:disabled="bloqueado" maxlength="255" autocomplete="off"
                                                 :value="filhos[index]?.eml_filho ?? ''"
                                                 placeholder="exemplo@email.com"
+                                                :class="serverErrors['filhos.' + index + '.eml_filho'] ? 'border-red-500' : ''"
                                                 class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                            <p x-show="serverErrors['filhos.' + index + '.eml_filho']" x-text="serverErrors['filhos.' + index + '.eml_filho']?.[0]" class="mt-1 text-sm text-red-600" role="alert"></p>
                                         </div>
 
                                         {{-- Data de nascimento filho --}}
@@ -913,7 +929,9 @@
                                                 :id="`dat_nascimento_filho_${index}`"
                                                 x-bind:disabled="bloqueado" autocomplete="off"
                                                 :value="filhos[index]?.dat_nascimento_filho ?? ''"
+                                                :class="serverErrors['filhos.' + index + '.dat_nascimento_filho'] ? 'border-red-500' : ''"
                                                 class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                            <p x-show="serverErrors['filhos.' + index + '.dat_nascimento_filho']" x-text="serverErrors['filhos.' + index + '.dat_nascimento_filho']?.[0]" class="mt-1 text-sm text-red-600" role="alert"></p>
                                         </div>
 
                                     </div>
@@ -967,6 +985,9 @@
                         <x-heroicon-o-heart class="w-6 h-6 text-amber-400 dark:text-amber-500 ml-auto shrink-0"
                             aria-hidden="true" />
                     </label>
+                    @error('ind_restricao')
+                        <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                    @enderror
 
                     <div x-show="mostrarRestricoes" x-transition
                         x-ref="restricoesContainer"

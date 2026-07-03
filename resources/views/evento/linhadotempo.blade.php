@@ -1,6 +1,5 @@
 <x-layouts.app :title="'Aura — Sua Jornada'">
     <section class="p-4 md:p-8 w-full max-w-7xl mx-auto space-y-8">
-        <x-session-alert />
 
         <div class="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-purple-700 to-indigo-900 rounded-[2rem] p-6 md:p-10 shadow-2xl text-white">
             <div class="absolute top-0 right-0 -mt-10 -mr-10 opacity-10 rotate-12">

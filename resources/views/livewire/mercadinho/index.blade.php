@@ -266,7 +266,7 @@ new class extends Component {
         $qtdNoCarrinho = $this->cart[$idt_produto]['qtd'] ?? 0;
 
         if ($produto->qtd_produto < ($qtdNoCarrinho + 1)) {
-            session()->flash('cart_error', "Estoque insuficiente para {$produto->nom_produto} (Disponível: {$produto->qtd_produto}).");
+            \Flux::toast(__('messages.alerts.error.insufficient_stock', ['product' => $produto->nom_produto, 'available' => $produto->qtd_produto]), variant: 'danger');
             return;
         }
 
@@ -322,7 +322,7 @@ new class extends Component {
 
         $this->showCompraModal = false;
         $this->cart = [];
-        session()->flash('success', 'Compra registrada com sucesso!');
+        \Flux::toast(__('messages.alerts.success.purchase_registered'), variant: 'success');
     }
 
     public function openVendaAvulsa(): void
@@ -342,12 +342,12 @@ new class extends Component {
         $produto = Produto::lockForUpdate()->find($this->vendaAvulsaProdutoId);
         
         if (!$produto) {
-            session()->flash('venda_avulsa_error', "Produto não encontrado.");
+            \Flux::toast(__('messages.alerts.error.product_not_found'), variant: 'danger');
             return;
         }
 
         if ($produto->qtd_produto < $this->vendaAvulsaQuantidade) {
-            session()->flash('venda_avulsa_error', "Estoque insuficiente para {$produto->nom_produto} (Disponível: {$produto->qtd_produto}).");
+            \Flux::toast(__('messages.alerts.error.insufficient_stock', ['product' => $produto->nom_produto, 'available' => $produto->qtd_produto]), variant: 'danger');
             return;
         }
 
@@ -382,7 +382,7 @@ new class extends Component {
         });
 
         $this->showVendaAvulsaModal = false;
-        session()->flash('success', 'Venda avulsa registrada com sucesso!');
+        \Flux::toast(__('messages.alerts.success.avulsa_registered'), variant: 'success');
     }
 
     // Lançamento de Crédito/Aporte
@@ -413,7 +413,7 @@ new class extends Component {
         ]);
 
         $this->showCreditoModal = false;
-        session()->flash('success', 'Crédito/Pagamento registrado com sucesso!');
+        \Flux::toast(__('messages.alerts.success.credit_registered'), variant: 'success');
     }
 
     // Estorno de transação
@@ -422,7 +422,7 @@ new class extends Component {
         $transacao = Transacao::find($idt_transacao);
         if ($transacao) {
             $transacao->delete();
-            session()->flash('success', 'Transação estornada com sucesso!');
+            \Flux::toast(__('messages.alerts.success.transaction_reversed'), variant: 'success');
         }
     }
 }; ?>
@@ -595,11 +595,7 @@ new class extends Component {
                     </div>
                 </div>
 
-                @if (session()->has('success'))
-                    <div class="p-4 bg-green-50 border border-green-200 text-green-700 dark:bg-green-950/20 dark:border-green-900/50 dark:text-green-400 rounded-xl text-sm font-medium">
-                        {{ session('success') }}
-                    </div>
-                @endif
+
 
                 {{-- Filtros e Lista de Contas --}}
                 <div class="bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 p-4 sm:p-6 space-y-4">
@@ -859,11 +855,7 @@ new class extends Component {
                                 <div class="font-bold text-zinc-950 dark:text-white text-sm">Catálogo de Produtos</div>
                             </div>
                             <div class="overflow-y-auto flex-1 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 space-y-2 bg-zinc-50 dark:bg-zinc-900/50">
-                                @if(session()->has('cart_error'))
-                                    <div class="p-2.5 bg-red-50 text-red-700 text-xs rounded-lg font-bold border border-red-200">
-                                        {{ session('cart_error') }}
-                                    </div>
-                                @endif
+
 
                                 @forelse($this->produtosDisponiveis as $prod)
                                     <div class="flex items-center justify-between p-3 bg-white dark:bg-zinc-800 rounded-lg shadow-xs border border-zinc-150 dark:border-zinc-700">
@@ -1167,11 +1159,7 @@ new class extends Component {
                         <flux:subheading>Registre uma venda avulsa. O estoque é reduzido e o valor contabilizado no faturamento.</flux:subheading>
                     </div>
 
-                    @if(session()->has('venda_avulsa_error'))
-                        <div class="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-bold">
-                            {{ session('venda_avulsa_error') }}
-                        </div>
-                    @endif
+
 
                     <form wire:submit.prevent="registrarVendaAvulsa" class="space-y-4">
                         <flux:select wire:model="vendaAvulsaProdutoId" label="Produto" placeholder="Selecione um produto" required>

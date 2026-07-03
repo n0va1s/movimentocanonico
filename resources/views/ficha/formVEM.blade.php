@@ -47,7 +47,7 @@
                                 if (data.tam_camiseta) document.getElementById('tam_camiseta').value = data.tam_camiseta;
                                 if (data.tip_genero) document.getElementById('tip_genero').value = data.tip_genero;
                             })
-                            .catch(error => console.log('Candidato ainda não existe, preenchimento manual necessário.'));
+                            .catch(error => console.log('{{ __('messages.api.candidate_not_found') }}'));
                     }
                 }
             }">
@@ -222,6 +222,7 @@
         @endif
 
         @if ($eventos->count() > 0)
+
             <form method="POST" 
                 enctype="multipart/form-data"
                 @submit="setTimeout(() => enviando = true, 50)"
@@ -334,7 +335,7 @@
                             <label for="tip_genero"
                                 class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
                                 Sexo <span class="text-red-600" aria-hidden="true">*</span><span
-                                    class="sr-only">(obrigatório)</span>
+                                    class="sr-only">{{ __('messages.hints.required') }}</span>
                             </label>
                             <select name="tip_genero" id="tip_genero" required x-bind:disabled="bloqueado"
                                 aria-required="true"
@@ -357,7 +358,7 @@
                             <label for="nom_candidato"
                                 class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
                                 Nome completo <span class="text-red-600" aria-hidden="true">*</span><span
-                                    class="sr-only">(obrigatório)</span>
+                                    class="sr-only">{{ __('messages.hints.required') }}</span>
                             </label>
                             <input type="text" name="nom_candidato" id="nom_candidato"
                                 x-bind:disabled="bloqueado" required maxlength="255" autocomplete="name"
@@ -389,7 +390,7 @@
                             <label for="dat_nascimento"
                                 class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
                                 Data de Nascimento <span class="text-red-600" aria-hidden="true">*</span><span
-                                    class="sr-only">(obrigatório)</span>
+                                    class="sr-only">{{ __('messages.hints.required') }}</span>
                             </label>
                             <input type="date" name="dat_nascimento" id="dat_nascimento"
                                 x-bind:disabled="bloqueado" required autocomplete="bday"
@@ -422,7 +423,7 @@
                             <label for="eml_candidato"
                                 class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
                                 Email <span class="text-red-600" aria-hidden="true">*</span><span
-                                    class="sr-only">(obrigatório)</span>
+                                    class="sr-only">{{ __('messages.hints.required') }}</span>
                             </label>
                             <input type="email" name="eml_candidato" id="eml_candidato"
                                 x-bind:disabled="bloqueado" required maxlength="255" autocomplete="email"
@@ -438,7 +439,7 @@
                         <div>
                             <label for="des_endereco"
                                 class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
-                                Endereço <span class="text-red-600" aria-hidden="true">*</span><span class="sr-only">(obrigatório)</span>
+                                Endereço <span class="text-red-600" aria-hidden="true">*</span><span class="sr-only">{{ __('messages.hints.required') }}</span>
                             </label>
                             <input type="text" name="des_endereco" id="des_endereco" x-bind:disabled="bloqueado"
                                 required maxlength="500" autocomplete="street-address" aria-required="true"
@@ -455,7 +456,7 @@
                             <label for="tam_camiseta"
                                 class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
                                 Tamanho da Camiseta <span class="text-red-600" aria-hidden="true">*</span><span
-                                    class="sr-only">(obrigatório)</span>
+                                    class="sr-only">{{ __('messages.hints.required') }}</span>
                             </label>
                             <select name="tam_camiseta" id="tam_camiseta" required x-bind:disabled="bloqueado"
                                 aria-required="true"
@@ -665,7 +666,7 @@
                                 <label for="idt_falar_com"
                                     class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
                                     Falar com <span class="text-red-600" aria-hidden="true">*</span><span
-                                        class="sr-only">(obrigatório)</span>
+                                        class="sr-only">{{ __('messages.hints.required') }}</span>
                                 </label>
                                 <select name="idt_falar_com" id="idt_falar_com" required x-bind:disabled="bloqueado"
                                     aria-required="true"
@@ -686,7 +687,7 @@
                                 <label for="des_onde_estuda"
                                     class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
                                     Onde estuda? <span class="text-red-600" aria-hidden="true">*</span><span
-                                        class="sr-only">(obrigatório)</span>
+                                        class="sr-only">{{ __('messages.hints.required') }}</span>
                                 </label>
                                 <input type="text" name="des_onde_estuda" id="des_onde_estuda"
                                     x-bind:disabled="bloqueado"
@@ -702,7 +703,7 @@
                                 <label for="des_mora_quem"
                                     class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
                                     Mora com quem? <span class="text-red-600" aria-hidden="true">*</span><span
-                                        class="sr-only">(obrigatório)</span>
+                                        class="sr-only">{{ __('messages.hints.required') }}</span>
                                 </label>
                                 <input type="text" name="des_mora_quem" id="des_mora_quem"
                                     x-bind:disabled="bloqueado"
@@ -737,33 +738,45 @@
                                     <input type="checkbox" name="ind_catolico" value="1"
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_catolico', $ficha->ind_catolico) ? 'checked' : '' }}
-                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_catolico') border-red-500 @enderror">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">É católico</span>
                                 </label>
+                                @error('ind_catolico')
+                                    <p class="text-sm text-red-600" role="alert">{{ $message }}</p>
+                                @enderror
                                 <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_batizado" value="0">
                                     <input type="checkbox" name="ind_batizado" value="1"
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_batizado', optional($ficha->fichaVem)->ind_batizado) ? 'checked' : '' }}
-                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_batizado') border-red-500 @enderror">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">Foi batizado</span>
                                 </label>
+                                @error('ind_batizado')
+                                    <p class="text-sm text-red-600" role="alert">{{ $message }}</p>
+                                @enderror
                                 <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_primeira_comunhao" value="0">
                                     <input type="checkbox" name="ind_primeira_comunhao" value="1"
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_primeira_comunhao', optional($ficha->fichaVem)->ind_primeira_comunhao) ? 'checked' : '' }}
-                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_primeira_comunhao') border-red-500 @enderror">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">Fez primeira comunhão</span>
                                 </label>
+                                @error('ind_primeira_comunhao')
+                                    <p class="text-sm text-red-600" role="alert">{{ $message }}</p>
+                                @enderror
                                 <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_crismado" value="0">
                                     <input type="checkbox" name="ind_crismado" value="1"
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_crismado', optional($ficha->fichaVem)->ind_crismado) ? 'checked' : '' }}
-                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_crismado') border-red-500 @enderror">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">Foi crismado</span>
                                 </label>
+                                @error('ind_crismado')
+                                    <p class="text-sm text-red-600" role="alert">{{ $message }}</p>
+                                @enderror
                             </div>
                         </div>
 
@@ -793,10 +806,13 @@
                                     <input type="checkbox" name="ind_toca_instrumento" value="1"
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_toca_instrumento', optional($ficha->fichaVem)->ind_toca_instrumento) ? 'checked' : '' }}
-                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_toca_instrumento') border-red-500 @enderror"
                                         aria-labelledby="instrumento-label">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">Sim</span>
                                 </label>
+                                @error('ind_toca_instrumento')
+                                    <p class="text-sm text-red-600" role="alert">{{ $message }}</p>
+                                @enderror
                             </div>
                         </div>
 
@@ -847,6 +863,9 @@
                         <x-heroicon-o-heart class="w-6 h-6 text-amber-400 dark:text-amber-500 ml-auto shrink-0"
                             aria-hidden="true" />
                     </label>
+                    @error('ind_restricao')
+                        <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                    @enderror
 
                     <div x-show="mostrarRestricoes" x-transition
                         x-ref="restricoesContainer"
@@ -937,7 +956,7 @@
                                 Estou ciente de que <strong>NÃO É PERMITIDO</strong> sair durante o encontro nem levar o
                                 celular para o VEM.
                                 <span class="text-red-600" aria-hidden="true">*</span><span
-                                    class="sr-only">(obrigatório)</span>
+                                    class="sr-only">{{ __('messages.hints.required') }}</span>
                             </span>
                         </label>
                         @error('ind_consentimento')
