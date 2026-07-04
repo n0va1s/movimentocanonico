@@ -95,7 +95,7 @@ test('pode criar uma nova pessoa com sucesso', function () {
 
     $this->actingAs($this->user)->post(route('pessoas.store'), $data)
         ->assertRedirect(route('pessoas.index'))
-        ->assertSessionHas('success', 'Pessoa criada com sucesso.');
+        ->assertSessionHas('success', 'Pessoa cadastrada/atualizada com sucesso.');
 
     $this->assertDatabaseHas('pessoa', ['nom_pessoa' => $data['nom_pessoa']]);
 });
@@ -114,7 +114,7 @@ test('pode criar pessoa com restricoes de saude e foto', function () {
 
     $this->actingAs($this->user)->post(route('pessoas.store'), $data)
         ->assertRedirect(route('pessoas.index'))
-        ->assertSessionHas('success', 'Pessoa criada com sucesso.');
+        ->assertSessionHas('success', 'Pessoa cadastrada/atualizada com sucesso.');
 
     $pessoa = Pessoa::where('nom_pessoa', $data['nom_pessoa'])->first();
 
@@ -141,7 +141,7 @@ test('pode criar uma pessoa com parceiro', function () {
 
     $this->actingAs($this->user)->post(route('pessoas.store'), $data)
         ->assertRedirect(route('pessoas.index'))
-        ->assertSessionHas('success', 'Pessoa criada com sucesso.');
+        ->assertSessionHas('success', 'Pessoa cadastrada/atualizada com sucesso.');
 
     $pessoaCriada = Pessoa::where('nom_pessoa', $data['nom_pessoa'])->first();
 
@@ -266,7 +266,7 @@ test('ao criar pessoa sem usuario cria usuario automaticamente', function () {
         ->and($user->email)->toBe('teste@teste.com')
         ->and(Hash::check('19900101', $user->password))->toBeTrue();
 
-    Mail::assertSent(BoasVindasMail::class);
+    Mail::assertQueued(BoasVindasMail::class);
 });
 
 test('nao cria usuario se pessoa ja possui idt_usuario', function () {

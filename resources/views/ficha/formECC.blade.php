@@ -29,6 +29,7 @@
                 'eml_filho'            => $f->eml_filho,
                 'dat_nascimento_filho' => $f->dat_nascimento_filho?->format('Y-m-d'),
             ])->toArray() ?? [])) }},
+            serverErrors: {{ Js::from($errors->messages()) }},
         }">
 
         {{-- ===== CABEÇALHO ===== --}}
@@ -114,6 +115,9 @@
                             <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold text-white {{ $style['bg'] }} shadow-sm">
                                 <x-heroicon-s-check class="w-4 h-4" />
                                 {{ $situacao->label() }}
+                                @if($situacao->mail()[0] === 'Sim')
+                                    <x-heroicon-o-envelope class="w-4 h-4" title="Envia e-mail ao ser alterado para esta situação" />
+                                @endif
                             </span>
                         @else
                             <form method="POST" action="{{ route('ecc.situacao', $ficha->idt_ficha) }}" class="inline">
@@ -126,7 +130,7 @@
                                     @elseif($situacao->value === 'S')
                                         <x-heroicon-o-check-circle class="w-4 h-4" />
                                     @elseif($situacao->value === 'E')
-                                        <x-heroicon-o-envelope class="w-4 h-4" />
+                                        <x-heroicon-o-paper-airplane class="w-4 h-4" />
                                     @elseif($situacao->value === 'R')
                                         <x-heroicon-o-document-check class="w-4 h-4" />
                                     @elseif($situacao->value === 'P')
@@ -143,6 +147,9 @@
                                         <x-heroicon-o-check-circle class="w-4 h-4" />
                                     @endif
                                     {{ $situacao->label() }}
+                                    @if($situacao->mail()[0] === 'Sim')
+                                        <x-heroicon-o-envelope class="w-4 h-4" title="Envia e-mail ao ser alterado para esta situação" />
+                                    @endif
                                 </button>
                             </form>
                         @endif
@@ -178,6 +185,7 @@
         @endif
 
         @if ($eventos->count() > 0)
+
             <form method="POST" enctype="multipart/form-data"
                 @submit="setTimeout(() => enviando = true, 50)"
                 action="{{ $ficha->exists ? route('ecc.update', $ficha) : route('ecc.store') }}" 
@@ -369,10 +377,13 @@
                                 <input type="checkbox" name="ind_catolico" value="1"
                                     x-bind:disabled="bloqueado"
                                     {{ old('ind_catolico', $ficha->ind_catolico) ? 'checked' : '' }}
-                                    class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_catolico') border-red-500 @enderror">
                                 <span class="font-medium text-gray-700 dark:text-gray-300 text-sm sm:text-base">É católico(a)?</span>
                             </label>
                         </div>
+                        @error('ind_catolico')
+                            <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                        @enderror
 
                         {{-- Habilidade Principal --}}
                         <div>
@@ -604,10 +615,13 @@
                                 <input type="checkbox" name="ind_catolico_conjuge" value="1"
                                     x-bind:disabled="bloqueado"
                                     {{ old('ind_catolico_conjuge', $ficha->fichaEcc?->ind_catolico_conjuge) ? 'checked' : '' }}
-                                    class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_catolico_conjuge') border-red-500 @enderror">
                                 <span class="font-medium text-gray-700 dark:text-gray-300 text-sm sm:text-base">É católico(a)?</span>
                             </label>
                         </div>
+                        @error('ind_catolico_conjuge')
+                            <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                        @enderror
 
                         {{-- Habilidade Principal cônjuge --}}
                         <div>
@@ -856,7 +870,9 @@
                                                 x-bind:disabled="bloqueado" maxlength="14" autocomplete="off"
                                                 :value="filhos[index]?.num_cpf_filho ?? ''"
                                                 placeholder="000.000.000-00"
+                                                :class="serverErrors['filhos.' + index + '.num_cpf_filho'] ? 'border-red-500' : ''"
                                                 class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                            <p x-show="serverErrors['filhos.' + index + '.num_cpf_filho']" x-text="serverErrors['filhos.' + index + '.num_cpf_filho']?.[0]" class="mt-1 text-sm text-red-600" role="alert"></p>
                                         </div>
 
                                         {{-- Nome filho --}}
@@ -869,7 +885,9 @@
                                                 x-bind:disabled="bloqueado" maxlength="255" autocomplete="off"
                                                 :value="filhos[index]?.nom_filho ?? ''"
                                                 placeholder="Nome completo"
+                                                :class="serverErrors['filhos.' + index + '.nom_filho'] ? 'border-red-500' : ''"
                                                 class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                            <p x-show="serverErrors['filhos.' + index + '.nom_filho']" x-text="serverErrors['filhos.' + index + '.nom_filho']?.[0]" class="mt-1 text-sm text-red-600" role="alert"></p>
                                         </div>
 
                                         {{-- Telefone filho --}}
@@ -882,7 +900,9 @@
                                                 x-bind:disabled="bloqueado" maxlength="20" autocomplete="off"
                                                 :value="filhos[index]?.tel_filho ?? ''"
                                                 placeholder="(61) 90000-0000"
+                                                :class="serverErrors['filhos.' + index + '.tel_filho'] ? 'border-red-500' : ''"
                                                 class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                            <p x-show="serverErrors['filhos.' + index + '.tel_filho']" x-text="serverErrors['filhos.' + index + '.tel_filho']?.[0]" class="mt-1 text-sm text-red-600" role="alert"></p>
                                         </div>
 
                                         {{-- Email filho --}}
@@ -895,7 +915,9 @@
                                                 x-bind:disabled="bloqueado" maxlength="255" autocomplete="off"
                                                 :value="filhos[index]?.eml_filho ?? ''"
                                                 placeholder="exemplo@email.com"
+                                                :class="serverErrors['filhos.' + index + '.eml_filho'] ? 'border-red-500' : ''"
                                                 class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                            <p x-show="serverErrors['filhos.' + index + '.eml_filho']" x-text="serverErrors['filhos.' + index + '.eml_filho']?.[0]" class="mt-1 text-sm text-red-600" role="alert"></p>
                                         </div>
 
                                         {{-- Data de nascimento filho --}}
@@ -907,7 +929,9 @@
                                                 :id="`dat_nascimento_filho_${index}`"
                                                 x-bind:disabled="bloqueado" autocomplete="off"
                                                 :value="filhos[index]?.dat_nascimento_filho ?? ''"
+                                                :class="serverErrors['filhos.' + index + '.dat_nascimento_filho'] ? 'border-red-500' : ''"
                                                 class="w-full rounded-md border border-gray-300 dark:border-zinc-600 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                            <p x-show="serverErrors['filhos.' + index + '.dat_nascimento_filho']" x-text="serverErrors['filhos.' + index + '.dat_nascimento_filho']?.[0]" class="mt-1 text-sm text-red-600" role="alert"></p>
                                         </div>
 
                                     </div>
@@ -918,7 +942,25 @@
                 </div>
 
                 {{-- ===== SAÚDE E RESTRIÇÕES ===== --}}
-                <div x-data="{ mostrarRestricoes: {{ old('ind_restricao', $ficha->ind_restricao ?? false) ? 'true' : 'false' }} }">
+                <div x-data="{
+                        mostrarRestricoes: {{ old('ind_restricao', $ficha->ind_restricao ?? false) ? 'true' : 'false' }},
+                        temRestricaoSelecionada: true,
+                        verificarRestricoes() {
+                            if (!this.mostrarRestricoes) {
+                                this.temRestricaoSelecionada = true;
+                                return;
+                            }
+                            const container = this.$refs.restricoesContainer;
+                            if (!container) return;
+                            const checkboxes = container.querySelectorAll('input[type=\'checkbox\'][name^=\'restricoes\']:checked');
+                            const inputs = Array.from(container.querySelectorAll('input[type=\'text\'][name^=\'complementos\']')).filter(i => i.value.trim() !== '');
+                            this.temRestricaoSelecionada = checkboxes.length > 0 || inputs.length > 0;
+                        }
+                    }"
+                    @change="verificarRestricoes"
+                    @input="verificarRestricoes"
+                    x-init="setTimeout(() => verificarRestricoes(), 100)"
+                >
                     <label
                         class="flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-colors
                         border-amber-300 bg-amber-50 hover:bg-amber-100
@@ -943,13 +985,27 @@
                         <x-heroicon-o-heart class="w-6 h-6 text-amber-400 dark:text-amber-500 ml-auto shrink-0"
                             aria-hidden="true" />
                     </label>
+                    @error('ind_restricao')
+                        <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                    @enderror
 
                     <div x-show="mostrarRestricoes" x-transition
+                        x-ref="restricoesContainer"
                         class="mt-3 bg-gray-50 dark:bg-zinc-700 rounded-md p-4" role="region"
                         aria-label="Restrições e Alergias">
                         <h3 class="text-base sm:text-lg font-medium mb-3 text-gray-900 dark:text-gray-100">
                             Restrições e Alergias
                         </h3>
+
+                        <div x-show="mostrarRestricoes && !temRestricaoSelecionada" x-transition
+                            class="mb-4 flex items-center gap-2 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 px-4 py-3"
+                            role="alert">
+                            <x-heroicon-o-exclamation-triangle class="w-5 h-5 text-amber-500 shrink-0" aria-hidden="true" />
+                            <p class="text-sm text-amber-700 dark:text-amber-400">
+                                Nenhuma restrição ou alergia foi informada.. Desmarque a opção Informações de Saúde por favor
+                            </p>
+                        </div>
+
                         <div class="space-y-4">
                             @php
                                 $restricoesSelecionadas = $ficha->fichaSaude->pluck('idt_restricao')->toArray();

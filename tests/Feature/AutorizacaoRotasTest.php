@@ -35,6 +35,8 @@ $rotasAuth = [
     '/timeline',
     '/termo-sgm',
     '/termo-vem',
+    '/mensagens',
+    '/pessoas/create',
     '/trabalhadores/create',
     '/eventos',
     '/settings/profile',
@@ -59,7 +61,6 @@ $rotasAdmin = [
     '/configuracoes/equipe',
     '/eventos/create',
     '/pessoas',
-    '/pessoas/create',
     '/aniversario',
 ];
 
@@ -73,9 +74,8 @@ foreach ($rotasAdmin as $rota) {
 
     foreach (['coord', 'dirig', 'user'] as $perfil) {
         test("{$perfil} recebe 403 em {$rota}", function () use ($rota, $perfil) {
-            $this->actingAs(userComRole($perfil))
-                ->get($rota)
-                ->assertStatus(403);
+            $response = $this->actingAs(userComRole($perfil))->get($rota);
+            $response->assertStatus(403);
         });
     }
 }
@@ -200,6 +200,7 @@ $rotasListagem = [
     '/eventos',
     '/dashboard',
     '/timeline',
+    '/pessoas/create',
 ];
 
 foreach ($rotasListagem as $rota) {

@@ -1,6 +1,5 @@
 <x-layouts.app title="Importar Planilhas de Eventos">
     <section class="p-6 w-full max-w-7xl mx-auto">
-        <x-session-alert />
 
         {{-- Cabeçalho Principal --}}
         <header class="mb-8 border-b border-gray-200 dark:border-zinc-700 pb-5">
@@ -60,7 +59,7 @@
                                         {{ $ev->des_evento }} ({{ $ev->movimento->des_sigla }} - {{ $ev->getDataInicioFormatada() }})
                                     </flux:select.option>
                                 @empty
-                                    <flux:select.option value="" disabled>Nenhum evento ativo cadastrado</flux:select.option>
+                                    <flux:select.option value="" disabled>{{ __('messages.empty.evento.no_active') }}</flux:select.option>
                                 @endforelse
                             </flux:select>
                             <span class="text-xs text-gray-400 dark:text-zinc-500 mt-1 block">Apenas eventos futuros ou em andamento são listados aqui.</span>
@@ -119,7 +118,7 @@
                                         {{ $ev->des_evento }} ({{ $ev->movimento->des_sigla }} - {{ $ev->getDataInicioFormatada() }})
                                     </flux:select.option>
                                 @empty
-                                    <flux:select.option value="" disabled>Nenhum evento ativo cadastrado</flux:select.option>
+                                    <flux:select.option value="" disabled>{{ __('messages.empty.evento.no_active') }}</flux:select.option>
                                 @endforelse
                             </flux:select>
                             <span class="text-xs text-gray-400 dark:text-zinc-500 mt-1 block">Apenas eventos futuros ou em andamento são listados aqui.</span>

@@ -44,11 +44,7 @@ class FichaEccController extends Controller
 
         $hoje = now()->startOfDay();
         $eventos = Evento::where('idt_movimento', TipoMovimento::ECC)
-            ->where(function ($q) use ($hoje) {
-                $q->where('dat_inicio', '>=', $hoje)
-                    ->orWhere('dat_termino', '>=', $hoje)
-                    ->orWhereNull('dat_termino');
-            })
+            ->ativos()
             ->orderBy('dat_inicio', 'asc')
             ->get();
 
@@ -80,7 +76,7 @@ class FichaEccController extends Controller
         Log::info('Acesso ao formulário de criação de ficha ECC', $this->getLogContext(request()));
 
         $ficha = new Ficha;
-        $eventos = Evento::getByTipo(TipoMovimento::ECC, 'E', 3);
+        $eventos = Evento::porTipo(TipoMovimento::ECC, 'E', 3)->get();
 
         return view('ficha.formECC', array_merge(
             $this->fichaService::dadosFixosFicha($ficha),
@@ -192,9 +188,12 @@ class FichaEccController extends Controller
             'duration_ms' => round((microtime(true) - $start) * 1000, 2),
         ]));
 
+        // Dispara e-mail de recebimento (para candidatos/casal)
+        \App\Events\FichaRecebidaEvent::dispatch($ficha);
+
         $previous = url()->previous();
         if (str_contains($previous, '/fichas/ecc') || (app()->runningUnitTests() && ! str_contains($previous, '/ecc'))) {
-            return redirect()->route('ecc.index')->with('success', 'Ficha cadastrada com sucesso!');
+            return back()->with('success', 'Ficha cadastrada com sucesso!');
         }
 
         return redirect()->route('home')->with('success', 'Ficha cadastrada com sucesso!');
@@ -416,8 +415,7 @@ class FichaEccController extends Controller
             'duration_ms' => round((microtime(true) - $start) * 1000, 2),
         ]));
 
-        $previous = url()->previous();
-        if (str_contains($previous, '/fichas/ecc') || (app()->runningUnitTests() && ! str_contains($previous, '/ecc'))) {
+        if (auth()->user()->role === 'admin') {
             return redirect()->route('ecc.index')->with('success', 'Ficha ECC atualizada com sucesso.');
         }
 
@@ -457,7 +455,7 @@ class FichaEccController extends Controller
                 ? 'Não é possível excluir esta ficha. É preciso apagar os dados associados.'
                 : 'Erro ao tentar excluir a ficha.';
 
-            return redirect()->route('ecc.index')->with('error', $msg);
+            return back()->with('error', $msg);
         }
     }
 
@@ -479,7 +477,7 @@ class FichaEccController extends Controller
         try {
             FichaService::atualizarSituacaoFicha($id, $novaSituacao);
 
-            return redirect()->back()->with('success', 'Situação da ficha atualizada com sucesso!');
+            return redirect()->route('ecc.index')->with('success', 'Situação da ficha atualizada com sucesso!');
         } catch (\RuntimeException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

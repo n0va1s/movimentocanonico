@@ -157,7 +157,7 @@ describe('Evento Model', function () {
             ->and($resultado->first()->idt_movimento)->toBe($this->movimento->idt_movimento);
     });
 
-    test('getByTipo retorna eventos filtrados por movimento e tipo', function () {
+    test('porTipo retorna eventos filtrados por movimento e tipo', function () {
         Evento::factory()->create([
             'idt_movimento' => $this->movimento->idt_movimento,
             'tip_evento' => TipoEvento::ENCONTRO->value,
@@ -167,21 +167,60 @@ describe('Evento Model', function () {
             'tip_evento' => TipoEvento::POS_ENCONTRO->value,
         ]);
 
-        $resultado = Evento::getByTipo($this->movimento->idt_movimento, TipoEvento::ENCONTRO->value);
+        $resultado = Evento::porTipo($this->movimento->idt_movimento, TipoEvento::ENCONTRO->value)->get();
 
         expect($resultado)->toHaveCount(1)
             ->and($resultado->first()->tip_evento)->toBe(TipoEvento::ENCONTRO);
     });
 
-    test('getByTipo respeita o limite quando informado', function () {
+    test('porTipo respeita o limite quando informado', function () {
         Evento::factory()->count(5)->create([
             'idt_movimento' => $this->movimento->idt_movimento,
             'tip_evento' => TipoEvento::ENCONTRO->value,
         ]);
 
-        $resultado = Evento::getByTipo($this->movimento->idt_movimento, TipoEvento::ENCONTRO->value, 3);
+        $resultado = Evento::porTipo($this->movimento->idt_movimento, TipoEvento::ENCONTRO->value, 3)->get();
 
         expect($resultado)->toHaveCount(3);
+    });
+
+    test('ativos retorna apenas eventos ativos (sem deleted_at)', function () {
+        // Evento passado (inativo via soft delete)
+        $eventoPassado = Evento::factory()->create([
+            'dat_inicio' => today()->subDays(5),
+            'dat_termino' => today()->subDays(2),
+        ]);
+        $eventoPassado->delete(); // Força o soft delete, o que torna o evento inativo
+        
+        // Evento ativo
+        Evento::factory()->create([
+            'dat_inicio' => today()->subDays(1),
+            'dat_termino' => today()->addDays(2),
+        ]);
+
+        $resultado = Evento::ativos()->get();
+
+        expect($resultado)->toHaveCount(1);
+    });
+
+    test('inativos retorna apenas eventos passados (com deleted_at)', function () {
+        // Evento passado (inativo via soft delete)
+        $eventoPassado = Evento::factory()->create([
+            'dat_inicio' => today()->subDays(5),
+            'dat_termino' => today()->subDays(2),
+        ]);
+        $eventoPassado->delete(); // Força o soft delete
+        
+        // Evento ativo
+        Evento::factory()->create([
+            'dat_inicio' => today()->subDays(1),
+            'dat_termino' => today()->addDays(2),
+        ]);
+
+        $resultado = Evento::inativos()->get();
+
+        expect($resultado)->toHaveCount(1)
+            ->and($resultado->first()->idt_evento)->toBe($eventoPassado->idt_evento);
     });
 
     test('relacionamento com movimento funciona', function () {

@@ -67,6 +67,14 @@ Route::get('/encerrar-eventos', function () {
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::post('/', [HomeController::class, 'contato'])->name('home.contato');
+Route::get('/fichas/{ficha}/autorizar', function (App\Models\Ficha $ficha) {
+    if ($ficha->tip_situacao === App\Enums\TipoSituacao::ENVIADA) {
+        $ficha->tip_situacao = App\Enums\TipoSituacao::RECEBIDA;
+        $ficha->save();
+        return redirect()->route('home')->with('success', 'Inscrição autorizada com sucesso!');
+    }
+    return redirect()->route('home')->with('info', 'Esta inscrição já foi processada ou não está aguardando autorização.');
+})->name('fichas.autorizar')->middleware('signed');
 
 // ---------------------------------------------------------------------------
 // Área autenticada — todos os perfis
@@ -151,6 +159,12 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // -----------------------------------------------------------------------
+    // Rotas acessíveis a qualquer usuário logado (veteranos podem completar perfil)
+    // -----------------------------------------------------------------------
+    Route::get('/pessoas/create', [PessoaController::class, 'create'])->name('pessoas.create');
+    Route::post('/pessoas', [PessoaController::class, 'store'])->name('pessoas.store');
+
+    // -----------------------------------------------------------------------
     // Somente admin: criar/editar/excluir/visualizar recursos e configurações
     // -----------------------------------------------------------------------
 
@@ -169,10 +183,8 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/eventos/{evento}', [EventoController::class, 'update'])->withTrashed();
         Route::delete('/eventos/{evento}', [EventoController::class, 'destroy'])->name('eventos.destroy')->withTrashed();
 
-        // Pessoas — listagem, busca e CRUD
+        // Pessoas — listagem, busca e CRUD (create e store foram movidos para cima)
         Volt::route('/pessoas', 'pessoas.index')->name('pessoas.index');
-        Route::get('/pessoas/create', [PessoaController::class, 'create'])->name('pessoas.create');
-        Route::post('/pessoas', [PessoaController::class, 'store'])->name('pessoas.store');
         Route::delete('/pessoas/{pessoa}', [PessoaController::class, 'destroy'])->name('pessoas.destroy');
 
         // Executado diariamente via command

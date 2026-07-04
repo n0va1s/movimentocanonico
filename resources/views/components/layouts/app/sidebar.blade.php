@@ -47,12 +47,20 @@
                         {{ __('Mensagens') }}
                     </flux:navlist.item>
                 @endif
-                <flux:navlist.item icon="user"
-                    :href="route('pessoas.edit', ['pessoa' => Auth::user()->pessoa?->idt_pessoa])"
-                    :current="request()->routeIs('pessoas.edit')" wire:navigate>
-                    {{ __('Meus Dados') }}
-                </flux:navlist.item>
-                @if (Auth::user() && Auth::user()->podeAcessarMinhasFichas())
+                @if (Auth::user() && Auth::user()->pessoa)
+                    <flux:navlist.item icon="user"
+                        :href="route('pessoas.edit', ['pessoa' => Auth::user()->pessoa->idt_pessoa])"
+                        :current="request()->routeIs('pessoas.edit')" wire:navigate>
+                        {{ __('Meus Dados') }}
+                    </flux:navlist.item>
+                @else
+                    <flux:navlist.item icon="user"
+                        :href="route('pessoas.create')"
+                        :current="request()->routeIs('pessoas.create')" wire:navigate>
+                        {{ __('Meus Dados') }}
+                    </flux:navlist.item>
+                @endif
+                @if (Auth::user() && Auth::user()->hasRole('admin', 'visit'))
                     <flux:navlist.item icon="document-text" :href="route('minhas-fichas.index')"
                         :current="request()->routeIs('minhas-fichas.index')" wire:navigate>
                         {{ __('Minhas Fichas') }}

@@ -44,4 +44,19 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    /**
+     * Configure the model factory.
+     */
+    public function configure(): static
+    {
+        return $this->afterCreating(function (User $user) {
+            \App\Models\Pessoa::factory()->create([
+                'idt_usuario' => $user->id,
+                'eml_pessoa' => $user->email,
+                'nom_pessoa' => $user->name,
+                'tel_pessoa' => '11999999999',
+            ]);
+        });
+    }
 }

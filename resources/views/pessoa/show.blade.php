@@ -1,7 +1,6 @@
 <x-layouts.app :title="$pessoa->nom_pessoa">
     <section class="p-6 w-full max-w-3xl mx-auto">
 
-        <x-session-alert />
 
         {{-- NAVEGAÇÃO --}}
         <flux:breadcrumbs class="mb-6">

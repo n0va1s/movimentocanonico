@@ -50,11 +50,7 @@ class FichaVemController extends Controller
 
         $hoje = now()->startOfDay();
         $eventos = Evento::where('idt_movimento', TipoMovimento::VEM)
-            ->where(function ($q) use ($hoje) {
-                $q->where('dat_inicio', '>=', $hoje)
-                    ->orWhere('dat_termino', '>=', $hoje)
-                    ->orWhereNull('dat_termino');
-            })
+            ->ativos()
             ->orderBy('dat_inicio', 'asc')
             ->get();
 
@@ -97,7 +93,7 @@ class FichaVemController extends Controller
         Log::info('Acesso ao formulário de criação de ficha VEM', $context);
 
         $ficha = new Ficha;
-        $eventos = Evento::getByTipo(TipoMovimento::VEM, 'E', 3);
+        $eventos = Evento::porTipo(TipoMovimento::VEM, 'E', 3)->get();
 
         return view('ficha.formVEM', array_merge($this->fichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,
@@ -193,8 +189,10 @@ class FichaVemController extends Controller
             'duration_ms' => $duration,
         ]));
 
-        $previous = url()->previous();
-        if (str_contains($previous, '/fichas/vem') || (app()->runningUnitTests() && ! str_contains($previous, '/vem'))) {
+        // Dispara e-mail de recebimento
+        \App\Events\FichaRecebidaEvent::dispatch($ficha);
+
+        if (auth()->user()->role === 'admin') {
             return redirect()->route('vem.index')->with('success', 'Ficha cadastrada com sucesso!');
         }
 
@@ -394,8 +392,7 @@ class FichaVemController extends Controller
             'duration_ms' => $duration,
         ]));
 
-        $previous = url()->previous();
-        if (str_contains($previous, '/fichas/vem') || (app()->runningUnitTests() && ! str_contains($previous, '/vem'))) {
+        if (auth()->user()->role === 'admin') {
             return redirect()->route('vem.index')->with('success', 'Ficha atualizada com sucesso!');
         }
 
@@ -425,9 +422,7 @@ class FichaVemController extends Controller
                 'duration_ms' => $duration,
             ]));
 
-            return redirect()
-                ->route('vem.index')
-                ->with('success', 'Ficha excluída com sucesso!');
+            return redirect()->route('vem.index')->with('success', 'Ficha excluída com sucesso!');
         } catch (QueryException $e) {
 
             $duration = round((microtime(true) - $start) * 1000, 2);
@@ -440,14 +435,12 @@ class FichaVemController extends Controller
             ]));
 
             if ($e->getCode() === '23000') {
-                return redirect()
-                    ->route('vem.index')
+                return back()
                     ->with('error', 'Não é possível excluir esta ficha. È preciso apagar os dados associados.');
             }
 
             // Se for outro erro de banco
-            return redirect()
-                ->route('vem.index')
+            return back()
                 ->with('error', 'Erro ao tentar excluir a ficha.');
         }
     }
@@ -470,9 +463,9 @@ class FichaVemController extends Controller
         try {
             FichaService::atualizarSituacaoFicha($id, $novaSituacao);
 
-            return redirect()->back()->with('success', 'Situação da ficha atualizada com sucesso!');
+            return redirect()->route('vem.index')->with('success', 'Situação da ficha atualizada com sucesso!');
         } catch (\RuntimeException $e) {
-            return redirect()->back()->with('error', $e->getMessage());
+            return back()->with('error', $e->getMessage());
         }
     }
 }

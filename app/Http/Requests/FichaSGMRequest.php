@@ -10,7 +10,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Validator;
 
-class FichaSGMRequest extends FormRequest
+class FichaSGMRequest extends FichaRequest
 {
     public function authorize(): bool
     {
@@ -19,7 +19,7 @@ class FichaSGMRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
+        return array_merge(parent::rules(), [
             // Responsável em caso de emergência
             'idt_falar_com' => 'required|exists:tipo_responsavel,idt_responsavel',
 
@@ -55,7 +55,7 @@ class FichaSGMRequest extends FormRequest
             'nom_convidou' => 'nullable|string|max:255',
             'tel_convidou' => ['nullable', new Telefone],
             'end_convidou' => 'nullable|string|max:255',
-        ];
+        ]);
     }
 
     /**
@@ -78,7 +78,7 @@ class FichaSGMRequest extends FormRequest
 
     public function messages(): array
     {
-        return [
+        return array_merge(parent::messages(), [
             'idt_falar_com.required' => 'Informe com quem devemos falar em caso de necessidade.',
             'des_naturalidade.required' => 'Informe a naturalidade do candidato.',
             'eml_mae.email' => 'Informe um e-mail válido para a mãe.',
@@ -86,6 +86,9 @@ class FichaSGMRequest extends FormRequest
             'med_foto.image' => 'A foto deve ser uma imagem.',
             'med_foto.max' => 'A foto não pode ter mais de 10MB.',
             'med_foto.uploaded' => 'A foto não pôde ser enviada. Verifique se o tamanho não excede o limite do servidor (normalmente 2MB) ou tente uma imagem menor.',
-        ];
+            'tip_escolaridade.required' => 'Informe a escolaridade do candidato.',
+            'tip_escolaridade_situacao.required' => 'Informe a situação da escolaridade.',
+            'tip_religiao.required' => 'Informe a religião do candidato.',
+        ]);
     }
 }

@@ -1,12 +1,15 @@
 <x-layouts.app title="Evento">
     <section class="p-6 w-full max-w-7xl mx-auto">
-        <x-session-alert />
 
         {{-- Cabeçalho --}}
         <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
                 <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Eventos</h1>
                 <p class="text-gray-600 mt-1 dark:text-gray-400">Visualize os próximos encontros, pós-encontros e desafios.</p>
+                <p class="text-sm text-yellow-600 dark:text-yellow-400 mt-2 flex items-center gap-1">
+                    <x-heroicon-o-information-circle class="w-4 h-4" />
+                    Os eventos só estarão disponíveis para pessoas que já fizeram os encontros.
+                </p>
             </div>
 
             @if (Auth::user()->isAdmin())
@@ -176,7 +179,7 @@
                                 $tipoValue = $evento->tip_evento instanceof \UnitEnum ? $evento->tip_evento->value : $evento->tip_evento;
                             @endphp
 
-                            @if ($tipoValue === 'E')
+                            @if ($tipoValue === 'E' && auth()->user()->pessoa)
                                 <flux:button href="{{ route('trabalhadores.create', ['evento' => $evento]) }}" color="green" class="w-full">
                                     Quero Trabalhar
                                 </flux:button>
@@ -192,9 +195,9 @@
                                     </flux:button>
                                 </form>
                             @else
-                                <div class="w-full py-2 text-center text-sm text-gray-500 dark:text-gray-400">
-                                    Complete seu cadastro para participar.
-                                </div>
+                                <flux:button href="{{ route('pessoas.create') }}" color="blue" class="w-full">
+                                    Completar Cadastro
+                                </flux:button>
                             @endif
                         @endif
                     </footer>

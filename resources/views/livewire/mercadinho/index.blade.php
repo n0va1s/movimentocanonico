@@ -38,6 +38,11 @@ new class extends Component {
     // Carrinho de Compras
     public array $cart = []; // [idt_produto => ['qtd' => X, 'nom' => Y, 'val' => Z]]
 
+    // Venda Avulsa
+    public bool $showVendaAvulsaModal = false;
+    public ?int $vendaAvulsaProdutoId = null;
+    public int $vendaAvulsaQuantidade = 1;
+
     public function mount(?Evento $evento = null): void
     {
         if ($evento && $evento->exists) {
@@ -213,6 +218,22 @@ new class extends Component {
         );
     }
 
+    public function getContaAvulsa(): Conta
+    {
+        $pessoaAvulsa = Pessoa::firstOrCreate(
+            ['eml_pessoa' => 'venda.avulsa@sistema.local'],
+            [
+                'nom_pessoa' => 'Venda Avulsa',
+                'dat_nascimento' => '1900-01-01',
+            ]
+        );
+
+        return Conta::firstOrCreate(
+            ['idt_pessoa' => $pessoaAvulsa->idt_pessoa, 'idt_evento' => $this->evento->idt_evento],
+            ['val_saldo' => 0.00, 'usu_inclusao' => Auth::id()]
+        );
+    }
+
     // Ações de Modal
     public function openCompra(int $idt_pessoa): void
     {
@@ -245,7 +266,7 @@ new class extends Component {
         $qtdNoCarrinho = $this->cart[$idt_produto]['qtd'] ?? 0;
 
         if ($produto->qtd_produto < ($qtdNoCarrinho + 1)) {
-            session()->flash('cart_error', "Estoque insuficiente para {$produto->nom_produto} (Disponível: {$produto->qtd_produto}).");
+            \Flux::toast(__('messages.alerts.error.insufficient_stock', ['product' => $produto->nom_produto, 'available' => $produto->qtd_produto]), variant: 'danger');
             return;
         }
 
@@ -301,7 +322,67 @@ new class extends Component {
 
         $this->showCompraModal = false;
         $this->cart = [];
-        session()->flash('success', 'Compra registrada com sucesso!');
+        \Flux::toast(__('messages.alerts.success.purchase_registered'), variant: 'success');
+    }
+
+    public function openVendaAvulsa(): void
+    {
+        $this->vendaAvulsaProdutoId = null;
+        $this->vendaAvulsaQuantidade = 1;
+        $this->showVendaAvulsaModal = true;
+    }
+
+    public function registrarVendaAvulsa(): void
+    {
+        $this->validate([
+            'vendaAvulsaProdutoId' => 'required',
+            'vendaAvulsaQuantidade' => 'required|integer|min:1'
+        ]);
+
+        $produto = Produto::lockForUpdate()->find($this->vendaAvulsaProdutoId);
+        
+        if (!$produto) {
+            \Flux::toast(__('messages.alerts.error.product_not_found'), variant: 'danger');
+            return;
+        }
+
+        if ($produto->qtd_produto < $this->vendaAvulsaQuantidade) {
+            \Flux::toast(__('messages.alerts.error.insufficient_stock', ['product' => $produto->nom_produto, 'available' => $produto->qtd_produto]), variant: 'danger');
+            return;
+        }
+
+        $conta = $this->getContaAvulsa();
+
+        DB::transaction(function() use ($conta, $produto) {
+            $valorTotal = $this->vendaAvulsaQuantidade * $produto->val_preco;
+
+            // 1. Compra
+            Transacao::create([
+                'idt_conta' => $conta->idt_conta,
+                'idt_produto' => $produto->idt_produto,
+                'tip_transacao' => 'C',
+                'nom_item' => $produto->nom_produto,
+                'qtd_item' => $this->vendaAvulsaQuantidade,
+                'val_unitario' => $produto->val_preco,
+                'val_transacao' => $valorTotal,
+                'dat_transacao' => now(),
+                'usu_inclusao' => Auth::id(),
+            ]);
+
+            // 2. Pagamento (Quitação imediata)
+            Transacao::create([
+                'idt_conta' => $conta->idt_conta,
+                'idt_produto' => null,
+                'tip_transacao' => 'P',
+                'nom_item' => 'Pagamento Venda Avulsa',
+                'val_transacao' => $valorTotal,
+                'dat_transacao' => now(),
+                'usu_inclusao' => Auth::id(),
+            ]);
+        });
+
+        $this->showVendaAvulsaModal = false;
+        \Flux::toast(__('messages.alerts.success.avulsa_registered'), variant: 'success');
     }
 
     // Lançamento de Crédito/Aporte
@@ -332,7 +413,7 @@ new class extends Component {
         ]);
 
         $this->showCreditoModal = false;
-        session()->flash('success', 'Crédito/Pagamento registrado com sucesso!');
+        \Flux::toast(__('messages.alerts.success.credit_registered'), variant: 'success');
     }
 
     // Estorno de transação
@@ -341,7 +422,7 @@ new class extends Component {
         $transacao = Transacao::find($idt_transacao);
         if ($transacao) {
             $transacao->delete();
-            session()->flash('success', 'Transação estornada com sucesso!');
+            \Flux::toast(__('messages.alerts.success.transaction_reversed'), variant: 'success');
         }
     }
 }; ?>
@@ -514,16 +595,20 @@ new class extends Component {
                     </div>
                 </div>
 
-                @if (session()->has('success'))
-                    <div class="p-4 bg-green-50 border border-green-200 text-green-700 dark:bg-green-950/20 dark:border-green-900/50 dark:text-green-400 rounded-xl text-sm font-medium">
-                        {{ session('success') }}
-                    </div>
-                @endif
+
 
                 {{-- Filtros e Lista de Contas --}}
                 <div class="bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 p-4 sm:p-6 space-y-4">
                     <div class="flex flex-col lg:flex-row gap-4 items-center justify-between">
                         <div class="flex flex-wrap gap-4 w-full lg:w-auto items-center">
+                            <flux:button 
+                                variant="primary" 
+                                icon="shopping-bag" 
+                                wire:click="openVendaAvulsa"
+                            >
+                                Venda Avulsa
+                            </flux:button>
+
                             <flux:input wire:model.live.debounce.300ms="search" placeholder="Buscar pessoa..." icon="magnifying-glass" class="w-full sm:w-64" />
                             
                             <flux:select wire:model.live="filtroEquipe" placeholder="Todas as Equipes" class="w-full sm:w-44">
@@ -770,11 +855,7 @@ new class extends Component {
                                 <div class="font-bold text-zinc-950 dark:text-white text-sm">Catálogo de Produtos</div>
                             </div>
                             <div class="overflow-y-auto flex-1 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 space-y-2 bg-zinc-50 dark:bg-zinc-900/50">
-                                @if(session()->has('cart_error'))
-                                    <div class="p-2.5 bg-red-50 text-red-700 text-xs rounded-lg font-bold border border-red-200">
-                                        {{ session('cart_error') }}
-                                    </div>
-                                @endif
+
 
                                 @forelse($this->produtosDisponiveis as $prod)
                                     <div class="flex items-center justify-between p-3 bg-white dark:bg-zinc-800 rounded-lg shadow-xs border border-zinc-150 dark:border-zinc-700">
@@ -1065,6 +1146,37 @@ new class extends Component {
                     <div class="flex justify-end pt-2">
                         <flux:button variant="ghost" wire:click="$set('showExtratoModal', false)">Fechar</flux:button>
                     </div>
+                </div>
+            </div>
+        @endif
+
+        {{-- MODAL VENDA AVULSA --}}
+        @if($showVendaAvulsaModal)
+            <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                <div class="w-full max-w-md bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-2xl rounded-2xl p-6 space-y-6">
+                    <div>
+                        <flux:heading size="lg">Venda Avulsa (Instantânea)</flux:heading>
+                        <flux:subheading>Registre uma venda avulsa. O estoque é reduzido e o valor contabilizado no faturamento.</flux:subheading>
+                    </div>
+
+
+
+                    <form wire:submit.prevent="registrarVendaAvulsa" class="space-y-4">
+                        <flux:select wire:model="vendaAvulsaProdutoId" label="Produto" placeholder="Selecione um produto" required>
+                            @foreach($this->produtosDisponiveis as $prod)
+                                <option value="{{ $prod->idt_produto }}">{{ $prod->nom_produto }} (R$ {{ number_format($prod->val_preco, 2, ',', '.') }})</option>
+                            @endforeach
+                        </flux:select>
+                        
+                        <flux:input wire:model="vendaAvulsaQuantidade" label="Quantidade" type="number" min="1" required />
+
+                        <flux:separator />
+
+                        <div class="flex justify-end gap-3">
+                            <flux:button variant="ghost" wire:click="$set('showVendaAvulsaModal', false)">Cancelar</flux:button>
+                            <flux:button variant="primary" type="submit">Confirmar Venda</flux:button>
+                        </div>
+                    </form>
                 </div>
             </div>
         @endif
