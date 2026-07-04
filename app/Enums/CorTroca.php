@@ -31,4 +31,15 @@ enum CorTroca: string
             self::LARANJA => '#FFA500',
         };
     }
+
+    public function borderLClass(): string
+    {
+        return match ($this) {
+            self::VERMELHA => 'border-l-red-500 dark:border-l-red-400',
+            self::AZUL => 'border-l-blue-500 dark:border-l-blue-400',
+            self::VERDE => 'border-l-green-500 dark:border-l-green-400',
+            self::AMARELA => 'border-l-yellow-400 dark:border-l-yellow-400',
+            self::LARANJA => 'border-l-orange-400 dark:border-l-orange-400',
+        };
+    }
 }
