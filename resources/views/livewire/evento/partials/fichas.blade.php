@@ -11,6 +11,7 @@ new class extends Component {
 
     public Evento $evento;
     public string $search = '';
+    public string $situacao = '';
 
     public function mount(Evento $evento): void
     {
@@ -19,6 +20,12 @@ new class extends Component {
 
     // Reseta a paginação quando a busca muda
     public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    // Reseta a paginação quando a situação muda
+    public function updatedSituacao(): void
     {
         $this->resetPage();
     }
@@ -71,6 +78,15 @@ new class extends Component {
     {
         $fichas = \App\Models\Ficha::with(['visitador', 'fichaVem', 'fichaEcc', 'fichaSGM'])
             ->where('idt_evento', $this->evento->idt_evento)
+            ->when($this->situacao, function ($query) {
+                $query->where('tip_situacao', $this->situacao);
+            })
+            ->when($this->search, function ($query) {
+                $query->where(function ($q) {
+                    $q->where('nom_candidato', 'like', '%' . $this->search . '%')
+                        ->orWhere('nom_apelido', 'like', '%' . $this->search . '%');
+                });
+            })
             ->get();
 
         $cabecalho = [
@@ -135,14 +151,31 @@ new class extends Component {
         return $response;
     }
 
+    /**
+     * Retorna a contagem de fichas agrupada por situação para o evento.
+     */
+    public function getQuantidadePorSituacao(): array
+    {
+        return \App\Models\Ficha::where('idt_evento', $this->evento->idt_evento)
+            ->select('tip_situacao', DB::raw('count(*) as total'))
+            ->groupBy('tip_situacao')
+            ->pluck('total', 'tip_situacao')
+            ->toArray();
+    }
+
     public function with(): array
     {
         return [
             'fichas' => \App\Models\Ficha::where('idt_evento', $this->evento->idt_evento)
                 ->with('evento') // necessário para rotasPorMovimento()
+                ->when($this->situacao, function ($query) {
+                    $query->where('tip_situacao', $this->situacao);
+                })
                 ->when($this->search, function ($query) {
-                    $query->where('nom_candidato', 'like', '%' . $this->search . '%')
-                        ->orWhere('nom_apelido', 'like', '%' . $this->search . '%');
+                    $query->where(function ($q) {
+                        $q->where('nom_candidato', 'like', '%' . $this->search . '%')
+                            ->orWhere('nom_apelido', 'like', '%' . $this->search . '%');
+                    });
                 })
                 ->paginate(10),
         ];
@@ -154,6 +187,7 @@ new class extends Component {
         <div>
             <div class="flex items-center gap-3">
                 <flux:heading size="lg">Fichas de Inscrição</flux:heading>
+                <flux:badge size="sm" color="zinc" inset="top bottom" title="Total filtrado">{{ $fichas->total() }}</flux:badge>
                 <flux:button wire:click="exportar" icon="arrow-down-tray" variant="outline" size="sm" title="Exportar CSV">
                     Exportar
                 </flux:button>
@@ -161,9 +195,24 @@ new class extends Component {
             <flux:subheading>Analise e aprove os candidatos para este evento.</flux:subheading>
         </div>
 
-        <div class="w-full md:w-auto">
-            <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="Buscar ficha..."
-                class="w-full md:max-w-xs" />
+        @php
+            $quantidades = $this->getQuantidadePorSituacao();
+            $totalFichas = array_sum($quantidades);
+        @endphp
+
+        <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+            <flux:select wire:model.live="situacao" icon="funnel" placeholder="Todas as situações" class="w-full sm:w-64">
+                <option value="">Todas as situações ({{ $totalFichas }})</option>
+                @foreach (\App\Enums\TipoSituacao::cases() as $sit)
+                    @php
+                        $qtd = $quantidades[$sit->value] ?? 0;
+                    @endphp
+                    <option value="{{ $sit->value }}">{{ $sit->label() }} ({{ $qtd }})</option>
+                @endforeach
+            </flux:select>
+
+            <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" 
+                placeholder="Buscar candidato(a)..." class="w-full sm:w-64" />
         </div>
     </div>
 
@@ -199,16 +248,15 @@ new class extends Component {
                 </flux:table.cell>
 
                 <flux:table.cell>
-                    <flux:select
+                    <select
                         wire:change="atualizarSituacao({{ $ficha->idt_ficha }}, $event.target.value)"
-                        size="sm"
-                        class="w-40">
+                        class="w-40 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 px-2.5 py-1.5 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 border-l-[5px] {{ $ficha->tip_situacao?->badge()['border-l'] ?? 'border-l-zinc-200 dark:border-l-zinc-700' }}">
                         @foreach (\App\Enums\TipoSituacao::cases() as $situacao)
-                            <option value="{{ $situacao->value }}" @selected($ficha->tip_situacao === $situacao)>
+                            <option value="{{ $situacao->value }}" @selected($ficha->tip_situacao === $situacao) class="text-zinc-800 bg-white dark:bg-zinc-900 dark:text-zinc-200">
                                 {{ $situacao->label() }}
                             </option>
                         @endforeach
-                    </flux:select>
+                    </select>
                 </flux:table.cell>
 
                 <flux:table.cell align="end">
