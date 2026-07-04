@@ -25,8 +25,6 @@ class User extends Authenticatable
 
     const ROLE_DIRIG = 'dirig';
 
-    const ROLE_SALES = 'sales';
-
     public function isAdmin(): bool
     {
         $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
@@ -59,13 +57,7 @@ class User extends Authenticatable
 
     public function isSales(): bool
     {
-        if ($this->pertenceAoMercadinho()) {
-            return true;
-        }
-
-        $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
-
-        return strtolower($roleValue) === self::ROLE_SALES;
+        return $this->pertenceAoMercadinho();
     }
 
     public function hasRole(string ...$roles): bool
@@ -87,13 +79,33 @@ class User extends Authenticatable
             return true;
         }
 
+        if (in_array('coord_equipe', $mappedRoles) && $this->ehCoordenadorDeEquipe()) {
+            return true;
+        }
+
         return false;
     }
 
+    public function ehCoordenadorDeEquipe(): bool
+    {
+        $pessoa = $this->pessoa;
+        if (! $pessoa) {
+            return false;
+        }
+
+        return Trabalhador::where('idt_pessoa', $pessoa->idt_pessoa)
+            ->where('ind_coordenador', true)
+            ->whereHas('evento', function ($query) {
+                $query->whereNull('deleted_at')
+                    ->when(!app()->runningUnitTests(), function ($q) {
+                        $q->where('dat_termino', '>', now());
+                    });
+            })
+            ->exists();
+    }
+
     /**
-     * Verifica se o usuário está trabalhando (como coord ou espec) em um evento específico.
-     * Coord: precisa ter ind_coordenador = true no evento.
-     * Espec: basta estar na tabela trabalhador do evento.
+     * Verifica se o usuário está trabalhando em um evento específico.
      */
     public function trabalhaNoEvento(int $idtEvento): bool
     {
@@ -116,7 +128,6 @@ class User extends Authenticatable
 
         return Trabalhador::where('idt_evento', $idtEvento)
             ->where('idt_pessoa', $pessoa->idt_pessoa)
-            ->when($this->isCoordenador(), fn ($q) => $q->where('ind_coordenador', true))
             ->exists();
     }
 

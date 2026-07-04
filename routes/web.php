@@ -93,7 +93,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/termo-sgm', fn () => view('termos.termoSGM'))->name('termo.sgm');
     Route::get('/termo-vem', fn () => view('termos.termoVEM'))->name('termo.vem');
 
-    Route::middleware(['role:admin,coord,dirig,sales'])->group(function () {
+    Route::middleware(['role:admin,coord,dirig,coord_equipe'])->group(function () {
         Route::get('/minha-equipe', [TrabalhadorController::class, 'minhaEquipe'])->name('trabalhadores.minha-equipe');
     });
     Route::get('/trabalhadores/create', [TrabalhadorController::class, 'create'])->name('trabalhadores.create');
@@ -125,7 +125,7 @@ Route::middleware(['auth'])->group(function () {
     // Gerenciamento de evento: admin + coord + espec
     // -----------------------------------------------------------------------
 
-    Route::middleware(['role:admin,dirig'])->group(function () {
+    Route::middleware(['role:admin,dirig,coord'])->group(function () {
         Volt::route('eventos/{evento}/gerenciamento', 'evento.gerenciamento')
             ->name('eventos.gerenciamento')
             ->withTrashed();

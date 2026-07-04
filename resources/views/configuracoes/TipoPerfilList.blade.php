@@ -32,7 +32,6 @@
                         <flux:select.option value="admin" :selected="request('perfil') == 'admin'">Admin</flux:select.option>
                         <flux:select.option value="coord" :selected="request('perfil') == 'coord'">Coordenador</flux:select.option>
                         <flux:select.option value="dirig" :selected="request('perfil') == 'dirig'">Dirigente</flux:select.option>
-                        <flux:select.option value="sales" :selected="request('perfil') == 'sales'">Mercadinho</flux:select.option>
                         <flux:select.option value="user" :selected="request('perfil') == 'user'">Usuário</flux:select.option>
                     </flux:select>
                 </div>
@@ -81,13 +80,12 @@
                                         'user' => 'Usuário',
                                         'admin' => 'Administrador',
                                         'coord' => 'Coordenador',
-                                        'dirig' => 'Dirigente',
-                                        'sales' => 'Mercadinho'
+                                        'dirig' => 'Dirigente'
                                     ];
                                 @endphp
                                 <select name='role[{{ $pessoa->id ?? '' }}]'
                                     class="w-full px-2 py-1 rounded-md border border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 text-gray-900 dark:text-gray-100">
-                                    @foreach (['user', 'admin', 'coord', 'dirig', 'sales'] as $role)
+                                    @foreach (['user', 'admin', 'coord', 'dirig'] as $role)
                                         <option value="{{ $role }}" @selected(strtolower($pessoa->role ?? '') == $role)>
                                             {{ $roleLabels[$role] }}
                                         </option>

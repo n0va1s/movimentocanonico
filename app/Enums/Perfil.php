@@ -8,7 +8,6 @@ enum Perfil: string
     case COORD = 'coord';
     case DIRIG = 'dirig';
     case USER = 'user';
-    case SALES = 'sales';
 
     public function label(): string
     {
@@ -17,7 +16,6 @@ enum Perfil: string
             self::COORD => 'Coordenador',
             self::DIRIG => 'Dirigente',
             self::USER => 'Usuário',
-            self::SALES => 'Mercadinho',
         };
     }
 
@@ -28,7 +26,6 @@ enum Perfil: string
             self::COORD => 'users',
             self::DIRIG => 'wrench-screwdriver',
             self::USER => 'user',
-            self::SALES => 'shopping-cart',
         };
     }
 
@@ -59,7 +56,7 @@ enum Perfil: string
             'participantes' => [self::ADMIN->value, self::COORD->value, self::DIRIG->value],
             'trabalhadores' => [self::ADMIN->value, self::COORD->value, self::DIRIG->value],
             'presenca' => [self::ADMIN->value, self::COORD->value, self::DIRIG->value],
-            'crachas' => [self::ADMIN->value, self::COORD->value, self::DIRIG->value],
+            'crachas' => [self::ADMIN->value, self::DIRIG->value],
             'quadrante' => [self::ADMIN->value, self::COORD->value, self::DIRIG->value],
             'fichas' => [self::ADMIN->value, self::DIRIG->value],
             'voluntarios' => [self::ADMIN->value, self::DIRIG->value],
