@@ -188,7 +188,11 @@ class PessoaController extends Controller
             'duration_ms' => $duration,
         ]));
 
-        return back()->with('success', 'Cadastro localizado e vinculado à sua conta com sucesso!');
+        if (auth()->user()->isAdmin()) {
+            return redirect()->route('pessoas.index')->with('success', 'Pessoa cadastrada/atualizada com sucesso.');
+        }
+
+        return redirect()->route('dashboard')->with('success', 'Pessoa cadastrada/atualizada com sucesso.');
     }
 
     public function edit($id): View
@@ -315,7 +319,11 @@ class PessoaController extends Controller
             'duration_ms' => $duration,
         ]));
 
-        return back()->with('success', 'Dados atualizados com sucesso.');
+        if (auth()->user()->isAdmin()) {
+            return redirect()->route('pessoas.index')->with('success', 'Dados atualizados com sucesso.');
+        }
+
+        return redirect()->route('dashboard')->with('success', 'Dados atualizados com sucesso.');
     }
 
     public function destroy($id): RedirectResponse
@@ -336,7 +344,7 @@ class PessoaController extends Controller
             // Cascade
             Pessoa::findOrFail($id)->delete();
 
-            return back()->with('success', 'Pessoa excluída com sucesso!');
+            return redirect()->route('pessoas.index')->with('success', 'Pessoa excluída com sucesso!');
         } catch (QueryException $e) {
             $duration = round((microtime(true) - $start) * 1000, 2);
             Log::error('Erro de Query ao excluir pessoa', array_merge($context, [

@@ -73,7 +73,8 @@ new class extends Component {
     {
         if (count($this->selectedFichas) > 3) {
             $this->selectedFichas = array_slice($this->selectedFichas, 0, 3);
-            session()->flash('error', 'Você pode selecionar no máximo 3 fichas para designação.');
+            $this->addError('selectedFichas', 'Você pode selecionar no máximo 3 fichas para designação.');
+            $this->dispatch('notify', message: 'Você pode selecionar no máximo 3 fichas para designação.', type: 'erro');
         }
     }
 
@@ -141,12 +142,20 @@ new class extends Component {
     public function abrirModalVisitacao(): void
     {
         if (count($this->selectedFichas) === 0) {
+            $this->addError('selectedFichas', 'Selecione pelo menos uma ficha para designação.');
+            $this->dispatch('notify', message: 'Selecione pelo menos uma ficha para designação.', type: 'erro');
             return;
         }
 
         if (count($this->selectedFichas) > 3) {
             $this->selectedFichas = array_slice($this->selectedFichas, 0, 3);
-            session()->flash('error', 'Você pode selecionar no máximo 3 fichas para designação.');
+            $this->addError('selectedFichas', 'Você pode selecionar no máximo 3 fichas para designação.');
+            $this->dispatch('notify', message: 'Você pode selecionar no máximo 3 fichas para designação.', type: 'erro');
+        }
+
+        // Only allow if user is admin or coordinator
+        if (!$this->podeDesignar()) {
+            $this->dispatch('notify', message: 'Você não tem permissão para designar visitadores.', type: 'erro');
             return;
         }
 
