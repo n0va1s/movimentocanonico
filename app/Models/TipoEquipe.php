@@ -20,6 +20,11 @@ class TipoEquipe extends Model
         'idt_movimento',
         'des_grupo',
         'txt_documento',
+        'ind_voluntariar',
+    ];
+
+    protected $casts = [
+        'ind_voluntariar' => 'boolean',
     ];
 
     public function movimento()

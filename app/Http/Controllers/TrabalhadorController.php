@@ -104,9 +104,14 @@ class TrabalhadorController extends Controller
 
         if ($evento) {
             $equipes = TipoEquipe::where('idt_movimento', $evento->idt_movimento ?? null)
-                ->select('idt_equipe', 'des_grupo')->get();
+                ->where('ind_voluntariar', true)
+                ->select('idt_equipe', 'des_grupo')
+                ->orderBy('des_grupo', 'asc')
+                ->get();
         } else {
-            $equipes = TipoEquipe::all();
+            $equipes = TipoEquipe::where('ind_voluntariar', true)
+                ->orderBy('des_grupo', 'asc')
+                ->get();
         }
 
         $duration = round((microtime(true) - $start) * 1000, 2);
@@ -166,6 +171,17 @@ class TrabalhadorController extends Controller
 
         if (empty($equipesSelecionadas)) {
             return back()->withErrors(['equipes' => 'Você precisa selecionar pelo menos uma equipe.'])->withInput();
+        }
+
+        $idsEquipesSelecionadas = array_keys($equipesSelecionadas);
+        $eventoObj = Evento::find($dados['idt_evento']);
+        $totalValidas = TipoEquipe::where('idt_movimento', $eventoObj->idt_movimento)
+            ->whereIn('idt_equipe', $idsEquipesSelecionadas)
+            ->where('ind_voluntariar', true)
+            ->count();
+
+        if (count($idsEquipesSelecionadas) !== $totalValidas) {
+            return back()->withErrors(['equipes' => 'Uma ou mais equipes selecionadas são inválidas para este evento.'])->withInput();
         }
 
         $this->voluntarioService->candidatura(
