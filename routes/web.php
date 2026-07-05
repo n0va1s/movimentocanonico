@@ -11,7 +11,6 @@ use App\Http\Controllers\FichaVemController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\PessoaController;
-use App\Http\Controllers\TipoEquipeController;
 use App\Http\Controllers\TipoPerfilController;
 use App\Http\Controllers\TrabalhadorController;
 use Illuminate\Support\Facades\Artisan;
@@ -67,6 +66,14 @@ Route::get('/encerrar-eventos', function () {
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::post('/', [HomeController::class, 'contato'])->name('home.contato');
+
+// Formulários públicos de inscrição — acessíveis apenas a partir da welcome page.
+// O middleware EnsureFromWelcome valida o token de sessão gerado pelo HomeController::index().
+Route::middleware([\App\Http\Middleware\EnsureFromWelcome::class])->group(function () {
+    Route::get('/vem', [HomeController::class, 'fichaVem'])->name('home.ficha.vem');
+    Route::get('/ecc', [HomeController::class, 'fichaEcc'])->name('home.ficha.ecc');
+    Route::get('/sgm', [HomeController::class, 'fichaSgm'])->name('home.ficha.sgm');
+});
 Route::get('/fichas/{ficha}/autorizar', function (App\Models\Ficha $ficha) {
     if ($ficha->tip_situacao === App\Enums\TipoSituacao::ENVIADA) {
         $ficha->tip_situacao = App\Enums\TipoSituacao::RECEBIDA;
@@ -82,12 +89,7 @@ Route::get('/fichas/{ficha}/autorizar', function (App\Models\Ficha $ficha) {
 
 Route::middleware(['auth'])->group(function () {
 
-    Route::get('/vem', [HomeController::class, 'fichaVem'])->name('home.ficha.vem');
-    Route::get('/ecc', [HomeController::class, 'fichaEcc'])->name('home.ficha.ecc');
-    // Route::get('/sgm', [HomeController::class, 'fichaSgm'])->name('home.ficha.sgm');
-    Route::get('/sgm', function() {
-        abort(403, 'As inscrições para o Segue-Me estão encerradas.');
-    })->name('home.ficha.sgm');
+
 
     // Submissão de fichas por candidatos (todos perfis autenticados)
     Route::post('/fichas/vem', [FichaVemController::class, 'store'])->name('vem.store');
@@ -271,9 +273,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/configuracoes/role', [TipoPerfilController::class, 'store'])->name('role.store');
         Route::post('/configuracoes/role/change', [TipoPerfilController::class, 'change'])->name('role.change');
 
-        Route::resources([
-            'configuracoes/equipe' => TipoEquipeController::class,
-        ]);
+        Volt::route('configuracoes/organizacao', 'organizacao.index')->name('organizacao.index');
     });
 });
 

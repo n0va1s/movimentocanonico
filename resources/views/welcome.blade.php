@@ -103,83 +103,8 @@
 
     </section>
 
-    <!-- Seção: Movimentos -->
-    <section class="text-center space-y-8 mt-16">
-        <h2 class="text-3xl font-bold text-gray-800 dark:text-white mb-6">
-            Nossos Movimentos
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto my-16 px-4">
-
-            <!-- Card VEM -->
-            <div class="border border-gray-300 dark:border-gray-700 rounded-xl p-6 flex flex-col justify-between shadow-sm dark:bg-gray-800">
-                <div>
-                    <img src="https://i.imgur.com/JmjVysp.png"
-                        class="w-full h-64 md:h-30 object-cover flex-shrink-0 rounded-2xl" alt="Imagem 1">
-                    <h3 class="text-xl font-bold text-blue-600 dark:text-blue-400">VEM</h3>
-                    <p class="text-gray-600 dark:text-gray-300 mt-2">Encontro de Adolescentes com Cristo</p>
-                </div>
-            
-                <!-- NOVO Badge Premium de Esgotado -->
-                <div class="mt-4 relative">
-                    <div class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 text-white font-bold rounded-md shadow-lg border-2 border-red-500 dark:border-red-600 animate-pulse-subtle">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                        <div class="flex flex-col leading-tight">
-                            <span class="text-sm uppercase tracking-wider">✓ Esgotado</span>
-                            <span class="text-xs font-normal opacity-90">Vamos selecionar as fichas</span>
-                        </div>
-                    </div>
-                    <!-- Badge "Esgotado" flutuante opcional -->
-                    <span class="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-black px-2 py-1 rounded-full shadow-md rotate-12">
-                        Até o ano que vem!
-                    </span>
-                </div>
-            </div>
-
-            <!-- Card Segue-Me -->
-            <div
-                class="border border-gray-300 dark:border-gray-700 rounded-xl p-6 flex flex-col justify-between shadow-sm dark:bg-gray-800">
-                <div>
-                    <img src="https://i.imgur.com/U3FfnPu.png"
-                        class="w-full h-64 md:h-30 object-contain flex-shrink-0 rounded-2xl" alt="Imagem 1">
-                    <h3 class="text-xl font-bold text-orange-600 dark:text-orange-400">Segue-Me</h3>
-                    <p class="text-gray-600 dark:text-gray-300 mt-2">Encontro de Jovens com Cristo</p>
-                </div>
-                <!-- NOVO Badge Premium de Esgotado -->
-                <div class="mt-4 relative">
-                    <div class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 text-white font-bold rounded-md shadow-lg border-2 border-red-500 dark:border-red-600 animate-pulse-subtle">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                        <div class="flex flex-col leading-tight">
-                            <span class="text-sm uppercase tracking-wider">✓ Esgotado</span>
-                            <span class="text-xs font-normal opacity-90">Vamos selecionar as fichas</span>
-                        </div>
-                    </div>
-                    <!-- Badge "Esgotado" flutuante opcional -->
-                    <span class="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-black px-2 py-1 rounded-full shadow-md rotate-12">
-                        Até o ano que vem!
-                    </span>
-                </div>
-            </div>
-
-            <!-- Card ECC -->
-            <div
-                class="border border-gray-300 dark:border-gray-700 rounded-xl p-6 flex flex-col justify-between shadow-sm dark:bg-gray-800">
-                <div>
-                    <img src="https://i.imgur.com/aaifcaH.png"
-                        class="w-full h-64 md:h-30 object-contain flex-shrink-0 rounded-2xl" alt="Imagem 1">
-                    <h3 class="text-xl font-bold text-green-600 dark:text-green-400">ECC</h3>
-                    <p class="text-gray-600 dark:text-gray-300 mt-2">Encontro de Casais com Cristo</p>
-                </div>
-                <a
-                    class="mt-4 inline-block bg-gray-600 hover:bg-gray-700 text-white font-semibold px-4 py-2 rounded-md transition">
-                    Ficha do ECC (Em breve)
-                </a>
-            </div>
-        </div>
-    </section>
+    <!-- Seção: Movimentos (Livewire) -->
+    <livewire:public.movimentos />
 
     <!-- FAQ -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto my-16 px-4">

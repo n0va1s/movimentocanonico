@@ -7,14 +7,13 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             @if (Auth::user()->isAdmin())
-                <!-- Card 3 -->
-                <a href="{{ route('equipe.index') }}"
+                <!-- Card: Organização -->
+                <a href="{{ route('organizacao.index') }}"
                     class="block bg-white dark:bg-zinc-600 rounded-xl shadow hover:shadow-lg transition p-6 text-center">
                     <div class="flex flex-col items-center justify-center h-full">
-                        <x-heroicon-o-cog-8-tooth class="w-12 h-12 text-purple-600 mb-4" />
-                        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Tipos de Equipes</h2>
-                        <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm">Organize as equipes como cozinha, oração,
-                            comunicação e outras.</p>
+                        <x-heroicon-o-building-library class="w-12 h-12 text-violet-600 mb-4" />
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Organização</h2>
+                        <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm">Gerencie paróquias, movimentos e equipes de forma unificada.</p>
                     </div>
                 </a>
 
@@ -79,6 +78,8 @@
                     </div>
                 </a>
             @endif
+
+
 
             <!-- Card 6 -->
             <a href="{{ route('eventos.importar') }}"
