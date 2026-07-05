@@ -126,4 +126,40 @@ enum TipoSituacao: string
             default => ['Não'],
         };
     }
+
+    public function cardConfig(): array
+    {
+        return match ($this) {
+            self::AGUARDANDO => [
+                'bg' => 'bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-400',
+                'icon' => 'clock',
+                'label' => 'Aguardando'
+            ],
+            self::SELECIONADA => [
+                'bg' => 'bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-400',
+                'icon' => 'check-circle',
+                'label' => 'Selecionada'
+            ],
+            self::VISITADA => [
+                'bg' => 'bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 text-green-700 dark:text-green-400',
+                'icon' => 'book-open',
+                'label' => 'Visitado'
+            ],
+            self::CONTATO => [
+                'bg' => 'bg-cyan-50 dark:bg-cyan-950/20 border border-cyan-200 dark:border-cyan-900 text-cyan-700 dark:text-cyan-400',
+                'icon' => 'phone',
+                'label' => 'Contato Feito'
+            ],
+            self::CANCELADA => [
+                'bg' => 'bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400',
+                'icon' => 'x-circle',
+                'label' => 'Cancelada'
+            ],
+            default => [
+                'bg' => 'bg-zinc-50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-900 text-zinc-700 dark:text-zinc-400',
+                'icon' => 'document-text',
+                'label' => $this->label()
+            ],
+        };
+    }
 }

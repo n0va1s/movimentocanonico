@@ -188,9 +188,32 @@ class FichaSGMController extends Controller
             ]);
         }
 
-        $visitadores = \App\Models\Pessoa::whereHas('usuario', function ($q) {
-            $q->where('role', \App\Models\User::ROLE_VISITACAO);
-        })->orderBy('nom_pessoa', 'asc')->get();
+        $eventoId = $ficha->idt_evento;
+        $visitadoresRaw = \App\Models\Pessoa::where(function ($query) use ($eventoId) {
+            $query->whereHas('trabalhadores', function ($q) use ($eventoId) {
+                $q->where('idt_evento', $eventoId)
+                  ->whereHas('equipe', function ($qe) {
+                      $qe->where('des_grupo', 'like', '%Visitação%');
+                  });
+            })
+            ->orWhereHas('parceiro.trabalhadores', function ($q) use ($eventoId) {
+                $q->where('idt_evento', $eventoId)
+                  ->whereHas('equipe', function ($qe) {
+                      $qe->where('des_grupo', 'like', '%Visitação%');
+                  });
+            });
+        })->with('parceiro')->orderBy('nom_pessoa', 'asc')->get();
+
+        $processed = [];
+        $visitadores = $visitadoresRaw->reject(function ($v) use (&$processed) {
+            if (in_array($v->idt_pessoa, $processed)) {
+                return true;
+            }
+            if ($v->idt_parceiro) {
+                $processed[] = $v->idt_parceiro;
+            }
+            return false;
+        });
 
         return view('ficha.formSGM', array_merge($this->fichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,
@@ -208,9 +231,32 @@ class FichaSGMController extends Controller
 
         $ficha = Ficha::with(['fichaSGM', 'fichaSaude', 'foto'])->findOrFail($id);
 
-        $visitadores = \App\Models\Pessoa::whereHas('usuario', function ($q) {
-            $q->where('role', \App\Models\User::ROLE_VISITACAO);
-        })->orderBy('nom_pessoa', 'asc')->get();
+        $eventoId = $ficha->idt_evento;
+        $visitadoresRaw = \App\Models\Pessoa::where(function ($query) use ($eventoId) {
+            $query->whereHas('trabalhadores', function ($q) use ($eventoId) {
+                $q->where('idt_evento', $eventoId)
+                  ->whereHas('equipe', function ($qe) {
+                      $qe->where('des_grupo', 'like', '%Visitação%');
+                  });
+            })
+            ->orWhereHas('parceiro.trabalhadores', function ($q) use ($eventoId) {
+                $q->where('idt_evento', $eventoId)
+                  ->whereHas('equipe', function ($qe) {
+                      $qe->where('des_grupo', 'like', '%Visitação%');
+                  });
+            });
+        })->with('parceiro')->orderBy('nom_pessoa', 'asc')->get();
+
+        $processed = [];
+        $visitadores = $visitadoresRaw->reject(function ($v) use (&$processed) {
+            if (in_array($v->idt_pessoa, $processed)) {
+                return true;
+            }
+            if ($v->idt_parceiro) {
+                $processed[] = $v->idt_parceiro;
+            }
+            return false;
+        });
 
         return view('ficha.formSGM', array_merge($this->fichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,

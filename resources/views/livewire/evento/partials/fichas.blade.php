@@ -3,6 +3,7 @@
 use App\Models\Evento;
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\Computed;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -11,10 +12,13 @@ new class extends Component {
 
     public Evento $evento;
     public string $search = '';
-    public string $situacao = '';
     public string $generoFiltro = '';
     public bool $vinculoFiltroParoquiano = false;
     public bool $vinculoFiltroRegiao = false;
+    public array $selectedFichas = [];
+    public ?int $pessoaVisitacaoId = null;
+    public bool $selectAll = false;
+    public ?string $filtroSituacao = null;
 
     public function mount(Evento $evento): void
     {
@@ -27,11 +31,6 @@ new class extends Component {
         $this->resetPage();
     }
 
-    // Reseta a paginação quando a situação muda
-    public function updatedSituacao(): void
-    {
-        $this->resetPage();
-    }
 
     // Reseta a paginação quando o gênero muda
     public function updatedGeneroFiltro(): void
@@ -48,6 +47,59 @@ new class extends Component {
     // Reseta a paginação quando o filtro de região muda
     public function updatedVinculoFiltroRegiao(): void
     {
+        $this->resetPage();
+    }
+
+    public function updatedSelectedFichas($value): void
+    {
+        if (count($this->selectedFichas) > 3) {
+            $this->selectedFichas = array_slice($this->selectedFichas, 0, 3);
+            $this->dispatch('notify',
+                message: "Você pode selecionar no máximo 3 fichas para designação.",
+                type: 'erro'
+            );
+        }
+    }
+
+    public function updatedSelectAll($value): void
+    {
+        if ($value) {
+            $query = \App\Models\Ficha::where('idt_evento', $this->evento->idt_evento)
+                ->when($this->filtroSituacao, function ($query) {
+                    $query->where('tip_situacao', $this->filtroSituacao);
+                })
+                ->when($this->search, function ($query) {
+                    $query->where(function ($q) {
+                        $q->where('nom_candidato', 'like', '%' . $this->search . '%')
+                            ->orWhere('nom_apelido', 'like', '%' . $this->search . '%');
+                    });
+                });
+
+            $total = $query->count();
+
+            $this->selectedFichas = $query->limit(3)
+                ->pluck('idt_ficha')
+                ->map(fn($id) => (string)$id)
+                ->toArray();
+
+            if ($total > 3) {
+                $this->selectAll = false;
+                $this->dispatch('notify',
+                    message: "Apenas as 3 primeiras fichas foram selecionadas devido ao limite máximo.",
+                    type: 'info'
+                );
+            }
+        } else {
+            $this->selectedFichas = [];
+        }
+    }
+    public function toggleFiltroSituacao(?string $status): void
+    {
+        if ($this->filtroSituacao === $status) {
+            $this->filtroSituacao = null;
+        } else {
+            $this->filtroSituacao = $status;
+        }
         $this->resetPage();
     }
 
@@ -83,7 +135,7 @@ new class extends Component {
     }
 
     /**
-     * Resolve as rotas de show, edit e destroy de acordo com o movimento do evento.
+     * Resolve as rotas de show, edit de acordo com o movimento do evento.
      */
     private function rotasPorMovimento(\App\Models\Ficha $ficha): array
     {
@@ -205,25 +257,32 @@ new class extends Component {
         return $response;
     }
 
-    /**
-     * Retorna a contagem de fichas agrupada por situação para o evento.
-     */
-    public function getQuantidadePorSituacao(): array
+    #[Computed]
+    public function contadores(): array
     {
-        return \App\Models\Ficha::where('idt_evento', $this->evento->idt_evento)
+        $counts = \App\Models\Ficha::where('idt_evento', $this->evento->idt_evento)
             ->select('tip_situacao', DB::raw('count(*) as total'))
             ->groupBy('tip_situacao')
             ->pluck('total', 'tip_situacao')
             ->toArray();
+
+        return [
+            \App\Enums\TipoSituacao::NOVA->value => $counts[\App\Enums\TipoSituacao::NOVA->value] ?? 0,
+            \App\Enums\TipoSituacao::AGUARDANDO->value => $counts[\App\Enums\TipoSituacao::AGUARDANDO->value] ?? 0,
+            \App\Enums\TipoSituacao::VISITADA->value => $counts[\App\Enums\TipoSituacao::VISITADA->value] ?? 0,
+            \App\Enums\TipoSituacao::SELECIONADA->value => $counts[\App\Enums\TipoSituacao::SELECIONADA->value] ?? 0,
+            \App\Enums\TipoSituacao::APROVADA->value => $counts[\App\Enums\TipoSituacao::APROVADA->value] ?? 0,
+            \App\Enums\TipoSituacao::CANCELADA->value => $counts[\App\Enums\TipoSituacao::CANCELADA->value] ?? 0,
+        ];
     }
 
     public function with(): array
     {
         return [
             'fichas' => \App\Models\Ficha::where('idt_evento', $this->evento->idt_evento)
-                ->with(['evento', 'fichaVem', 'fichaEcc', 'fichaSGM']) // necessário para rotasPorMovimento() e vínculos
-                ->when($this->situacao, function ($query) {
-                    $query->where('tip_situacao', $this->situacao);
+                ->with(['evento', 'fichaVem', 'fichaEcc', 'fichaSGM', 'visitador'])
+                ->when($this->filtroSituacao, function ($query) {
+                    $query->where('tip_situacao', $this->filtroSituacao);
                 })
                 ->when($this->generoFiltro, function ($query) {
                     $query->where('tip_genero', $this->generoFiltro);
@@ -282,51 +341,119 @@ new class extends Component {
             <flux:subheading>Analise e aprove os candidatos para este evento.</flux:subheading>
         </div>
 
-        @php
-            $quantidades = $this->getQuantidadePorSituacao();
-            $totalFichas = array_sum($quantidades);
-        @endphp
 
-        <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto items-end">
-            <flux:select wire:model.live="situacao" icon="funnel" placeholder="Todas as situações" class="w-full sm:w-44">
-                <option value="">Todas as situações ({{ $totalFichas }})</option>
-                @foreach (\App\Enums\TipoSituacao::cases() as $sit)
-                    @php
-                        $qtd = $quantidades[$sit->value] ?? 0;
-                    @endphp
-                    <option value="{{ $sit->value }}">{{ $sit->label() }} ({{ $qtd }})</option>
-                @endforeach
-            </flux:select>
-
-            <flux:select wire:model.live="generoFiltro" icon="funnel" placeholder="Todos os sexos" class="w-full sm:w-36">
-                <option value="">Todos os sexos</option>
-                <option value="M">Masculino</option>
-                <option value="F">Feminino</option>
-            </flux:select>
-
-            <flux:dropdown>
-                <flux:button icon="link" variant="outline" class="w-full sm:w-44 justify-between">
-                    <span>Vínculos</span>
-                    @php
-                        $count = ($vinculoFiltroParoquiano ? 1 : 0) + ($vinculoFiltroRegiao ? 1 : 0);
-                    @endphp
-                    @if ($count > 0)
-                        <flux:badge size="sm" color="indigo" class="ml-2 shrink-0">{{ $count }}</flux:badge>
-                    @endif
+        <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto items-end md:items-center">
+            @if(count($selectedFichas) > 0)
+                <flux:button wire:click="abrirModalVisitacao" icon="user-group" variant="primary" class="w-full md:w-auto shrink-0">
+                    Designar Visitação ({{ count($selectedFichas) }})
                 </flux:button>
-                <flux:menu class="p-3 space-y-3 min-w-[14rem]">
-                    <flux:checkbox wire:model.live="vinculoFiltroParoquiano" label="Paroquialidade" />
-                    <flux:checkbox wire:model.live="vinculoFiltroRegiao" label="Região" />
-                </flux:menu>
-            </flux:dropdown>
+            @endif
 
-            <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" 
-                placeholder="Buscar..." class="w-full sm:w-44" />
+            <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto items-end">
+                <flux:select wire:model.live="generoFiltro" icon="funnel" placeholder="Todos os sexos" class="w-full sm:w-36">
+                    <option value="">Todos os sexos</option>
+                    <option value="M">Masculino</option>
+                    <option value="F">Feminino</option>
+                </flux:select>
+
+                <flux:dropdown>
+                    <flux:button icon="link" variant="outline" class="w-full sm:w-44 justify-between">
+                        <span>Vínculos</span>
+                        @php
+                            $count = ($vinculoFiltroParoquiano ? 1 : 0) + ($vinculoFiltroRegiao ? 1 : 0);
+                        @endphp
+                        @if ($count > 0)
+                            <flux:badge size="sm" color="indigo" class="ml-2 shrink-0">{{ $count }}</flux:badge>
+                        @endif
+                    </flux:button>
+                    <flux:menu class="p-3 space-y-3 min-w-[14rem]">
+                        <flux:checkbox wire:model.live="vinculoFiltroParoquiano" label="Paroquialidade" />
+                        <flux:checkbox wire:model.live="vinculoFiltroRegiao" label="Região" />
+                    </flux:menu>
+                </flux:dropdown>
+
+                <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" 
+                    placeholder="Buscar..." class="w-full sm:w-44" />
+            </div>
         </div>
+    </div>
+
+    {{-- Dashboard de Status --}}
+    @php
+        $statusCards = [
+            [
+                'status' => \App\Enums\TipoSituacao::NOVA->value,
+                'label' => 'Novas',
+                'color' => 'blue',
+                'icon' => 'document-text',
+                'textClass' => 'text-blue-600 dark:text-blue-400',
+                'activeClass' => 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950/20 border-blue-500',
+            ],
+            [
+                'status' => \App\Enums\TipoSituacao::AGUARDANDO->value,
+                'label' => 'Aguardando',
+                'color' => 'amber',
+                'icon' => 'clock',
+                'textClass' => 'text-amber-500 dark:text-amber-400',
+                'activeClass' => 'ring-2 ring-amber-500 bg-amber-50 dark:bg-amber-950/20 border-amber-500',
+            ],
+            [
+                'status' => \App\Enums\TipoSituacao::VISITADA->value,
+                'label' => 'Visitadas',
+                'color' => 'purple',
+                'icon' => 'map-pin',
+                'textClass' => 'text-purple-600 dark:text-purple-400',
+                'activeClass' => 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-950/20 border-purple-500',
+            ],
+            [
+                'status' => \App\Enums\TipoSituacao::SELECIONADA->value,
+                'label' => 'Selecionadas',
+                'color' => 'teal',
+                'icon' => 'check-badge',
+                'textClass' => 'text-teal-600 dark:text-teal-400',
+                'activeClass' => 'ring-2 ring-teal-500 bg-teal-50 dark:bg-teal-950/20 border-teal-500',
+            ],
+            [
+                'status' => \App\Enums\TipoSituacao::APROVADA->value,
+                'label' => 'Aprovadas',
+                'color' => 'emerald',
+                'icon' => 'check-circle',
+                'textClass' => 'text-emerald-600 dark:text-emerald-400',
+                'activeClass' => 'ring-2 ring-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 border-emerald-500',
+            ],
+            [
+                'status' => \App\Enums\TipoSituacao::CANCELADA->value,
+                'label' => 'Canceladas',
+                'color' => 'rose',
+                'icon' => 'x-circle',
+                'textClass' => 'text-rose-600 dark:text-rose-400',
+                'activeClass' => 'ring-2 ring-rose-500 bg-rose-50 dark:bg-rose-950/20 border-rose-500',
+            ],
+        ];
+    @endphp
+
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        @foreach ($statusCards as $card)
+            @php
+                $isActive = $filtroSituacao === $card['status'];
+                $count = $this->contadores[$card['status']] ?? 0;
+            @endphp
+            <div 
+                wire:click="toggleFiltroSituacao('{{ $card['status'] }}')"
+                class="cursor-pointer transition-all duration-200 rounded-xl p-3 flex flex-col border shadow-sm hover:shadow-md hover:-translate-y-0.5 {{ $isActive ? $card['activeClass'] : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700' }}"
+            >
+                <div class="flex items-center gap-2">
+                    <flux:icon name="{{ $card['icon'] }}" variant="outline" class="size-5 {{ $card['textClass'] }} shrink-0" />
+                    <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{{ $card['label'] }}</span>
+                </div>
+                <h4 class="text-xl font-bold text-zinc-900 dark:text-white mt-2">{{ $count }}</h4>
+            </div>
+        @endforeach
     </div>
 
     <flux:table>
         <flux:table.columns>
+
             <flux:table.column>Candidato</flux:table.column>
             <flux:table.column>Data Nasc</flux:table.column>
             <flux:table.column>Endereço</flux:table.column>
@@ -349,6 +476,7 @@ new class extends Component {
                     $isRegiao = preg_match('/Lago Norte|SHIN|Setor de Mans.es|Taquari|Varj.o/iu', (string) $ficha->des_endereco);
                 @endphp
             <flux:table.row :key="'ficha-'.$ficha->idt_ficha">
+
                 <flux:table.cell>
                     <div class="font-medium text-zinc-900 dark:text-white flex items-center gap-1.5">
                         <span>{{ $ficha->nom_candidato }}</span>
@@ -371,6 +499,17 @@ new class extends Component {
                         <div class="flex items-center gap-1 mt-1">
                             <flux:icon name="exclamation-triangle" variant="outline" class="size-3 text-amber-500" />
                             <span class="text-[10px] text-amber-600 font-semibold">CPF não informado</span>
+                        </div>
+                    @endif
+                    @if($ficha->visitador)
+                        <div class="flex items-center gap-1 mt-1">
+                            <flux:icon name="user-group" class="size-3 text-zinc-500" />
+                            <span class="text-[11px] text-zinc-500 font-medium">
+                                Visitação: {{ $ficha->visitador->nom_pessoa }}
+                                @if($ficha->visitador->parceiro)
+                                    e {{ $ficha->visitador->parceiro->nom_pessoa }}
+                                @endif
+                            </span>
                         </div>
                     @endif
                 </flux:table.cell>
@@ -478,7 +617,7 @@ new class extends Component {
             </flux:table.row>
             @empty
             <flux:table.row>
-                <flux:table.cell colspan="6" class="text-center py-12">
+                <flux:table.cell colspan="7" class="text-center py-12">
                     <div class="flex flex-col items-center">
                         <x-heroicon-o-document-magnifying-glass class="w-12 h-12 text-zinc-300 mb-2" />
                         <flux:text>Nenhuma ficha encontrada para este critério.</flux:text>
@@ -492,4 +631,6 @@ new class extends Component {
     <div class="mt-4">
         {{ $fichas->links(data: ['scrollTo' => false]) }}
     </div>
+
+
 </div>

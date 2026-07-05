@@ -342,7 +342,7 @@ class EventoController extends Controller
     /**
      * Linha do Tempo Otimizada.
      */
-    public function timeline()
+    public function timeline(): View|RedirectResponse
     {
         $start = microtime(true);
         $pessoa = Auth::user()->pessoa;

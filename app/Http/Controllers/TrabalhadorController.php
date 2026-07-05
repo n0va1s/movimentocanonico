@@ -404,53 +404,51 @@ class TrabalhadorController extends Controller
         $context = $this->getLogContext($request);
 
         $pessoa = Auth::user()->pessoa;
-
-        if (! $pessoa) {
-            abort(403, 'Cadastro de pessoa não encontrado.');
-        }
-
-        // Busca o registro de coordenação mais recente da pessoa logada
-        $coordenacaoQuery = Trabalhador::with('evento', 'equipe')
-            ->where('idt_pessoa', $pessoa->idt_pessoa);
-
-        if (!Auth::user()->hasRole('sales')) {
-            $coordenacaoQuery->where('ind_coordenador', true);
-        }
-
-        $coordenacao = $coordenacaoQuery->orderByDesc('idt_evento')
-            ->first();
-
         $membros = collect();
         $evento = null;
         $equipe = null;
+        $coordenacao = null;
 
-        if ($coordenacao) {
-            $evento = $coordenacao->evento;
-            $equipe = $coordenacao->equipe;
+        if ($pessoa) {
+            // Busca o registro de coordenação mais recente da pessoa logada
+            $coordenacaoQuery = Trabalhador::with('evento', 'equipe')
+                ->where('idt_pessoa', $pessoa->idt_pessoa);
 
-            // Busca todos os trabalhadores da mesma equipe e evento, exceto o próprio coordenador
-            $membros = Trabalhador::with([
-                'pessoa' => function ($q) {
-                    $q->with(['restricoes', 'pontos']);
-                },
-            ])
-                ->where('idt_evento', $coordenacao->idt_evento)
-                ->where('idt_equipe', $coordenacao->idt_equipe)
-                ->where('idt_pessoa', '!=', $pessoa->idt_pessoa)
-                ->orderBy('ind_coordenador', 'desc')
-                ->get();
+            if (!Auth::user()->hasRole('sales')) {
+                $coordenacaoQuery->where('ind_coordenador', true);
+            }
+
+            $coordenacao = $coordenacaoQuery->orderByDesc('idt_evento')
+                ->first();
+
+            if ($coordenacao) {
+                $evento = $coordenacao->evento;
+                $equipe = $coordenacao->equipe;
+
+                // Busca todos os trabalhadores da mesma equipe e evento, exceto o próprio coordenador
+                $membros = Trabalhador::with([
+                    'pessoa' => function ($q) {
+                        $q->with(['restricoes', 'pontos']);
+                    },
+                ])
+                    ->where('idt_evento', $coordenacao->idt_evento)
+                    ->where('idt_equipe', $coordenacao->idt_equipe)
+                    ->where('idt_pessoa', '!=', $pessoa->idt_pessoa)
+                    ->orderBy('ind_coordenador', 'desc')
+                    ->get();
+            }
         }
 
         $duration = round((microtime(true) - $start) * 1000, 2);
         Log::notice('Minha equipe carregada', array_merge($context, [
-            'pessoa_id' => $pessoa->idt_pessoa,
+            'pessoa_id' => $pessoa?->idt_pessoa,
             'evento_id' => $evento?->idt_evento,
             'equipe_id' => $equipe?->idt_equipe,
             'total_membros' => $membros->count(),
             'duration_ms' => $duration,
         ]));
 
-        return view('trabalhador.minha-equipe', compact('membros', 'evento', 'equipe', 'coordenacao'));
+        return view('trabalhador.minha-equipe', compact('membros', 'evento', 'equipe', 'coordenacao', 'pessoa'));
     }
 
     public function destroy($id)

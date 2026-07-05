@@ -110,6 +110,7 @@ describe('TipoPerfilController::change', function () {
         ]);
 
         $this->actingAs($this->admin)
+            ->from(route('role.index'))
             ->post(route('role.change'), [
                 'role' => [
                     $usuarioAlvo->id => 'coord',
@@ -118,7 +119,7 @@ describe('TipoPerfilController::change', function () {
                     $usuarioAlvo->id => $movimento->idt_movimento,
                 ],
             ])
-            ->assertRedirect(route('eventos.index'))
+            ->assertRedirect(route('role.index'))
             ->assertSessionHas('success');
 
         expect($usuarioAlvo->fresh()->role)->toBe('coord');
@@ -133,6 +134,7 @@ describe('TipoPerfilController::change', function () {
         ]);
 
         $this->actingAs($this->admin)
+            ->from(route('role.index'))
             ->post(route('role.change'), [
                 'role' => [
                     $usuarioAlvo->id => 'espec',
@@ -141,7 +143,7 @@ describe('TipoPerfilController::change', function () {
                     $usuarioAlvo->id => $movimento->idt_movimento,
                 ],
             ])
-            ->assertRedirect(route('eventos.index'))
+            ->assertRedirect(route('role.index'))
             ->assertSessionHas('success');
 
         expect($usuarioAlvo->fresh()->role)->toBe('espec');
@@ -156,6 +158,7 @@ describe('TipoPerfilController::change', function () {
         ]);
 
         $this->actingAs($this->admin)
+            ->from(route('role.index'))
             ->post(route('role.change'), [
                 'role' => [
                     $usuarioAlvo->id => 'coord',
@@ -164,7 +167,7 @@ describe('TipoPerfilController::change', function () {
                     $usuarioAlvo->id => '',
                 ],
             ])
-            ->assertRedirect(route('eventos.index'))
+            ->assertRedirect(route('role.index'))
             ->assertSessionHas('success');
 
         expect($usuarioAlvo->fresh()->role)->toBe('coord');
