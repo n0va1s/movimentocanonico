@@ -149,7 +149,7 @@
                         @endphp
                         
                         @if($isCurrent)
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold text-white {{ $style['bg'] }} shadow-sm">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold {{ $style['light'] }} shadow-sm">
                                 <x-heroicon-s-check class="w-4 h-4" />
                                 {{ $situacao->label() }}
                                 @if($situacao->mail()[0] === 'Sim')
