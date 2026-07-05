@@ -84,7 +84,10 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/vem', [HomeController::class, 'fichaVem'])->name('home.ficha.vem');
     Route::get('/ecc', [HomeController::class, 'fichaEcc'])->name('home.ficha.ecc');
-    Route::get('/sgm', [HomeController::class, 'fichaSgm'])->name('home.ficha.sgm');
+    // Route::get('/sgm', [HomeController::class, 'fichaSgm'])->name('home.ficha.sgm');
+    Route::get('/sgm', function() {
+        abort(403, 'As inscrições para o Segue-Me estão encerradas.');
+    })->name('home.ficha.sgm');
 
     // Submissão de fichas por candidatos (todos perfis autenticados)
     Route::post('/fichas/vem', [FichaVemController::class, 'store'])->name('vem.store');

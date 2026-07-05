@@ -146,10 +146,22 @@
                     <h3 class="text-xl font-bold text-orange-600 dark:text-orange-400">Segue-Me</h3>
                     <p class="text-gray-600 dark:text-gray-300 mt-2">Encontro de Jovens com Cristo</p>
                 </div>
-                <a href="{{ route('home.ficha.sgm') }}"
-                    class="mt-4 inline-block bg-orange-600 hover:bg-orange-700 text-white font-semibold px-4 py-2 rounded-md transition">
-                    Ficha do Segue-Me
-                </a>
+                <!-- NOVO Badge Premium de Esgotado -->
+                <div class="mt-4 relative">
+                    <div class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 text-white font-bold rounded-md shadow-lg border-2 border-red-500 dark:border-red-600 animate-pulse-subtle">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <div class="flex flex-col leading-tight">
+                            <span class="text-sm uppercase tracking-wider">✓ Esgotado</span>
+                            <span class="text-xs font-normal opacity-90">Vamos selecionar as fichas</span>
+                        </div>
+                    </div>
+                    <!-- Badge "Esgotado" flutuante opcional -->
+                    <span class="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-black px-2 py-1 rounded-full shadow-md rotate-12">
+                        Até o ano que vem!
+                    </span>
+                </div>
             </div>
 
             <!-- Card ECC -->
