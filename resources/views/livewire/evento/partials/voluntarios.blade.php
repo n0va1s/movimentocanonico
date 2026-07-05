@@ -14,6 +14,7 @@ new class extends Component {
 
     public Evento $evento;
     public string $search = '';
+    public string $equipeFiltroId = '';
     public array $selectedEquipes = [];
     public array $indCoordenador = [];
     public array $indPrimeiraVez = [];
@@ -94,7 +95,10 @@ new class extends Component {
             'voluntarios' => \App\Models\Pessoa::query()
                 ->whereHas('voluntarios', function ($query) {
                     $query->where('idt_evento', $this->evento->idt_evento)
-                        ->whereNull('idt_trabalhador');
+                        ->whereNull('idt_trabalhador')
+                        ->when($this->equipeFiltroId, function ($q) {
+                            $q->where('idt_equipe', $this->equipeFiltroId);
+                        });
                 })
                 ->whereDoesntHave('voluntarios', function ($query) {
                     $query->where('idt_evento', $this->evento->idt_evento)
@@ -119,18 +123,28 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6">
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
             <flux:heading size="lg">Triagem de Voluntários</flux:heading>
             <flux:subheading>Analise os candidatos e aloque-os nas equipes correspondentes.</flux:subheading>
         </div>
 
-        <flux:input
-            wire:model.live.debounce.300ms="search"
-            icon="magnifying-glass"
-            placeholder="Buscar por nome ou apelido..."
-            class="w-full md:max-w-xs"
-        />
+        <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto items-end">
+            <flux:select label="Equipe de interesse" wire:model.live="equipeFiltroId" icon="funnel" placeholder="Todas as equipes" class="w-full sm:w-48">
+                <option value="">Todas as equipes</option>
+                @foreach ($equipes as $equipe)
+                    <option value="{{ $equipe->idt_equipe }}">{{ $equipe->des_grupo }}</option>
+                @endforeach
+            </flux:select>
+
+            <flux:input
+                
+                wire:model.live.debounce.300ms="search"
+                icon="magnifying-glass"
+                placeholder="Nome ou apelido..."
+                class="w-full sm:w-64"
+            />
+        </div>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

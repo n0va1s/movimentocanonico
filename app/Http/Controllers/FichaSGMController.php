@@ -140,6 +140,8 @@ class FichaSGMController extends Controller
 
         $sgmData = $sgmRequest->validated();
         unset($sgmData['med_foto']);
+        $fillable = (new FichaSGM)->getFillable();
+        $sgmData = array_intersect_key($sgmData, array_flip($fillable));
         $ficha->fichaSGM()->create($sgmData);
 
         if ($fichaRequest->filled('restricoes')) {
@@ -256,10 +258,12 @@ class FichaSGMController extends Controller
 
         $sgmData = $sgmRequest->validated();
         unset($sgmData['med_foto']);
+        $fillable = (new FichaSGM)->getFillable();
+        $sgmData = array_intersect_key($sgmData, array_flip($fillable));
         $sgmData['idt_ficha'] = $ficha->idt_ficha;
 
         if ($ficha->fichaSGM) {
-            $ficha->fichaSGM()->update($sgmData);
+            $ficha->fichaSGM->update($sgmData);
         } else {
             $ficha->fichaSGM()->create($sgmData);
         }

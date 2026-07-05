@@ -34,16 +34,86 @@ enum TipoSituacao: string
     public function badge(): array
     {
         return match ($this) {
-            self::NOVA => ['bg' => 'bg-slate-500', 'text' => 'text-slate-500', 'hover' => 'hover:bg-slate-600 hover:border-slate-600', 'border' => 'border-slate-500', 'light' => 'bg-slate-50 dark:bg-slate-900/20 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700'],
-            self::SELECIONADA => ['bg' => 'bg-indigo-500', 'text' => 'text-indigo-500', 'hover' => 'hover:bg-indigo-600 hover:border-indigo-600', 'border' => 'border-indigo-500', 'light' => 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-700'],
-            self::CONTATO => ['bg' => 'bg-cyan-500', 'text' => 'text-cyan-500', 'hover' => 'hover:bg-cyan-600 hover:border-cyan-600', 'border' => 'border-cyan-500', 'light' => 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700'],
-            self::AGUARDANDO => ['bg' => 'bg-purple-500', 'text' => 'text-purple-500', 'hover' => 'hover:bg-purple-600 hover:border-purple-600', 'border' => 'border-purple-500', 'light' => 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700'],
-            self::VISITADA => ['bg' => 'bg-orange-500', 'text' => 'text-orange-500', 'hover' => 'hover:bg-orange-600 hover:border-orange-600', 'border' => 'border-orange-500', 'light' => 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700'],
-            self::ENVIADA => ['bg' => 'bg-blue-500', 'text' => 'text-blue-500', 'hover' => 'hover:bg-blue-600 hover:border-blue-600', 'border' => 'border-blue-500', 'light' => 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700'],
-            self::RECEBIDA => ['bg' => 'bg-teal-500', 'text' => 'text-teal-500', 'hover' => 'hover:bg-teal-600 hover:border-teal-600', 'border' => 'border-teal-500', 'light' => 'bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 border-teal-300 dark:border-teal-700'],
-            self::PAGA => ['bg' => 'bg-emerald-500', 'text' => 'text-emerald-500', 'hover' => 'hover:bg-emerald-600 hover:border-emerald-600', 'border' => 'border-emerald-500', 'light' => 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'],
-            self::CANCELADA => ['bg' => 'bg-rose-500', 'text' => 'text-rose-500', 'hover' => 'hover:bg-rose-600 hover:border-rose-600', 'border' => 'border-rose-500', 'light' => 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700'],
-            self::APROVADA => ['bg' => 'bg-amber-500', 'text' => 'text-amber-500', 'hover' => 'hover:bg-amber-600 hover:border-amber-600', 'border' => 'border-amber-500', 'light' => 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700'],        
+            self::NOVA => [
+                'bg' => 'bg-slate-100 dark:bg-slate-900/40',
+                'text' => 'text-slate-800 dark:text-slate-300',
+                'hover' => 'hover:bg-slate-200 hover:border-slate-300',
+                'border' => 'border-slate-200',
+                'light' => 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-950/40 dark:text-slate-300 dark:border-slate-800',
+                'border-l' => 'border-l-slate-300 dark:border-l-slate-600'
+            ],
+            self::SELECIONADA => [
+                'bg' => 'bg-lime-100 dark:bg-lime-900/40',
+                'text' => 'text-lime-800 dark:text-lime-300',
+                'hover' => 'hover:bg-lime-200 hover:border-lime-300',
+                'border' => 'border-lime-200',
+                'light' => 'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-950/40 dark:text-lime-300 dark:border-lime-800',
+                'border-l' => 'border-l-lime-500 dark:border-l-lime-400'
+            ],
+            self::CONTATO => [
+                'bg' => 'bg-sky-100 dark:bg-sky-900/40',
+                'text' => 'text-sky-800 dark:text-sky-300',
+                'hover' => 'hover:bg-sky-200 hover:border-sky-300',
+                'border' => 'border-sky-200',
+                'light' => 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800',
+                'border-l' => 'border-l-sky-500 dark:border-l-sky-400'
+            ],
+            self::AGUARDANDO => [
+                'bg' => 'bg-amber-100 dark:bg-amber-900/40',
+                'text' => 'text-amber-800 dark:text-amber-300',
+                'hover' => 'hover:bg-amber-200 hover:border-amber-300',
+                'border' => 'border-amber-200',
+                'light' => 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800',
+                'border-l' => 'border-l-amber-500 dark:border-l-amber-400'
+            ],
+            self::VISITADA => [
+                'bg' => 'bg-purple-100 dark:bg-purple-900/40',
+                'text' => 'text-purple-800 dark:text-purple-300',
+                'hover' => 'hover:bg-purple-200 hover:border-purple-300',
+                'border' => 'border-purple-200',
+                'light' => 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800',
+                'border-l' => 'border-l-purple-600 dark:border-l-purple-400'
+            ],
+            self::ENVIADA => [
+                'bg' => 'bg-cyan-50 dark:bg-cyan-900/30',
+                'text' => 'text-cyan-800 dark:text-cyan-300',
+                'hover' => 'hover:bg-cyan-100 hover:border-cyan-200',
+                'border' => 'border-cyan-200',
+                'light' => 'bg-cyan-50 text-cyan-800 border-cyan-200 dark:bg-cyan-950/30 dark:text-cyan-300 dark:border-cyan-800',
+                'border-l' => 'border-l-cyan-500 dark:border-l-cyan-400'
+            ],
+            self::RECEBIDA => [
+                'bg' => 'bg-green-100 dark:bg-green-900/40',
+                'text' => 'text-green-800 dark:text-green-300',
+                'hover' => 'hover:bg-green-200 hover:border-green-300',
+                'border' => 'border-green-200',
+                'light' => 'bg-green-100 text-green-800 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-800',
+                'border-l' => 'border-l-green-500 dark:border-l-green-400'
+            ],
+            self::PAGA => [
+                'bg' => 'bg-emerald-100 dark:bg-emerald-900/40',
+                'text' => 'text-emerald-800 dark:text-emerald-300',
+                'hover' => 'hover:bg-emerald-200 hover:border-emerald-300',
+                'border' => 'border-emerald-200',
+                'light' => 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800',
+                'border-l' => 'border-l-emerald-600 dark:border-l-emerald-400'
+            ],
+            self::CANCELADA => [
+                'bg' => 'bg-rose-100 dark:bg-rose-900/40',
+                'text' => 'text-rose-800 dark:text-rose-300',
+                'hover' => 'hover:bg-rose-200 hover:border-rose-300',
+                'border' => 'border-rose-200',
+                'light' => 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800',
+                'border-l' => 'border-l-rose-500 dark:border-l-rose-400'
+            ],
+            self::APROVADA => [
+                'bg' => 'bg-teal-100 dark:bg-teal-900/40',
+                'text' => 'text-teal-800 dark:text-teal-300',
+                'hover' => 'hover:bg-teal-200 hover:border-teal-300',
+                'border' => 'border-teal-200',
+                'light' => 'bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800',
+                'border-l' => 'border-l-teal-500 dark:border-l-teal-400'
+            ],
         };
     }
 
