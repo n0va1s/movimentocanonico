@@ -32,6 +32,40 @@
             serverErrors: {{ Js::from($errors->messages()) }},
         }">
 
+        {{-- ===== BREADCRUMBS ===== --}}
+        @php
+            $previousUrl = url()->previous();
+            $isMinhasFichas = str_contains($previousUrl, 'minhas-fichas');
+            $isGerenciamento = str_contains($previousUrl, 'gerenciamento');
+            
+            // Fallback baseado no perfil se a origem for desconhecida ou houver refresh (F5)
+            if (!$isMinhasFichas && !$isGerenciamento && Auth::user()) {
+                if (Auth::user()->hasRole('admin', 'espec', 'coord')) {
+                    $isGerenciamento = true;
+                } else {
+                    $isMinhasFichas = true;
+                }
+            }
+        @endphp
+
+        @if (Auth::user())
+            <flux:breadcrumbs class="mb-6">
+                <flux:breadcrumbs.item href="{{ route('home') }}">Início</flux:breadcrumbs.item>
+                
+                @if ($isGerenciamento)
+                    @if ($ficha->idt_evento)
+                        <flux:breadcrumbs.item href="{{ route('eventos.gerenciamento', $ficha->idt_evento) }}">Gerenciamento</flux:breadcrumbs.item>
+                    @else
+                        <flux:breadcrumbs.item href="{{ route('eventos.index') }}">Eventos</flux:breadcrumbs.item>
+                    @endif
+                @else
+                    <flux:breadcrumbs.item href="{{ route('minhas-fichas.index') }}">Minhas Fichas</flux:breadcrumbs.item>
+                @endif
+                
+                <flux:breadcrumbs.item>Ficha do ECC</flux:breadcrumbs.item>
+            </flux:breadcrumbs>
+        @endif
+
         {{-- ===== CABEÇALHO ===== --}}
         <div class="mb-6 space-y-4">
             <div>
@@ -85,18 +119,6 @@
                 </ol>
             </div>
         </div>
-
-        {{-- Botão voltar (admin) --}}
-        @if (Auth::user()?->isAdmin())
-            <div class="flex justify-end mb-4">
-                <a href="{{ route('ecc.index') }}"
-                    class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-500 focus:ring-2 focus:ring-green-500 focus:outline-none focus-visible:ring-offset-2"
-                    aria-label="Voltar para a lista de fichas">
-                    <x-heroicon-o-arrow-left class="w-5 h-5 mr-2" aria-hidden="true" />
-                    Fichas
-                </a>
-            </div>
-        @endif
 
         @if (Auth::user()?->hasRole('admin', 'espec', 'coord') && $ficha->exists)
             <div class="bg-white dark:bg-zinc-800 rounded-xl shadow border border-gray-200 dark:border-zinc-700 p-4 sm:p-6 mb-6">

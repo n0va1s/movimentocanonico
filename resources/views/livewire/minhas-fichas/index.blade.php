@@ -335,9 +335,9 @@ new class extends Component {
         {{-- Barra de Filtros e Busca --}}
         @if ($this->podeDesignar())
             <div class="flex flex-col gap-5">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 w-full">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 w-full items-end">
                     {{-- Busca --}}
-                    <div class="sm:col-span-2 lg:col-span-1">
+                    <div class="w-full">
                         <flux:input 
                             wire:model.live.debounce.300ms="search" 
                             icon="magnifying-glass" 
@@ -347,7 +347,7 @@ new class extends Component {
                     </div>
 
                     {{-- Filtro de Casal Designado --}}
-                    <div>
+                    <div class="w-full">
                         <flux:input 
                             wire:model.live.debounce.300ms="visitadorSearch" 
                             icon="users" 
@@ -357,7 +357,7 @@ new class extends Component {
                     </div>
 
                     {{-- Situação --}}
-                    <div>
+                    <div class="w-full">
                         <flux:select 
                             wire:model.live="situacao" 
                             placeholder="Todas as Situações"
@@ -396,42 +396,11 @@ new class extends Component {
                     $siglaMovimento = $ficha->evento?->movimento?->des_sigla ?? 'N/A';
                     
                     // Configuração de Badge e Estilos baseada no status atual
-                    $badgeConfig = match ($ficha->tip_situacao) {
-                        \App\Enums\TipoSituacao::AGUARDANDO => [
-                            'bg' => 'bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-400',
-                            'icon' => 'clock',
-                            'label' => 'Aguardando'
-                        ],
-                        \App\Enums\TipoSituacao::SELECIONADA => [
-                            'bg' => 'bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-400',
-                            'icon' => 'check-circle',
-                            'label' => 'Selecionada'
-                        ],
-                        \App\Enums\TipoSituacao::VISITADA => [
-                            'bg' => 'bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 text-green-700 dark:text-green-400',
-                            'icon' => 'book-open',
-                            'label' => 'Visitado'
-                        ],
-                        \App\Enums\TipoSituacao::CONTATO => [
-                            'bg' => 'bg-cyan-50 dark:bg-cyan-950/20 border border-cyan-200 dark:border-cyan-900 text-cyan-700 dark:text-cyan-400',
-                            'icon' => 'phone',
-                            'label' => 'Contato Feito'
-                        ],
-                        \App\Enums\TipoSituacao::CANCELADA => [
-                            'bg' => 'bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400',
-                            'icon' => 'x-circle',
-                            'label' => 'Cancelada'
-                        ],
-                        default => [
-                            'bg' => 'bg-zinc-50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-900 text-zinc-700 dark:text-zinc-400',
-                            'icon' => 'document-text',
-                            'label' => $ficha->tip_situacao->label()
-                        ]
-                    };
+                    $badgeConfig = $ficha->tip_situacao->cardConfig();
                 @endphp
                 <div class="relative bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 p-5 shadow-sm hover:shadow-md transition duration-200 flex flex-col h-full justify-between">
                     @if ($this->podeDesignar())
-                        <div class="absolute top-4 right-4 z-10" wire:click.stop>
+                        <div class="absolute top-4 left-4 z-10" wire:click.stop>
                             <input 
                                 type="checkbox" 
                                 wire:model.live="selectedFichas" 
@@ -443,10 +412,7 @@ new class extends Component {
                     @endif
                     <div class="flex flex-col flex-1">
                         {{-- Top row: Badges --}}
-                        <div class="flex justify-start items-center gap-1.5 mb-4">
-                            <span class="bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
-                                {{ $ficha->evento->des_evento ?? 'Sem Evento' }}
-                            </span>
+                        <div class="flex justify-end items-center gap-1.5 mb-4">
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold {{ $badgeConfig['bg'] }}">
                                 <flux:icon :icon="$badgeConfig['icon']" class="size-3" />
                                 {{ $badgeConfig['label'] }}
@@ -557,20 +523,6 @@ new class extends Component {
                                 <span>Contato Feito</span>
                             </button>
 
-                            {{-- Visitado --}}
-                            @php $isActive = $ficha->tip_situacao->value === 'V'; @endphp
-                            <button 
-                                wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'V')" 
-                                @disabled($isActive)
-                                class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-xl transition duration-150 cursor-pointer text-center text-[10px] font-medium leading-tight tracking-tight border w-full
-                                {{ $isActive 
-                                    ? 'bg-emerald-50/70 border-emerald-100 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900/60 dark:text-emerald-400 opacity-60 cursor-not-allowed' 
-                                    : 'bg-white border-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 dark:hover:bg-emerald-950/20 dark:hover:text-emerald-400 dark:hover:border-emerald-800' }}"
-                            >
-                                <flux:icon.book-open class="size-4 mb-1" />
-                                <span>Visitado</span>
-                            </button>
-
                             {{-- Aguardando --}}
                             @php $isActive = $ficha->tip_situacao->value === 'W'; @endphp
                             <button 
@@ -583,6 +535,20 @@ new class extends Component {
                             >
                                 <flux:icon.clock class="size-4 mb-1" />
                                 <span>Aguardando</span>
+                            </button>
+
+                            {{-- Visitado --}}
+                            @php $isActive = $ficha->tip_situacao->value === 'V'; @endphp
+                            <button 
+                                wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'V')" 
+                                @disabled($isActive)
+                                class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-xl transition duration-150 cursor-pointer text-center text-[10px] font-medium leading-tight tracking-tight border w-full
+                                {{ $isActive 
+                                    ? 'bg-emerald-50/70 border-emerald-100 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900/60 dark:text-emerald-400 opacity-60 cursor-not-allowed' 
+                                    : 'bg-white border-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 dark:hover:bg-emerald-950/20 dark:hover:text-emerald-400 dark:hover:border-emerald-800' }}"
+                            >
+                                <flux:icon.book-open class="size-4 mb-1" />
+                                <span>Visitado</span>
                             </button>
 
                             {{-- Desistência --}}
