@@ -18,7 +18,30 @@
 
             <form method="POST"
                 action="{{ $pessoa->exists ? route('pessoas.update', $pessoa) : route('pessoas.store') }}"
-                enctype="multipart/form-data" class="space-y-6">
+                enctype="multipart/form-data" class="space-y-6"
+                x-data="{
+                    buscarPorCpf() {
+                        let cpf = document.getElementById('num_cpf_pessoa').value.replace(/\D/g, '');
+                        if (cpf.length === 11) {
+                            fetch(`/pessoas/${cpf}/busca/`)
+                                .then(response => {
+                                    if (response.ok) return response.json();
+                                    throw new Error('Not found');
+                                })
+                                .then(data => {
+                                    document.getElementById('nom_pessoa').value = data.nom_pessoa || '';
+                                    document.getElementById('nom_apelido').value = data.nom_apelido || '';
+                                    if (data.dat_nascimento) document.getElementById('dat_nascimento').value = data.dat_nascimento.split('T')[0];
+                                    document.getElementById('tel_pessoa').value = data.tel_pessoa || '';
+                                    document.getElementById('eml_pessoa').value = data.eml_pessoa || '';
+                                    if (document.getElementById('des_endereco')) document.getElementById('des_endereco').value = data.des_endereco || '';
+                                    if (data.tam_camiseta && document.getElementById('tam_camiseta')) document.getElementById('tam_camiseta').value = data.tam_camiseta;
+                                    if (data.tip_genero && document.getElementById('tip_genero')) document.getElementById('tip_genero').value = data.tip_genero;
+                                })
+                                .catch(() => {});
+                        }
+                    }
+                }">
                 @csrf
                 @if ($pessoa->exists)
                     @method('PUT')
