@@ -182,23 +182,6 @@ class TrabalhadorController extends Controller
             'equipes.*.habilidade' => 'nullable|string|max:500',
         ]);
 
-        // Regra de segurança: Bloqueia caso o CPF já conste como participante
-        $cpfUsuario = \App\Services\CpfService::clean($pessoa->num_cpf_pessoa);
-        if ($cpfUsuario) {
-            $jaInscritoComoParticipante = \App\Models\Ficha::where('idt_evento', $dados['idt_evento'])
-                ->where(function ($query) use ($cpfUsuario) {
-                    $query->where('num_cpf_candidato', $cpfUsuario)
-                          ->orWhereHas('fichaEcc', function ($q) use ($cpfUsuario) {
-                              $q->where('num_cpf_conjuge', $cpfUsuario);
-                          });
-                })
-                ->exists();
-
-            if ($jaInscritoComoParticipante) {
-                abort(403, 'Sua ficha está cadastrada nesse evento e você não pode se candidatar para a equipe de trabalho.');
-            }
-        }
-
         // remover as equipes que não foram marcadas
         $equipesSelecionadas = array_filter($dados['equipes'], function ($item) {
             return isset($item['selecionado']) && $item['selecionado'] == '1';

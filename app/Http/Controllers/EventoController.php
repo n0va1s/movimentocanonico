@@ -54,19 +54,6 @@ class EventoController extends Controller
                         'voluntarios as ja_inscrito_voluntario' => fn ($q) => $q
                             ->where('idt_pessoa', $pessoa->idt_pessoa),
                     ]);
-
-                $cpfUsuario = \App\Services\CpfService::clean($pessoa->num_cpf_pessoa);
-                if ($cpfUsuario) {
-                    $q->withExists([
-                        'fichas as has_submitted_ficha' => fn ($qFicha) => $qFicha
-                            ->where(function ($qSub) use ($cpfUsuario) {
-                                $qSub->where('num_cpf_candidato', $cpfUsuario)
-                                     ->orWhereHas('fichaEcc', function ($qEcc) use ($cpfUsuario) {
-                                         $qEcc->where('num_cpf_conjuge', $cpfUsuario);
-                                     });
-                            })
-                    ]);
-                }
             })
             ->when($request->search, fn ($q) => $q->search($request->search))
             ->when($request->idt_movimento, fn ($q) => $q->movimento($request->idt_movimento))
