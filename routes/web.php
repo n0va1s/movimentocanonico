@@ -19,8 +19,10 @@ use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
 // ---------------------------------------------------------------------------
-// Utilitários (sem auth)
+// Utilitários (Somente admin)
 // ---------------------------------------------------------------------------
+
+Route::middleware(['auth', 'role:admin'])->group(function () {
 
 Route::get('/limpar-tudo', function () {
     Artisan::call('config:clear');
@@ -56,6 +58,7 @@ Route::get('/encerrar-eventos', function () {
         return 'Erro ao encerrar eventos: '.$e->getMessage();
     }
 });
+});
 
 
 // ---------------------------------------------------------------------------
@@ -64,6 +67,14 @@ Route::get('/encerrar-eventos', function () {
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::post('/', [HomeController::class, 'contato'])->name('home.contato');
+Route::get('/fichas/{ficha}/autorizar', function (App\Models\Ficha $ficha) {
+    if ($ficha->tip_situacao === App\Enums\TipoSituacao::ENVIADA) {
+        $ficha->tip_situacao = App\Enums\TipoSituacao::RECEBIDA;
+        $ficha->save();
+        return redirect()->route('home')->with('success', 'Inscrição autorizada com sucesso!');
+    }
+    return redirect()->route('home')->with('info', 'Esta inscrição já foi processada ou não está aguardando autorização.');
+})->name('fichas.autorizar')->middleware('signed');
 
 // ---------------------------------------------------------------------------
 // Área autenticada — todos os perfis
@@ -139,7 +150,6 @@ Route::middleware(['auth'])->group(function () {
     // Importação de Planilhas (Definido antes do wildcard /eventos/{evento} para evitar 404)
     // -----------------------------------------------------------------------
     Route::middleware(['role:admin,espec'])->group(function () {
-        Route::get('/configuracoes', [ConfiguracoesController::class, 'index'])->name('configuracoes.index');
         Route::get('/eventos/importar', [ImportController::class, 'index'])->name('eventos.importar');
         Route::post('/eventos/importar/participantes', [ImportController::class, 'importarParticipantes'])->name('eventos.importar.participantes');
         Route::post('/eventos/importar/trabalhadores', [ImportController::class, 'importarTrabalhadores'])->name('eventos.importar.trabalhadores');
@@ -148,10 +158,18 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // -----------------------------------------------------------------------
+    // Rotas acessíveis a qualquer usuário logado (veteranos podem completar perfil)
+    // -----------------------------------------------------------------------
+    Route::get('/pessoas/create', [PessoaController::class, 'create'])->name('pessoas.create');
+    Route::post('/pessoas', [PessoaController::class, 'store'])->name('pessoas.store');
+
+    // -----------------------------------------------------------------------
     // Somente admin: criar/editar/excluir/visualizar recursos e configurações
     // -----------------------------------------------------------------------
 
     Route::middleware(['role:admin'])->group(function () {
+
+        // Configurações Globais (Movido para role:admin,espec)
 
         // Contatos
         Route::get('/contatos', [ContatoController::class, 'index'])->name('contatos.index');
@@ -160,16 +178,14 @@ Route::middleware(['auth'])->group(function () {
         // Eventos
         Route::get('/eventos/create', [EventoController::class, 'create'])->name('eventos.create');
         Route::post('/eventos', [EventoController::class, 'store'])->name('eventos.store');
-        Route::get('/eventos/{evento}', [EventoController::class, 'show'])->name('eventos.show');
-        Route::get('/eventos/{evento}/edit', [EventoController::class, 'edit'])->name('eventos.edit');
-        Route::put('/eventos/{evento}', [EventoController::class, 'update'])->name('eventos.update');
-        Route::patch('/eventos/{evento}', [EventoController::class, 'update']);
-        Route::delete('/eventos/{evento}', [EventoController::class, 'destroy'])->name('eventos.destroy');
+        Route::get('/eventos/{evento}', [EventoController::class, 'show'])->name('eventos.show')->withTrashed();
+        Route::get('/eventos/{evento}/edit', [EventoController::class, 'edit'])->name('eventos.edit')->withTrashed();
+        Route::put('/eventos/{evento}', [EventoController::class, 'update'])->name('eventos.update')->withTrashed();
+        Route::patch('/eventos/{evento}', [EventoController::class, 'update'])->withTrashed();
+        Route::delete('/eventos/{evento}', [EventoController::class, 'destroy'])->name('eventos.destroy')->withTrashed();
 
-        // Pessoas — listagem, busca e CRUD
+        // Pessoas — listagem, busca e CRUD (create e store foram movidos para cima)
         Volt::route('/pessoas', 'pessoas.index')->name('pessoas.index');
-        Route::get('/pessoas/create', [PessoaController::class, 'create'])->name('pessoas.create');
-        Route::post('/pessoas', [PessoaController::class, 'store'])->name('pessoas.store');
         Route::delete('/pessoas/{pessoa}', [PessoaController::class, 'destroy'])->name('pessoas.destroy');
 
         // Executado diariamente via command
@@ -220,6 +236,9 @@ Route::middleware(['auth'])->group(function () {
     });
 
     Route::middleware(['role:admin,espec'])->group(function () {
+        // Configurações Globais
+        Route::get('/configuracoes', [ConfiguracoesController::class, 'index'])->name('configuracoes.index');
+
         Route::post('/fichas/{id}/designar-visitador', function (\Illuminate\Http\Request $request, $id) {
             $request->validate([
                 'idt_pessoa_visitacao' => 'nullable|exists:pessoa,idt_pessoa',

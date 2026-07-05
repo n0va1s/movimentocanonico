@@ -1,7 +1,6 @@
 <x-layouts.app :title="'Contato'">
     <section class="p-6 w-full max-w-[80vw] ml-auto">
         <div>
-            <x-session-alert />
         </div>
         <div class="mb-6">
             <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Contatos</h1>

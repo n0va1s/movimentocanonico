@@ -2,7 +2,6 @@
     <section class="p-6 w-full max-w-5xl mx-auto">
 
         {{-- Flash messages --}}
-        <x-session-alert />
 
         {{-- NAVEGAÇÃO --}}
         <flux:breadcrumbs class="mb-6">

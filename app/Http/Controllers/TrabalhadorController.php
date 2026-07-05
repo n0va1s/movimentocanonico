@@ -98,6 +98,24 @@ class TrabalhadorController extends Controller
 
         if ($eventoId) {
             $evento = Evento::findOrFail($eventoId);
+
+            // Regra 2: Bloqueio de Duplo Papel (Não pode ser trabalhador se for candidato)
+            $user = Auth::user();
+            if ($user) {
+                $jaEhCandidato = \App\Models\Ficha::where('idt_evento', $eventoId)
+                    ->where(function ($query) use ($user) {
+                        if ($user->pessoa) {
+                            $query->where('idt_pessoa', $user->pessoa->idt_pessoa);
+                        }
+                        $query->orWhere('eml_candidato', $user->email);
+                    })
+                    ->exists();
+
+                if ($jaEhCandidato) {
+                    return redirect()->route('eventos.index')
+                        ->with('error', 'Você já está inscrito como candidato neste evento.');
+                }
+            }
         } else {
             $evento = new Evento;
         }
@@ -138,6 +156,23 @@ class TrabalhadorController extends Controller
 
         if (! $pessoa) {
             return back()->with('error', 'Seu cadastro de pessoa não foi encontrado.');
+        }
+
+        // Regra 2: Bloqueio de Duplo Papel (Não pode ser trabalhador se for candidato)
+        $eventoId = $request->input('idt_evento');
+        $user = Auth::user();
+        if ($eventoId && $user) {
+            $jaEhCandidato = \App\Models\Ficha::where('idt_evento', $eventoId)
+                ->where(function ($query) use ($user) {
+                    $query->where('idt_pessoa', $user->pessoa->idt_pessoa)
+                          ->orWhere('eml_candidato', $user->email);
+                })
+                ->exists();
+
+            if ($jaEhCandidato) {
+                return redirect()->route('eventos.index')
+                    ->with('error', 'Você já está inscrito como candidato neste evento.');
+            }
         }
 
         $dados = $request->validate([

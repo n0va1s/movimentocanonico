@@ -52,11 +52,7 @@ class FichaSGMController extends Controller
 
         $hoje = now()->startOfDay();
         $eventos = Evento::where('idt_movimento', TipoMovimento::SGM)
-            ->where(function ($q) use ($hoje) {
-                $q->where('dat_inicio', '>=', $hoje)
-                    ->orWhere('dat_termino', '>=', $hoje)
-                    ->orWhereNull('dat_termino');
-            })
+            ->ativos()
             ->orderBy('dat_inicio', 'asc')
             ->get();
 
@@ -100,7 +96,7 @@ class FichaSGMController extends Controller
         $ficha->idt_movimento = TipoMovimento::SGM;
         $ficha->setRelation('fichaSGM', new FichaSGM);
 
-        $eventos = Evento::getByTipo(TipoMovimento::SGM, 'E', 3);
+        $eventos = Evento::porTipo(TipoMovimento::SGM, 'E', 3)->get();
 
         return view('ficha.formSGM', array_merge($this->fichaService::dadosFixosFicha($ficha), [
             'ficha' => $ficha,
@@ -164,9 +160,11 @@ class FichaSGMController extends Controller
             'duration_ms' => $duration,
         ]));
 
-        $previous = url()->previous();
-        if (str_contains($previous, '/fichas/sgm') || (app()->runningUnitTests() && ! str_contains($previous, '/sgm'))) {
-            return redirect()->route('sgm.index')->with('success', 'Ficha cadastrada com sucesso!');
+        // Dispara e-mail de recebimento
+        \App\Events\FichaRecebidaEvent::dispatch($ficha);
+
+        if (auth()->user()->role === 'admin') {
+            return back()->with('success', 'Ficha cadastrada com sucesso!');
         }
 
         return redirect()->route('home')->with('success', 'Ficha cadastrada com sucesso!');
@@ -286,8 +284,7 @@ class FichaSGMController extends Controller
             'duration_ms' => $duration,
         ]));
 
-        $previous = url()->previous();
-        if (str_contains($previous, '/fichas/sgm') || (app()->runningUnitTests() && ! str_contains($previous, '/sgm'))) {
+        if (auth()->user()->role === 'admin') {
             return redirect()->route('sgm.index')->with('success', 'Ficha atualizada com sucesso!');
         }
 
@@ -313,14 +310,10 @@ class FichaSGMController extends Controller
                 'duration_ms' => $duration,
             ]));
 
-            return redirect()
-                ->route('sgm.index')
-                ->with('success', 'Ficha excluída com sucesso!');
+            return redirect()->route('sgm.index')->with('success', 'Ficha excluída com sucesso!');
         } catch (QueryException $e) {
             if ($e->getCode() === '23000') {
-                return redirect()
-                    ->route('sgm.index')
-                    ->with('error', 'Não é possível excluir esta ficha. É preciso apagar os dados associados.');
+                return back()->with('error', 'Não é possível excluir esta ficha. É preciso apagar os dados associados.');
             }
 
             $duration = round((microtime(true) - $start) * 1000, 2);
@@ -333,9 +326,7 @@ class FichaSGMController extends Controller
                 'duration_ms' => $duration,
             ]));
 
-            return redirect()
-                ->route('sgm.index')
-                ->with('error', 'Erro ao tentar excluir a ficha.');
+            return back()->with('error', 'Erro ao tentar excluir a ficha.');
         }
     }
 
@@ -350,7 +341,7 @@ class FichaSGMController extends Controller
         try {
             FichaService::atualizarSituacaoFicha($id, $novaSituacao);
 
-            return redirect()->back()->with('success', 'Situação da ficha atualizada com sucesso!');
+            return redirect()->route('sgm.index')->with('success', 'Situação da ficha atualizada com sucesso!');
         } catch (\RuntimeException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

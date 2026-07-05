@@ -1,9 +1,6 @@
 <x-layouts.app>
     <section class="p-6 w-full max-w-[80vw] ml-auto">
 
-        <div>
-            <x-session-alert />
-        </div>
         <h1 id="titulo-pagina" class="text-2xl font-bold mb-4">Lista de Tipos de Equipe</h1>
 
         <div class="flex justify-end items-center mb-4">

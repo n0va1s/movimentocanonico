@@ -1,11 +1,6 @@
 <x-layouts.app>
     <section class="p-6 w-full max-w-[80vw] ml-auto">
 
-        {{-- Alerta de Sucesso ou Erro --}}
-        <div>
-            <x-session-alert />
-        </div>
-
         <h1 id="titulo-pagina" class="text-2xl font-bold mb-4">Lista de Tipos de Situação</h1>
 
         {{-- Botão cadastrar --}}

@@ -122,10 +122,9 @@
                     <div
                         class="flex flex-col items-center justify-center text-center p-10 bg-white dark:bg-zinc-800 rounded-xl shadow border border-dashed border-gray-300 dark:border-zinc-600">
                         <x-heroicon-o-briefcase class="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
-                        <p class="text-lg font-medium text-gray-600 dark:text-gray-300">Nenhum(a) trabalhador(a)
-                            encontrado(a)</p>
+                        <p class="text-lg font-medium text-gray-600 dark:text-gray-300">{{ __('messages.empty.trabalhador.title') }}</p>
                         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            Quando houver trabalhadores(as) cadastrados(as), eles(as) aparecerão aqui.
+                            {{ __('messages.empty.trabalhador.description') }}
                         </p>
                     </div>
                 </div>

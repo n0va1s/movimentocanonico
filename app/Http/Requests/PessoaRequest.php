@@ -49,7 +49,12 @@ class PessoaRequest extends FormRequest
             'tel_pessoa' => ['nullable', new Telefone],
             'dat_nascimento' => ['required', 'date', 'before:today', 'after:1925-01-01'],
             'des_endereco' => ['nullable', 'string', 'min:10', 'max:255'],
-            'eml_pessoa' => ['required', 'email', 'max:255'],
+            'eml_pessoa' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('pessoa', 'eml_pessoa')->ignore($pessoaId, 'idt_pessoa'),
+            ],
             'tam_camiseta' => ['required', new Enum(TamanhoCamiseta::class)],
             'tip_genero' => ['required', new Enum(Genero::class)],
             'tip_estado_civil' => ['nullable', new Enum(EstadoCivil::class)],

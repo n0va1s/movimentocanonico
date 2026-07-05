@@ -1,13 +1,6 @@
 <x-layouts.app :title="'Minha Equipe'">
     <section class="p-6 w-full max-w-5xl mx-auto">
 
-        <x-session-alert />
-
-        {{-- NAVEGAÇÃO --}}
-        <flux:breadcrumbs class="mb-6">
-            <flux:breadcrumbs.item href="/">Início</flux:breadcrumbs.item>
-            <flux:breadcrumbs.item>Minha Equipe</flux:breadcrumbs.item>
-        </flux:breadcrumbs>
 
         {{-- CABEÇALHO --}}
         <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">

@@ -355,10 +355,16 @@ class EventoController extends Controller
     /**
      * Linha do Tempo Otimizada.
      */
-    public function timeline(): View
+    public function timeline()
     {
         $start = microtime(true);
-        $pessoa = Auth::user()->pessoa->fresh();
+        $pessoa = Auth::user()->pessoa;
+
+        if (! $pessoa) {
+            return redirect()->route('dashboard')->with('error', 'Você ainda não possui um perfil de participante aprovado para visualizar sua linha do tempo.');
+        }
+
+        $pessoa = $pessoa->fresh();
 
         // Dados cacheados/processados para alta performance
         $data = [

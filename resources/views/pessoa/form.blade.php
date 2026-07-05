@@ -2,27 +2,19 @@
     <section class="p-6 w-full max-w-[80vw] ml-auto">
         <div class="mb-6">
             <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                {{ $pessoa->exists ? 'Editar Pessoa' : 'Nova Pessoa' }}</h1>
+                {{ $pessoa->exists ? 'Atualizar Seus Dados' : 'Se Cadastrar' }}</h1>
             <p class="text-gray-700 mt-1 dark:text-gray-400">
-                {{ $pessoa->exists ? 'Esses dados serão utilizados no próximo encontro' : 'Cadastre uma nova pessoa' }}
+                {{ $pessoa->exists ? 'Esses dados serão utilizados no próximo encontro' : 'Esses dados serão utilizados no próximo encontro' }}
             </p>
+            @if (!$pessoa->exists)
+                <p class="text-sm text-yellow-600 dark:text-yellow-400 mt-2 flex items-center gap-1">
+                    <x-heroicon-o-information-circle class="w-4 h-4" />
+                    Não é possível cadastrar pessoas que estão com fichas em andamento.
+                </p>
+            @endif
         </div>
 
-        @if (Auth::user()->isAdmin())
-            <div class="flex justify-end mt-4">
-                <a href="{{ route('pessoas.index') }}"
-                    class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-500 focus:ring-2 focus:ring-green-500 focus:outline-none">
-                    <x-heroicon-o-arrow-left class="w-5 h-5 mr-2" />
-                    Pessoas
-                </a>
-            </div>
-        @endif
-
         <div class="mb-6 bg-white dark:bg-zinc-800 rounded-md shadow p-6">
-
-            <h2 class="text-xl font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                <x-heroicon-o-user-plus class="text-blue-600 w-6 h-6" /> Dados da Pessoa
-            </h2>
 
             <form method="POST"
                 action="{{ $pessoa->exists ? route('pessoas.update', $pessoa) : route('pessoas.store') }}"
@@ -35,12 +27,13 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                         
                     {{-- Foto --}}
-                    <div class="flex flex-col items-center gap-3" x-data="{ photoPreview: '{{ $pessoa->foto?->med_foto ? Storage::url($pessoa->foto->med_foto) : '' }}' }">
+                    <div class="flex flex-col items-center gap-3" x-data="{ photoPreview: '{{ $pessoa->foto?->med_foto ? asset('storage/' . $pessoa->foto->med_foto) : '' }}' }">
                         <div
                             class="w-28 h-28 rounded-full bg-gray-100 dark:bg-zinc-700 border-2 border-gray-300 dark:border-zinc-600 flex items-center justify-center overflow-hidden">
                             <template x-if="photoPreview">
                                 <img :src="photoPreview" alt="Foto do participante"
-                                    class="w-full h-full object-cover" />
+                                    class="w-full h-full object-cover"
+                                    @@error="photoPreview = ''" />
                             </template>
                             <template x-if="!photoPreview">
                                 <x-heroicon-o-user class="w-14 h-14 text-gray-400 dark:text-gray-500"
@@ -58,7 +51,7 @@
                                     if (file) {
                                         photoPreview = URL.createObjectURL(file);
                                     } else {
-                                        photoPreview = '{{ $pessoa->foto?->med_foto ? Storage::url($pessoa->foto->med_foto) : '' }}';
+                                        photoPreview = '{{ $pessoa->foto?->med_foto ? asset('storage/' . $pessoa->foto->med_foto) : '' }}';
                                     }
                                 "
                                 class="block text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-300" />
@@ -243,7 +236,25 @@
                     </div>
                 </div>
 
-                <div x-data="{ mostrarRestricoes: {{ old('ind_restricao', $pessoa->ind_restricao ?? false) ? 'true' : 'false' }} }">
+                <div x-data="{
+                        mostrarRestricoes: {{ old('ind_restricao', $pessoa->ind_restricao ?? false) ? 'true' : 'false' }},
+                        temRestricaoSelecionada: true,
+                        verificarRestricoes() {
+                            if (!this.mostrarRestricoes) {
+                                this.temRestricaoSelecionada = true;
+                                return;
+                            }
+                            const container = this.$refs.restricoesContainer;
+                            if (!container) return;
+                            const checkboxes = container.querySelectorAll('input[type=\'checkbox\'][name^=\'restricoes\']:checked');
+                            const inputs = Array.from(container.querySelectorAll('input[type=\'text\'][name^=\'complementos\']')).filter(i => i.value.trim() !== '');
+                            this.temRestricaoSelecionada = checkboxes.length > 0 || inputs.length > 0;
+                        }
+                    }"
+                    @change="verificarRestricoes"
+                    @input="verificarRestricoes"
+                    x-init="setTimeout(() => verificarRestricoes(), 100)"
+                >
                     <label
                         class="flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-colors
                         border-amber-300 bg-amber-50 hover:bg-amber-100
@@ -269,11 +280,22 @@
                     </label>
 
                     <div x-show="mostrarRestricoes" x-transition
+                        x-ref="restricoesContainer"
                         class="mt-3 bg-gray-50 dark:bg-zinc-700 rounded-md p-4" role="region"
                         aria-label="Restrições e Alergias">
                         <h3 class="text-base sm:text-lg font-medium mb-3 text-gray-900 dark:text-gray-100">
                             Restrições e Alergias
                         </h3>
+
+                        <div x-show="mostrarRestricoes && !temRestricaoSelecionada" x-transition
+                            class="mb-4 flex items-center gap-2 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 px-4 py-3"
+                            role="alert">
+                            <x-heroicon-o-exclamation-triangle class="w-5 h-5 text-amber-500 shrink-0" aria-hidden="true" />
+                            <p class="text-sm text-amber-700 dark:text-amber-400">
+                                Nenhuma restrição ou alergia foi informada.. Desmarque a opção Informações de Saúde por favor
+                            </p>
+                        </div>
+
                         <div class="space-y-4">
                             @php
                                 $relacaoSaude = $pessoa->restricoes ?? collect();
@@ -285,10 +307,16 @@
 
                             @foreach ($restricoes as $restricao)
                                 @php
-                                    $checked = in_array($restricao->idt_restricao, $restricoesSelecionadas);
+                                    $id = $restricao->idt_restricao;
+                                    if (old('_token')) {
+                                        $checked = is_array(old('restricoes')) && array_key_exists($id, old('restricoes'));
+                                    } else {
+                                        $checked = in_array($id, $restricoesSelecionadas);
+                                    }
+                                    
                                     $complemento = old(
-                                        "complementos.{$restricao->idt_restricao}",
-                                        $complementos[$restricao->idt_restricao] ?? '',
+                                        "complementos.{$id}",
+                                        $complementos[$id] ?? '',
                                     );
                                 @endphp
 

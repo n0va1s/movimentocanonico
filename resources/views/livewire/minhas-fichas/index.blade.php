@@ -56,9 +56,9 @@ new class extends Component {
         try {
             $situacaoEnum = TipoSituacao::from($novaSituacao);
             \App\Services\FichaService::atualizarSituacaoFicha($fichaId, $situacaoEnum);
-            session()->flash('success', 'Situação da ficha atualizada com sucesso!');
+            \Flux::toast(__('messages.alerts.success.ficha_updated'), variant: 'success');
         } catch (\Exception $e) {
-            session()->flash('error', 'Erro ao atualizar situação: ' . $e->getMessage());
+            \Flux::toast(__('messages.alerts.error.ficha_update_error', ['error' => $e->getMessage()]), variant: 'danger');
         }
     }
 
@@ -123,7 +123,6 @@ new class extends Component {
     </header>
 
     {{-- Alerts --}}
-    <x-session-alert />
 
     {{-- Filtros --}}
     <div class="flex flex-col sm:flex-row gap-4 bg-zinc-50 dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 items-center justify-between w-full">

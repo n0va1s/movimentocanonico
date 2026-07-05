@@ -1,6 +1,5 @@
 <x-layouts.public :title="'Movimento Canônico'">
     <div>
-        <x-session-alert />
     </div>
     <!-- Seção: Sistema de Gestão -->
     <section
