@@ -25,6 +25,11 @@ new class extends Component {
         'ind_taxa_pagou'     => false,
     ];
 
+    public ?int $alterarEquipeTrabalhadorId = null;
+    public ?int $alterarEquipeId = null;
+    public bool $alterarIndCoordenador = false;
+    public bool $alterarIndPrimeiraVez = false;
+
     public function mount(Evento $evento): void
     {
         $this->evento = $evento;
@@ -62,6 +67,36 @@ new class extends Component {
         $this->trabalhadorSelecionadoId = null;
 
         $this->dispatch('notify', message: 'Avaliação de ' . $trabalhador->pessoa->nom_pessoa . ' atualizada!');
+    }
+
+    public function abrirAlterarEquipe(int $idtTrabalhador): void
+    {
+        $trabalhador = \App\Models\Trabalhador::findOrFail($idtTrabalhador);
+        $this->alterarEquipeTrabalhadorId = $trabalhador->idt_trabalhador;
+        $this->alterarEquipeId = $trabalhador->idt_equipe;
+        $this->alterarIndCoordenador = (bool) $trabalhador->ind_coordenador;
+        $this->alterarIndPrimeiraVez = (bool) $trabalhador->ind_primeira_vez;
+
+        $this->modal('alterar-equipe-trabalhador')->show();
+    }
+
+    public function salvarAlterarEquipe(): void
+    {
+        $trabalhador = \App\Models\Trabalhador::findOrFail($this->alterarEquipeTrabalhadorId);
+
+        $trabalhador->update([
+            'idt_equipe' => $this->alterarEquipeId,
+            'ind_coordenador' => $this->alterarIndCoordenador,
+            'ind_primeira_vez' => $this->alterarIndPrimeiraVez,
+        ]);
+
+        $this->modal('alterar-equipe-trabalhador')->close();
+        $this->alterarEquipeTrabalhadorId = null;
+        $this->alterarEquipeId = null;
+        $this->alterarIndCoordenador = false;
+        $this->alterarIndPrimeiraVez = false;
+
+        $this->dispatch('notify', message: 'Alocação de ' . $trabalhador->pessoa->nom_pessoa . ' atualizada!');
     }
 
     public function removerTrabalhador(int $idtTrabalhador): void
@@ -189,6 +224,13 @@ new class extends Component {
                     <flux:table.cell>
                         <div class="flex justify-end gap-2">
                             <flux:button
+                                icon="pencil-square"
+                                size="sm"
+                                variant="ghost"
+                                wire:click="abrirAlterarEquipe({{ $trabalhador->idt_trabalhador }})"
+                                tooltip="Alterar Alocação"
+                            />
+                            <flux:button
                                 icon="clipboard-document-check"
                                 size="sm"
                                 variant="ghost"
@@ -249,6 +291,36 @@ new class extends Component {
                     <flux:button variant="ghost">Cancelar</flux:button>
                 </flux:modal.close>
                 <flux:button type="submit" variant="primary">Salvar Avaliação</flux:button>
+            </div>
+        </form>
+    </flux:modal>
+
+    {{-- Modal de Alteração de Equipe e Função --}}
+    <flux:modal name="alterar-equipe-trabalhador" class="min-w-[20rem] md:min-w-[25rem]">
+        <form wire:submit="salvarAlterarEquipe" class="space-y-6">
+            <div>
+                <flux:heading size="lg">Alterar Equipe / Função</flux:heading>
+                <flux:subheading>Selecione a nova equipe e atualize as funções do trabalhador.</flux:subheading>
+            </div>
+
+            <div class="space-y-4">
+                <flux:select label="Nova Equipe" wire:model="alterarEquipeId" placeholder="Selecione a equipe..." required>
+                    @foreach ($equipes as $equipe)
+                        <option value="{{ $equipe->idt_equipe }}">{{ $equipe->des_grupo }}</option>
+                    @endforeach
+                </flux:select>
+
+                <div class="space-y-3">
+                    <flux:checkbox wire:model="alterarIndCoordenador" label="Coordenador da Equipe" />
+                    <flux:checkbox wire:model="alterarIndPrimeiraVez" label="Primeira vez trabalhando no evento" />
+                </div>
+            </div>
+
+            <div class="flex gap-2 justify-end">
+                <flux:modal.close>
+                    <flux:button variant="ghost">Cancelar</flux:button>
+                </flux:modal.close>
+                <flux:button type="submit" variant="primary">Salvar Alterações</flux:button>
             </div>
         </form>
     </flux:modal>
