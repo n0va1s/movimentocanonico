@@ -14,17 +14,6 @@ new #[Title('Organização')] class extends Component {
     public ?int $paroquiaSelecionada = null;
     public ?int $movimentoSelecionado = null;
 
-    // ── Modal controls ────────────────────────────────────────────────────────
-    public bool $modalParoquia = false;
-    public bool $modalMovimento = false;
-    public bool $modalEquipe = false;
-
-    public bool $readyToLoad = false;
-    
-    public function loadData(): void
-    {
-        $this->readyToLoad = true;
-    }
     // ── Form: Paróquia ────────────────────────────────────────────────────────
     public ?int $editandoParoquia = null;
     public string $nom_paroquia = '';
@@ -74,7 +63,7 @@ new #[Title('Organização')] class extends Component {
             $this->tel_paroquia        = $p->tel_paroquia ?? '';
             $this->des_chave_pix       = $p->des_chave_pix ?? '';
         }
-        $this->modalParoquia = true;
+        $this->modal('modal-paroquia')->show();
     }
 
     public function salvarParoquia(): void
@@ -92,7 +81,7 @@ new #[Title('Organização')] class extends Component {
             array_map(fn($v) => $v ?: null, $dados)
         );
 
-        $this->modalParoquia = false;
+        $this->modal('modal-paroquia')->close();
         $this->resetParoquiaForm();
     }
 
@@ -133,7 +122,7 @@ new #[Title('Organização')] class extends Component {
             $this->ind_inscricao_aberta   = (bool) $m->ind_inscricao_aberta;
             $this->logo_atual             = $m->med_logo;
         }
-        $this->modalMovimento = true;
+        $this->modal('modal-movimento')->show();
     }
 
     public function salvarMovimento(): void
@@ -162,7 +151,7 @@ new #[Title('Organização')] class extends Component {
             $servico->uploadDirectly($movimento, $this->med_logo, 'med_logo', 'movimentos');
         }
 
-        $this->modalMovimento = false;
+        $this->modal('modal-movimento')->close();
         $this->resetMovimentoForm();
     }
 
@@ -195,7 +184,7 @@ new #[Title('Organização')] class extends Component {
             $this->editandoEquipe = $id;
             $this->des_grupo      = $e->des_grupo;
         }
-        $this->modalEquipe = true;
+        $this->modal('modal-equipe')->show();
     }
 
     public function salvarEquipe(): void
@@ -212,7 +201,7 @@ new #[Title('Organização')] class extends Component {
             ]
         );
 
-        $this->modalEquipe = false;
+        $this->modal('modal-equipe')->close();
         $this->resetEquipeForm();
     }
 
@@ -234,12 +223,12 @@ new #[Title('Organização')] class extends Component {
     public function with(): array
     {
         return [
-            'paroquias' => $this->readyToLoad ? TipoParoquia::orderBy('nom_paroquia')->get() : collect(),
-            'movimentos' => $this->readyToLoad && $this->paroquiaSelecionada
+            'paroquias' => TipoParoquia::orderBy('nom_paroquia')->get(),
+            'movimentos' => $this->paroquiaSelecionada
                 ? TipoMovimento::where('idt_paroquia', $this->paroquiaSelecionada)
                     ->orderBy('nom_movimento')->get()
                 : collect(),
-            'equipes' => $this->readyToLoad && $this->movimentoSelecionado
+            'equipes' => $this->movimentoSelecionado
                 ? TipoEquipe::where('idt_movimento', $this->movimentoSelecionado)
                     ->orderBy('des_grupo')->get()
                 : collect(),
@@ -249,7 +238,7 @@ new #[Title('Organização')] class extends Component {
 
 ?>
 
-<div wire:init="loadData">
+<div>
     <section class="p-4 md:p-6 w-full max-w-[90vw] ml-auto">
 
         {{-- ── Cabeçalho ────────────────────────────────────────────────────── --}}
@@ -260,25 +249,8 @@ new #[Title('Organização')] class extends Component {
             </p>
         </div>
 
-        @if(!$readyToLoad)
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                @for ($i = 0; $i < 3; $i++)
-                    <div class="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 shadow-sm flex flex-col h-[60vh] animate-pulse">
-                        <div class="px-4 py-3 border-b border-gray-100 dark:border-zinc-700 flex justify-between">
-                            <div class="h-5 bg-gray-200 dark:bg-zinc-700 rounded w-1/3"></div>
-                            <div class="h-6 bg-gray-200 dark:bg-zinc-700 rounded w-16"></div>
-                        </div>
-                        <div class="p-4 space-y-4">
-                            <div class="h-4 bg-gray-200 dark:bg-zinc-700 rounded w-3/4"></div>
-                            <div class="h-4 bg-gray-200 dark:bg-zinc-700 rounded w-5/6"></div>
-                            <div class="h-4 bg-gray-200 dark:bg-zinc-700 rounded w-2/3"></div>
-                        </div>
-                    </div>
-                @endfor
-            </div>
-        @else
-            {{-- ── Grid de três colunas (drill-down) ──────────────────────────── --}}
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {{-- ── Grid de três colunas (drill-down) ──────────────────────────── --}}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
                 {{-- ╔══════════════════════════════╗
                  ║  COLUNA 1 — PARÓQUIAS        ║
@@ -449,17 +421,12 @@ new #[Title('Organização')] class extends Component {
                 </ul>
             </div>
 
-            </div>
-
         </div>{{-- /grid --}}
-        @endif
-
-    </section>
 
     {{-- ════════════════════════════════════════════════════════════════════════
          MODAL — PARÓQUIA
          ════════════════════════════════════════════════════════════════════════ --}}
-    <flux:modal wire:model="modalParoquia" name="modal-paroquia" class="w-full max-w-lg">
+    <flux:modal name="modal-paroquia" class="w-full max-w-lg">
         <div class="p-6 space-y-5">
             <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">
                 {{ $editandoParoquia ? 'Editar Paróquia' : 'Nova Paróquia' }}
@@ -486,7 +453,7 @@ new #[Title('Organização')] class extends Component {
                 id="des_chave_pix" />
 
             <div class="flex justify-end gap-3 pt-2">
-                <flux:button variant="ghost" wire:click="$set('modalParoquia', false)">Cancelar</flux:button>
+                <flux:button variant="ghost" x-on:click="$flux.modal('modal-paroquia').close()">Cancelar</flux:button>
                 <flux:button variant="primary" wire:click="salvarParoquia" wire:loading.attr="disabled">
                     Salvar
                 </flux:button>
@@ -497,7 +464,7 @@ new #[Title('Organização')] class extends Component {
     {{-- ════════════════════════════════════════════════════════════════════════
          MODAL — MOVIMENTO
          ════════════════════════════════════════════════════════════════════════ --}}
-    <flux:modal wire:model="modalMovimento" name="modal-movimento" class="w-full max-w-lg">
+    <flux:modal name="modal-movimento" class="w-full max-w-lg">
         <div class="p-6 space-y-5">
             <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">
                 {{ $editandoMovimento ? 'Editar Movimento' : 'Novo Movimento' }}
@@ -550,7 +517,7 @@ new #[Title('Organização')] class extends Component {
             </div>
 
             <div class="flex justify-end gap-3 pt-2">
-                <flux:button variant="ghost" wire:click="$set('modalMovimento', false)">Cancelar</flux:button>
+                <flux:button variant="ghost" x-on:click="$flux.modal('modal-movimento').close()">Cancelar</flux:button>
                 <flux:button variant="primary" wire:click="salvarMovimento" wire:loading.attr="disabled">
                     Salvar
                 </flux:button>
@@ -561,7 +528,7 @@ new #[Title('Organização')] class extends Component {
     {{-- ════════════════════════════════════════════════════════════════════════
          MODAL — EQUIPE
          ════════════════════════════════════════════════════════════════════════ --}}
-    <flux:modal wire:model="modalEquipe" name="modal-equipe" class="w-full max-w-md">
+    <flux:modal name="modal-equipe" class="w-full max-w-md">
         <div class="p-6 space-y-5">
             <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">
                 {{ $editandoEquipe ? 'Editar Equipe' : 'Nova Equipe' }}
@@ -573,11 +540,12 @@ new #[Title('Organização')] class extends Component {
             @error('des_grupo') <p class="text-red-500 text-xs -mt-3" role="alert">{{ $message }}</p> @enderror
 
             <div class="flex justify-end gap-3 pt-2">
-                <flux:button variant="ghost" wire:click="$set('modalEquipe', false)">Cancelar</flux:button>
+                <flux:button variant="ghost" x-on:click="$flux.modal('modal-equipe').close()">Cancelar</flux:button>
                 <flux:button variant="primary" wire:click="salvarEquipe" wire:loading.attr="disabled">
                     Salvar
                 </flux:button>
             </div>
         </div>
     </flux:modal>
+    </section>
 </div>

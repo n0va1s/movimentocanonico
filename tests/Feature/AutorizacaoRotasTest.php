@@ -58,7 +58,7 @@ foreach ($rotasAuth as $rota) {
 $rotasAdmin = [
     '/contatos',
     '/configuracoes/role',
-    '/configuracoes/equipe',
+    '/configuracoes/organizacao',
     '/eventos/create',
     '/pessoas',
     '/aniversario',
