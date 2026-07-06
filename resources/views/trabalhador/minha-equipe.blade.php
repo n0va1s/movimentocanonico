@@ -5,7 +5,7 @@
         {{-- CABEÇALHO --}}
         <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Minha Equipe</h1>
+                <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">Minha Equipe</flux:heading>
                 @if ($evento && $equipe)
                     <p class="text-gray-600 mt-1 dark:text-gray-400">
                         {{ $evento->des_evento }}

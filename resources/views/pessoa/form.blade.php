@@ -1,8 +1,8 @@
 <x-layouts.app :title="'Pessoa'">
     <section class="p-6 w-full max-w-[80vw] ml-auto">
         <div class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                {{ $pessoa->exists ? 'Atualizar Seus Dados' : 'Se Cadastrar' }}</h1>
+            <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">
+                {{ $pessoa->exists ? 'Atualizar Seus Dados' : 'Se Cadastrar' }}</flux:heading>
             <p class="text-gray-700 mt-1 dark:text-gray-400">
                 {{ $pessoa->exists ? 'Esses dados serão utilizados no próximo encontro' : 'Esses dados serão utilizados no próximo encontro' }}
             </p>

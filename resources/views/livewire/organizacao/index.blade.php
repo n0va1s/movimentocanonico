@@ -19,6 +19,12 @@ new #[Title('Organização')] class extends Component {
     public bool $modalMovimento = false;
     public bool $modalEquipe = false;
 
+    public bool $readyToLoad = false;
+    
+    public function loadData(): void
+    {
+        $this->readyToLoad = true;
+    }
     // ── Form: Paróquia ────────────────────────────────────────────────────────
     public ?int $editandoParoquia = null;
     public string $nom_paroquia = '';
@@ -228,12 +234,12 @@ new #[Title('Organização')] class extends Component {
     public function with(): array
     {
         return [
-            'paroquias' => TipoParoquia::orderBy('nom_paroquia')->get(),
-            'movimentos' => $this->paroquiaSelecionada
+            'paroquias' => $this->readyToLoad ? TipoParoquia::orderBy('nom_paroquia')->get() : collect(),
+            'movimentos' => $this->readyToLoad && $this->paroquiaSelecionada
                 ? TipoMovimento::where('idt_paroquia', $this->paroquiaSelecionada)
                     ->orderBy('nom_movimento')->get()
                 : collect(),
-            'equipes' => $this->movimentoSelecionado
+            'equipes' => $this->readyToLoad && $this->movimentoSelecionado
                 ? TipoEquipe::where('idt_movimento', $this->movimentoSelecionado)
                     ->orderBy('des_grupo')->get()
                 : collect(),
@@ -243,21 +249,38 @@ new #[Title('Organização')] class extends Component {
 
 ?>
 
-<div>
+<div wire:init="loadData">
     <section class="p-4 md:p-6 w-full max-w-[90vw] ml-auto">
 
         {{-- ── Cabeçalho ────────────────────────────────────────────────────── --}}
         <div class="mb-6">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Organização</h1>
+            <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">Organização</flux:heading>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 Gerencie paróquias, seus movimentos e equipes vinculadas.
             </p>
         </div>
 
-        {{-- ── Grid de três colunas (drill-down) ──────────────────────────── --}}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        @if(!$readyToLoad)
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                @for ($i = 0; $i < 3; $i++)
+                    <div class="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 shadow-sm flex flex-col h-[60vh] animate-pulse">
+                        <div class="px-4 py-3 border-b border-gray-100 dark:border-zinc-700 flex justify-between">
+                            <div class="h-5 bg-gray-200 dark:bg-zinc-700 rounded w-1/3"></div>
+                            <div class="h-6 bg-gray-200 dark:bg-zinc-700 rounded w-16"></div>
+                        </div>
+                        <div class="p-4 space-y-4">
+                            <div class="h-4 bg-gray-200 dark:bg-zinc-700 rounded w-3/4"></div>
+                            <div class="h-4 bg-gray-200 dark:bg-zinc-700 rounded w-5/6"></div>
+                            <div class="h-4 bg-gray-200 dark:bg-zinc-700 rounded w-2/3"></div>
+                        </div>
+                    </div>
+                @endfor
+            </div>
+        @else
+            {{-- ── Grid de três colunas (drill-down) ──────────────────────────── --}}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-            {{-- ╔══════════════════════════════╗
+                {{-- ╔══════════════════════════════╗
                  ║  COLUNA 1 — PARÓQUIAS        ║
                  ╚══════════════════════════════╝ --}}
             <div class="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 shadow-sm flex flex-col">
@@ -426,7 +449,10 @@ new #[Title('Organização')] class extends Component {
                 </ul>
             </div>
 
+            </div>
+
         </div>{{-- /grid --}}
+        @endif
 
     </section>
 

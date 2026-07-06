@@ -1,7 +1,7 @@
 <x-layouts.app :title="'Trabalhador'">
     <section class="p-6 w-full max-w-[80vw] ml-auto">
         <div class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Lista de Trabalhadores</h1>
+            <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">Lista de Trabalhadores</flux:heading>
             @if ($evento?->exists)
                 <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-1">
                     Evento: <b>{{ $evento->des_evento }}</b>

@@ -4,7 +4,7 @@
         {{-- Cabeçalho --}}
         <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Eventos</h1>
+                <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">Eventos</flux:heading>
                 <p class="text-gray-600 mt-1 dark:text-gray-400">Visualize os próximos encontros, pós-encontros e desafios.</p>
                 <p class="text-sm text-yellow-600 dark:text-yellow-400 mt-2 flex items-center gap-1">
                     <x-heroicon-o-information-circle class="w-4 h-4" />

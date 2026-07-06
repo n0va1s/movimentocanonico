@@ -7,7 +7,7 @@
         {{-- Título e ações principais --}}
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Gerenciar Fichas do Segue-me</h1>
+                <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">Gerenciar Fichas do Segue-me</flux:heading>
                 @if ($evento?->exists)
                     <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-1">
                         Evento: <strong>{{ $evento->des_evento }}</strong>

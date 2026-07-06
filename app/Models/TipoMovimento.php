@@ -55,8 +55,6 @@ class TipoMovimento extends Model
         return $this->hasMany(Evento::class, 'idt_movimento');
     }
 
-
-
     /**
      * Accessor para formatar a data de início
      */
@@ -64,4 +62,19 @@ class TipoMovimento extends Model
     {
         return $this->dat_inicio ? $this->dat_inicio->format('d/m/Y') : null;
     }
+
+    /**
+     * Retorna a cor base do movimento (Padrão Flux/Tailwind) 
+     * conforme as diretrizes do DESIGN.md
+     */
+    public function getCorBadgeAttribute(): string
+    {
+        return match(strtoupper($this->des_sigla)) {
+            'VEM'      => 'blue',
+            'ECC'      => 'green',
+            'SGM', 'SEGUE-ME' => 'purple',
+            default    => 'zinc',
+        };
+    }
+
 }

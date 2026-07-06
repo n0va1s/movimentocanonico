@@ -58,7 +58,7 @@
         {{-- ===== CABEÇALHO ===== --}}
         <div class="mb-6 space-y-4">
             <div class="mb-6">
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Ficha do Segue-me</h1>
+                <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">Ficha do Segue-me</flux:heading>
                 <p class="text-gray-700 dark:text-gray-500 mt-1">Paróquia Nossa Senhora do Lago</p>
             </div>
 

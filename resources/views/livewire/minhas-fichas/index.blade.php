@@ -20,6 +20,12 @@ new class extends Component {
     public string $visitadorSearch = '';
     public array $selectedFichas = [];
     public ?int $pessoaVisitacaoId = null;
+    public bool $readyToLoad = false;
+
+    public function loadData(): void
+    {
+        $this->readyToLoad = true;
+    }
 
     public function mount(?Evento $evento = null): void
     {
@@ -322,12 +328,22 @@ new class extends Component {
     {{-- Cabeçalho --}}
     <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-zinc-900 dark:text-zinc-100 font-sans tracking-tight">Minhas Fichas</h1>
+            <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">Minhas Fichas</flux:heading>
             <p class="text-zinc-500 mt-1 dark:text-zinc-400 text-sm">Gerencie suas visitas e contatos.</p>
         </div>
     </header>
 
     {{-- Alerts --}}
+
+    <div wire:init="loadData">
+        @if(!$readyToLoad)
+            <div class="flex items-center justify-center min-h-[50vh]">
+                <div class="animate-pulse flex flex-col items-center">
+                    <div class="w-12 h-12 border-4 border-zinc-200 dark:border-zinc-700 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <p class="mt-4 text-indigo-600 dark:text-indigo-400 font-medium tracking-tight">Carregando os dados das Fichas...</p>
+                </div>
+            </div>
+        @else
 
     @if($evento && $evento->exists)
         {{-- Cabeçalho do Evento Selecionado --}}
@@ -739,4 +755,6 @@ new class extends Component {
             @endif
         </div>
     @endif
+    @endif
+    </div>
 </div>

@@ -3,7 +3,9 @@
 
         {{-- Cabeçalho de Boas-vindas --}}
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Olá, {{ Auth::user()->name }}!</h1>
+        <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">
+            Olá, {{ Auth::user()->name }}!
+        </flux:heading>
             <p class="text-gray-600 dark:text-gray-400 mt-1">Essa é a força da sua comunidade</p>
         </div>
 

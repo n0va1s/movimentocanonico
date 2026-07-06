@@ -17,34 +17,35 @@
             </p>
         </div>
         <div class="md:col-span-2">
-            <div class="relative w-full max-w-2xl mx-auto overflow-hidden rounded-2xl" id="carousel">
+            <div class="relative w-full max-w-2xl mx-auto overflow-hidden rounded-2xl" id="carousel" aria-label="Carrossel de imagens do Movimento Canônico">
                 <div id="carouselSlides" class="flex transition-transform duration-500">
                     <img src="https://i.imgur.com/yXiQHE9.jpeg"
-                        class="w-full h-64 md:h-100 object-cover flex-shrink-0 carousel-img " alt="Imagem 1">
+                        class="w-full h-64 md:h-100 object-cover flex-shrink-0 carousel-img" alt="Jovens reunidos em oração" loading="lazy">
                     <img src="https://i.imgur.com/FdbulA4.jpeg"
-                        class="w-full h-64 md:h-100 object-cover flex-shrink-0 carousel-img " alt="Imagem 2">
+                        class="w-full h-64 md:h-100 object-cover flex-shrink-0 carousel-img" alt="Grupo de jovens no retiro" loading="lazy">
                     <img src="https://i.imgur.com/piduEFx.jpeg"
-                        class="w-full h-64 md:h-100 object-cover flex-shrink-0 carousel-img " alt="Imagem 3">
+                        class="w-full h-64 md:h-100 object-cover flex-shrink-0 carousel-img" alt="Celebração paroquial com jovens" loading="lazy">
                 </div>
 
                 <!-- Dots navigation -->
-                <div class="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
+                <div class="absolute bottom-4 left-0 right-0 flex justify-center space-x-2" role="tablist">
                     <button onclick="showSlide(0)"
                         class="w-3 h-3 rounded-full transition-all duration-300 cursor-pointer hover:bg-blue-600"
-                        id="dot-0"></button>
+                        id="dot-0" role="tab" aria-label="Ir para a imagem 1"></button>
                     <button onclick="showSlide(1)"
                         class="w-3 h-3 rounded-full transition-all duration-300 cursor-pointer hover:bg-blue-600"
-                        id="dot-1"></button>
+                        id="dot-1" role="tab" aria-label="Ir para a imagem 2"></button>
                     <button onclick="showSlide(2)"
                         class="w-3 h-3 rounded-full transition-all duration-300 cursor-pointer hover:bg-blue-600"
-                        id="dot-2"></button>
+                        id="dot-2" role="tab" aria-label="Ir para a imagem 3"></button>
                 </div>
 
                 <button onclick="prevSlide()"
                     class="absolute top-1/2 left-0 transform -translate-y-1/2 bg-opacity-50 text-white p-3 text-2xl z-10 hover: transition cursor-pointer"
                     onmouseover="this.querySelector('svg').style.transform='scale(1.4)'"
-                    onmouseout="this.querySelector('svg').style.transform='scale(1)'">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    onmouseout="this.querySelector('svg').style.transform='scale(1)'"
+                    aria-label="Imagem anterior">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
                 </button>
@@ -52,8 +53,9 @@
                 <button onclick="nextSlide()"
                     class="absolute top-1/2 right-0 transform -translate-y-1/2 bg-opacity-50 text-white p-3 text-2xl z-10 hover:bg-opacity-70 transition cursor-pointer"
                     onmouseover="this.querySelector('svg').style.transform='scale(1.4)'"
-                    onmouseout="this.querySelector('svg').style.transform='scale(1)'">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    onmouseout="this.querySelector('svg').style.transform='scale(1)'"
+                    aria-label="Próxima imagem">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                     </svg>
                 </button>

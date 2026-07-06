@@ -27,8 +27,8 @@ export default defineConfig({
                 name: "Movimento Canônico",
                 short_name: "Movimento",
                 description: "Movimento Canônico App",
-                theme_color: "#2563eb",
-                background_color: "#ffffff",
+                theme_color: "#6366f1",
+                background_color: "#fafafa",
                 display: "standalone",
                 start_url: "/",
                 icons: [

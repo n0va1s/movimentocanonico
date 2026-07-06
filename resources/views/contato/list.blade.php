@@ -3,7 +3,7 @@
         <div>
         </div>
         <div class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Contatos</h1>
+            <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">Contatos</flux:heading>
             <p class="text-gray-700 mt-1 dark:text-gray-400">Após responder exclua a mensagem</p>
         </div>
 

@@ -1,7 +1,7 @@
 <x-layouts.app :title="'Configurações do Sistema'">
     <section class="p-6 w-full max-w-[80vw] ml-auto">
         <div class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Configurações</h1>
+            <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">Configurações</flux:heading>
             <p class="text-gray-700 dark:text-gray-400 mt-1">Gerencie os tipos e classificações do sistema</p>
         </div>
 

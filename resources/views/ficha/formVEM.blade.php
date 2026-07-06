@@ -89,7 +89,7 @@
         {{-- ===== CABEÇALHO ===== --}}
         <div class="mb-6 space-y-4">
             <div>
-                <h1 id="page-title" class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Ficha do VEM</h1>
+                <flux:heading size="xl" id="page-title" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">Ficha do VEM</flux:heading>
                 <p class="text-gray-600 dark:text-gray-400 mt-1 text-sm sm:text-base">Paróquia Nossa Senhora do Lago</p>
             </div>
 

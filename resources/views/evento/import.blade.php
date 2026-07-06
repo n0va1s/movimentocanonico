@@ -3,10 +3,10 @@
 
         {{-- Cabeçalho Principal --}}
         <header class="mb-8 border-b border-gray-200 dark:border-zinc-700 pb-5">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-3">
+            <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1 flex items-center gap-3">
                 <x-heroicon-o-cloud-arrow-up class="w-8 h-8 text-blue-500" />
                 Importar Planilhas de Eventos
-            </h1>
+            </flux:heading>
             <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm md:text-base">
                 Cadastre e atualize participantes e trabalhadores em lote (lotes de 50) vinculados a um evento ativo. O sistema verifica automaticamente duplicidades por CPF ou e-mail, vincula usuários e pessoas, e gera logs detalhados do processamento.
             </p>

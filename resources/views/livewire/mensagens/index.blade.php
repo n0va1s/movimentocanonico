@@ -8,6 +8,12 @@ new class extends Component {
     use WithPagination;
 
     public string $search = '';
+    public bool $readyToLoad = false;
+
+    public function loadData(): void
+    {
+        $this->readyToLoad = true;
+    }
 
     public function updatedSearch(): void
     {
@@ -16,6 +22,12 @@ new class extends Component {
 
     public function with(): array
     {
+        if (!$this->readyToLoad) {
+            return [
+                'mensagens' => collect(),
+            ];
+        }
+
         return [
             'mensagens' => Mensagem::with(['evento', 'usuario'])
                 ->withCount([
@@ -38,11 +50,15 @@ new class extends Component {
     {{-- Cabeçalho --}}
     <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Mensagens</h1>
-            <p class="text-gray-600 mt-1 dark:text-gray-400">Mensagens enviadas, taxas de impacto e histórico de disparos para pessoas dos eventos.</p>
+            <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1" aria-label="Mensagens">
+                Mensagens
+            </flux:heading>
+            <p class="text-indigo-900/70 dark:text-indigo-300/70 mt-1 font-medium">
+                Mensagens enviadas, taxas de impacto e histórico de disparos para pessoas dos eventos.
+            </p>
         </div>
 
-        <flux:button :href="route('mensagens.create')" icon="plus" variant="primary" color="green" wire:navigate>
+        <flux:button :href="route('mensagens.create')" icon="plus" variant="primary" wire:navigate class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md">
             Nova Mensagem / Campanha
         </flux:button>
     </header>
@@ -61,6 +77,15 @@ new class extends Component {
     </div>
 
     {{-- Tabela --}}
+    <div wire:init="loadData">
+        @if(!$readyToLoad)
+            <div class="flex items-center justify-center min-h-[30vh]">
+                <div class="animate-pulse flex flex-col items-center">
+                    <div class="w-12 h-12 border-4 border-zinc-200 dark:border-zinc-700 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <p class="mt-4 text-indigo-600 dark:text-indigo-400 font-medium tracking-tight">Carregando histórico de envios...</p>
+                </div>
+            </div>
+        @else
     <flux:card class="overflow-x-auto p-0 border border-zinc-200 dark:border-zinc-700 shadow-sm rounded-xl">
         <flux:table>
             <flux:table.columns>
@@ -91,9 +116,9 @@ new class extends Component {
                             <div class="font-medium text-zinc-800 dark:text-zinc-200">
                                 {{ $msg->evento->des_evento }}
                             </div>
-                            <span class="inline-flex items-center rounded bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-2xs font-medium text-zinc-800 dark:text-zinc-200 uppercase">
+                            <flux:badge :color="$msg->evento->movimento->cor_badge" size="sm" class="uppercase font-bold tracking-wider mt-1">
                                 {{ $msg->evento->movimento->des_sigla }}
-                            </span>
+                            </flux:badge>
                         </flux:table.cell>
 
                         {{-- Destinatários --}}
@@ -165,6 +190,8 @@ new class extends Component {
     </flux:card>
 
     <div class="mt-4">
-        {{ $mensagens->links(data: ['scrollTo' => false]) }}
+        {{ $mensagens instanceof \Illuminate\Pagination\LengthAwarePaginator ? $mensagens->links(data: ['scrollTo' => false]) : '' }}
+    </div>
+        @endif
     </div>
 </div>

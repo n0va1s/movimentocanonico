@@ -1,7 +1,7 @@
 <x-layouts.app :title="'Evento'">
     <section class="p-6 w-full max-w-[80vw] ml-auto">
         <div class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-900">Novo Evento</h1>
+            <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">Novo Evento</flux:heading>
             <p class="text-gray-700 mt-1">Cadastre um novo evento ou atividade de pós-encontro</p>
         </div>
         <div class="flex justify-end mt-4">
