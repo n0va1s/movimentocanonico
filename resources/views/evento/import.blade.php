@@ -1,5 +1,10 @@
 <x-layouts.app title="Importar Planilhas de Eventos">
     <section class="p-6 w-full max-w-7xl mx-auto">
+        <flux:breadcrumbs class="mb-4">
+            <flux:breadcrumbs.item icon="home" href="/" />
+            <flux:breadcrumbs.item href="{{ route('configuracoes.index') }}">Configurações</flux:breadcrumbs.item>
+            <flux:breadcrumbs.item>Importar Planilhas</flux:breadcrumbs.item>
+        </flux:breadcrumbs>
 
         {{-- Cabeçalho Principal --}}
         <header class="mb-8 border-b border-gray-200 dark:border-zinc-700 pb-5">
@@ -82,8 +87,7 @@
                     </div>
 
                     <div class="pt-4 border-t border-gray-100 dark:border-zinc-700/50 mt-6">
-                        <flux:button type="submit" color="indigo" class="w-full flex justify-center items-center gap-2" loading>
-                            <x-heroicon-m-arrow-up-on-square class="w-4 h-4" />
+                        <flux:button type="submit" variant="primary" class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md" icon="arrow-up-on-square" loading>
                             Iniciar Importação de Participantes
                         </flux:button>
                     </div>
@@ -141,8 +145,7 @@
                     </div>
 
                     <div class="pt-4 border-t border-gray-100 dark:border-zinc-700/50 mt-6">
-                        <flux:button type="submit" color="emerald" class="w-full flex justify-center items-center gap-2" loading>
-                            <x-heroicon-m-arrow-up-on-square class="w-4 h-4" />
+                        <flux:button type="submit" variant="primary" class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md" icon="arrow-up-on-square" loading>
                             Iniciar Importação de Trabalhadores
                         </flux:button>
                     </div>

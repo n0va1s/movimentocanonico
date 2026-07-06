@@ -73,13 +73,6 @@ new class extends Component {
                     default => 'text-indigo-600 dark:text-indigo-400',
                 };
                 
-                // Cor do botão correspondente
-                $corBotao = match (strtoupper($movimento->des_sigla)) {
-                    'VEM' => 'bg-blue-600 hover:bg-blue-700',
-                    'SEGUE-ME' => 'bg-orange-600 hover:bg-orange-700',
-                    'ECC' => 'bg-green-600 hover:bg-green-700',
-                    default => 'bg-indigo-600 hover:bg-indigo-700',
-                };
 
                 // Link para a ficha pública, se existir rota para a sigla
                 // O fallback leva pra home caso não encontre
@@ -110,7 +103,7 @@ new class extends Component {
                 <div class="mt-4">
                     @if ($movimento->ind_inscricao_aberta && $rotaInscricao)
                         <a href="{{ $rotaInscricao }}"
-                            class="inline-block {{ $corBotao }} text-white font-semibold px-4 py-2 rounded-md transition text-center w-full shadow-sm">
+                            class="inline-block bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md text-white font-semibold px-4 py-2 rounded-md transition text-center w-full">
                             Preencher Ficha
                         </a>
                     @else

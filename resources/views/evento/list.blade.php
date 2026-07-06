@@ -13,7 +13,7 @@
             </div>
 
             @if (Auth::user()->isAdmin())
-                <flux:button href="{{ route('eventos.create') }}" variant="primary" icon="plus" color="green">
+                <flux:button href="{{ route('eventos.create') }}" variant="primary" icon="plus" class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md">
                     Novo Evento
                 </flux:button>
             @endif
@@ -182,7 +182,7 @@
                             @endphp
 
                             @if ($tipoValue === 'E' && auth()->user()->pessoa)
-                                <flux:button href="{{ route('trabalhadores.create', ['evento' => $evento]) }}" color="green" class="w-full">
+                                <flux:button href="{{ route('trabalhadores.create', ['evento' => $evento]) }}" variant="primary" class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md">
                                     Quero Trabalhar
                                 </flux:button>
                             @elseif (Auth::user()->pessoa)
@@ -192,12 +192,12 @@
 
                                 <form method="POST" action="{{ route('participantes.confirm', ['evento' => $evento, 'pessoa' => Auth::user()->pessoa]) }}">
                                     @csrf
-                                    <flux:button type="submit" color="green" class="w-full" loading>
+                                    <flux:button type="submit" variant="primary" class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md" loading>
                                         {{ $textoBotao }}
                                     </flux:button>
                                 </form>
                             @else
-                                <flux:button href="{{ route('pessoas.create') }}" color="blue" class="w-full">
+                                <flux:button href="{{ route('pessoas.create') }}" variant="primary" class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md">
                                     Completar Cadastro
                                 </flux:button>
                             @endif

@@ -26,47 +26,7 @@ class FichaEccController extends Controller
     /**
      * Listagem das fichas.
      */
-    public function index(Request $request)
-    {
-        $start = microtime(true);
-        $context = $this->getLogContext($request);
 
-        $search = $request->get('search');
-        $eventoId = $request->get('evento');
-        $situacao = $request->get('situacao');
-        $evento = $eventoId ? Evento::find($eventoId) : null;
-
-        Log::info('Requisição de listagem de fichas ECC iniciada', array_merge($context, [
-            'search_term' => $search,
-            'evento_filtro' => $eventoId,
-            'situacao_filtro' => $situacao,
-        ]));
-
-        $hoje = now()->startOfDay();
-        $eventos = Evento::where('idt_movimento', TipoMovimento::ECC)
-            ->ativos()
-            ->orderBy('dat_inicio', 'asc')
-            ->get();
-
-        $fichas = Ficha::with(['fichaEcc', 'fichaSaude'])
-            ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
-                $q->where('nom_candidato', 'like', "%{$search}%")
-                    ->orWhere('nom_apelido', 'like', "%{$search}%");
-            }))
-            ->when($eventoId, fn ($q) => $q->where('idt_evento', $eventoId))
-            ->when($situacao, fn ($q) => $q->where('tip_situacao', $situacao))
-            ->whereHas('evento', fn ($q) => $q->where('idt_movimento', TipoMovimento::ECC))
-            ->orderBy('created_at', 'desc')
-            ->paginate(10)
-            ->withQueryString();
-
-        Log::notice('Listagem de fichas ECC concluída', array_merge($context, [
-            'total_fichas' => $fichas->total(),
-            'duration_ms' => round((microtime(true) - $start) * 1000, 2),
-        ]));
-
-        return view('ficha.listECC', compact('fichas', 'search', 'evento', 'eventos', 'situacao'));
-    }
 
     /**
      * Formulário de criação.

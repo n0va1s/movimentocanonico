@@ -745,7 +745,7 @@ new class extends Component {
                             </div>
 
                             <footer class="p-4 bg-gray-50 dark:bg-zinc-800/50 border-t border-gray-100 dark:border-zinc-700 mt-auto">
-                                <flux:button variant="filled" color="blue" class="w-full pointer-events-none group-hover:bg-blue-700 dark:group-hover:bg-blue-600 group-hover:text-white hover:text-white transition-colors">
+                                <flux:button variant="primary" class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md">
                                     Selecionar Evento
                                 </flux:button>
                             </footer>

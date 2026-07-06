@@ -190,7 +190,6 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/eventos/{evento}', [EventoController::class, 'destroy'])->name('eventos.destroy')->withTrashed();
 
         // Pessoas — listagem, busca e CRUD (create e store foram movidos para cima)
-        Volt::route('/pessoas', 'pessoas.index')->name('pessoas.index');
         Route::delete('/pessoas/{pessoa}', [PessoaController::class, 'destroy'])->name('pessoas.destroy');
 
         // Executado diariamente via command
@@ -202,7 +201,6 @@ Route::middleware(['auth'])->group(function () {
 
         Route::middleware(['espec.movimento:2'])->group(function () {
             // Fichas VEM — listagem, aprovação e CRUD
-            Route::get('/fichas/vem', [FichaVemController::class, 'index'])->name('vem.index');
             Route::get('fichas/vem/{id}/approve', [FichaVemController::class, 'approve'])->name('vem.approve');
             Route::post('fichas/vem/{id}/situacao', [FichaVemController::class, 'updateSituacao'])->name('vem.situacao');
             Route::get('/fichas/vem/create', [FichaVemController::class, 'create'])->name('vem.create');
@@ -215,7 +213,6 @@ Route::middleware(['auth'])->group(function () {
 
         Route::middleware(['espec.movimento:1'])->group(function () {
             // Fichas ECC — listagem, aprovação e CRUD
-            Route::get('/fichas/ecc', [FichaEccController::class, 'index'])->name('ecc.index');
             Route::get('fichas/ecc/{id}/approve', [FichaEccController::class, 'approve'])->name('ecc.approve');
             Route::post('fichas/ecc/{id}/situacao', [FichaEccController::class, 'updateSituacao'])->name('ecc.situacao');
             Route::get('/fichas/ecc/create', [FichaEccController::class, 'create'])->name('ecc.create');
@@ -228,7 +225,6 @@ Route::middleware(['auth'])->group(function () {
 
         Route::middleware(['espec.movimento:3'])->group(function () {
             // Fichas SGM — listagem, aprovação e CRUD
-            Route::get('/fichas/sgm', [FichaSGMController::class, 'index'])->name('sgm.index');
             Route::get('fichas/sgm/{id}/approve', [FichaSGMController::class, 'approve'])->name('sgm.approve');
             Route::post('fichas/sgm/{id}/situacao', [FichaSGMController::class, 'updateSituacao'])->name('sgm.situacao');
             Route::get('/fichas/sgm/create', [FichaSGMController::class, 'create'])->name('sgm.create');

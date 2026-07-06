@@ -44,7 +44,7 @@
                 </div>
 
                 <div class="flex gap-2">
-                    <flux:button type="submit" variant="filled" color="blue" class="flex-1">Filtrar</flux:button>
+                    <flux:button type="submit" variant="primary" class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md flex-1" icon="magnifying-glass">Filtrar</flux:button>
                     @if ($search || $idt_movimento)
                         <flux:button href="{{ route('contatos.index', ['status' => $status ?? 'pendentes']) }}" icon="x-mark" variant="ghost" />
                     @endif
@@ -88,7 +88,7 @@
                                 onsubmit="return confirm('Tem certeza que deseja concluir este contato?');">
                                 @csrf
                                 @method('DELETE')
-                                <flux:button type="submit" color="green" class="w-full" icon="check">
+                                <flux:button type="submit" variant="primary" class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md" icon="check">
                                     Concluir
                                 </flux:button>
                             </form>

@@ -117,7 +117,7 @@ new class extends Component {
                     </div>
                 @endif
 
-                <flux:button variant="primary" type="submit" class="w-full">
+                <flux:button variant="primary" type="submit" class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md" icon="magnifying-glass">
                     Consultar Consumo
                 </flux:button>
             </form>

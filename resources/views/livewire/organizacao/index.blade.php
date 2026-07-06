@@ -240,6 +240,11 @@ new #[Title('Organização')] class extends Component {
 
 <div>
     <section class="p-4 md:p-6 w-full max-w-[90vw] ml-auto">
+        <flux:breadcrumbs class="mb-4">
+            <flux:breadcrumbs.item icon="home" href="/" />
+            <flux:breadcrumbs.item href="{{ route('configuracoes.index') }}">Configurações</flux:breadcrumbs.item>
+            <flux:breadcrumbs.item>Organização</flux:breadcrumbs.item>
+        </flux:breadcrumbs>
 
         {{-- ── Cabeçalho ────────────────────────────────────────────────────── --}}
         <div class="mb-6">
@@ -261,7 +266,7 @@ new #[Title('Organização')] class extends Component {
                         <x-heroicon-o-building-library class="w-5 h-5 text-violet-500" />
                         Paróquias
                     </h2>
-                    <flux:button size="sm" icon="plus" wire:click="abrirModalParoquia()" aria-label="Nova paróquia">
+                    <flux:button size="sm" icon="plus" wire:click="abrirModalParoquia()" variant="primary" class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md" aria-label="Nova paróquia">
                         Nova
                     </flux:button>
                 </div>
@@ -317,7 +322,7 @@ new #[Title('Organização')] class extends Component {
                         Movimentos
                     </h2>
                     @if ($paroquiaSelecionada)
-                        <flux:button size="sm" icon="plus" wire:click="abrirModalMovimento()" aria-label="Novo movimento">
+                        <flux:button size="sm" icon="plus" wire:click="abrirModalMovimento()" variant="primary" class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md" aria-label="Novo movimento">
                             Novo
                         </flux:button>
                     @endif
@@ -385,7 +390,7 @@ new #[Title('Organização')] class extends Component {
                         Equipes
                     </h2>
                     @if ($movimentoSelecionado)
-                        <flux:button size="sm" icon="plus" wire:click="abrirModalEquipe()" aria-label="Nova equipe">
+                        <flux:button size="sm" icon="plus" wire:click="abrirModalEquipe()" variant="primary" class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md" aria-label="Nova equipe">
                             Nova
                         </flux:button>
                     @endif
@@ -454,7 +459,7 @@ new #[Title('Organização')] class extends Component {
 
             <div class="flex justify-end gap-3 pt-2">
                 <flux:button variant="ghost" x-on:click="$flux.modal('modal-paroquia').close()">Cancelar</flux:button>
-                <flux:button variant="primary" wire:click="salvarParoquia" wire:loading.attr="disabled">
+                <flux:button variant="primary" class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md" wire:click="salvarParoquia" wire:loading.attr="disabled">
                     Salvar
                 </flux:button>
             </div>
@@ -518,7 +523,7 @@ new #[Title('Organização')] class extends Component {
 
             <div class="flex justify-end gap-3 pt-2">
                 <flux:button variant="ghost" x-on:click="$flux.modal('modal-movimento').close()">Cancelar</flux:button>
-                <flux:button variant="primary" wire:click="salvarMovimento" wire:loading.attr="disabled">
+                <flux:button variant="primary" class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md" wire:click="salvarMovimento" wire:loading.attr="disabled">
                     Salvar
                 </flux:button>
             </div>
@@ -541,7 +546,7 @@ new #[Title('Organização')] class extends Component {
 
             <div class="flex justify-end gap-3 pt-2">
                 <flux:button variant="ghost" x-on:click="$flux.modal('modal-equipe').close()">Cancelar</flux:button>
-                <flux:button variant="primary" wire:click="salvarEquipe" wire:loading.attr="disabled">
+                <flux:button variant="primary" class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md" wire:click="salvarEquipe" wire:loading.attr="disabled">
                     Salvar
                 </flux:button>
             </div>

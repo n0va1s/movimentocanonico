@@ -28,15 +28,6 @@
                     </div>
                 </a>
 
-                <!-- Card: Pessoas -->
-                <a href="{{ route('pessoas.index') }}"
-                    class="block bg-white dark:bg-zinc-600 rounded-xl shadow hover:shadow-lg transition p-6 text-center">
-                    <div class="flex flex-col items-center justify-center h-full">
-                        <x-heroicon-o-users class="w-12 h-12 text-indigo-600 mb-4" />
-                        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Pessoas</h2>
-                        <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm">Gerencie o cadastro de pessoas no sistema.</p>
-                    </div>
-                </a>
 
                 <!-- Card: Limpar Cache -->
                 <a href="/limpar-tudo"
@@ -91,41 +82,6 @@
                 </div>
             </a>
 
-            <!-- Card 7: Fichas VEM -->
-            @if (Auth::user()->isAdmin() || (Auth::user()->isEspec() && Auth::user()->idt_movimento === \App\Models\TipoMovimento::VEM))
-            <a href="{{ route('vem.index') }}"
-                class="block bg-white dark:bg-zinc-600 rounded-xl shadow hover:shadow-lg transition p-6 text-center">
-                <div class="flex flex-col items-center justify-center h-full">
-                    <x-heroicon-o-document-text class="w-12 h-12 text-indigo-600 mb-4" />
-                    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Fichas VEM</h2>
-                    <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm">Gerencie as inscrições, status e aprovações de Fichas VEM.</p>
-                </div>
-            </a>
-            @endif
-
-            <!-- Card 8: Fichas SGM -->
-            @if (Auth::user()->isAdmin() || (Auth::user()->isEspec() && Auth::user()->idt_movimento === \App\Models\TipoMovimento::SegueMe))
-            <a href="{{ route('sgm.index') }}"
-                class="block bg-white dark:bg-zinc-600 rounded-xl shadow hover:shadow-lg transition p-6 text-center">
-                <div class="flex flex-col items-center justify-center h-full">
-                    <x-heroicon-o-document-text class="w-12 h-12 text-rose-600 mb-4" />
-                    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Fichas SGM</h2>
-                    <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm">Gerencie as inscrições, status e aprovações de Fichas SGM.</p>
-                </div>
-            </a>
-            @endif
-
-            <!-- Card 9: Fichas ECC -->
-            @if (Auth::user()->isAdmin() || (Auth::user()->isEspec() && Auth::user()->idt_movimento === \App\Models\TipoMovimento::ECC))
-            <a href="{{ route('ecc.index') }}"
-                class="block bg-white dark:bg-zinc-600 rounded-xl shadow hover:shadow-lg transition p-6 text-center">
-                <div class="flex flex-col items-center justify-center h-full">
-                    <x-heroicon-o-document-text class="w-12 h-12 text-emerald-600 mb-4" />
-                    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Fichas ECC</h2>
-                    <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm">Gerencie as inscrições, status e aprovações de Fichas ECC.</p>
-                </div>
-            </a>
-            @endif
         </div>
     </section>
 </x-layouts.app>

@@ -909,11 +909,11 @@
                         </h3>
 
                         <div x-show="mostrarRestricoes && !temRestricaoSelecionada" x-transition
-                            class="mb-4 flex items-center gap-2 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 px-4 py-3"
+                            class="mb-4 flex items-center gap-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 px-4 py-3"
                             role="alert">
-                            <x-heroicon-o-exclamation-triangle class="w-5 h-5 text-amber-500 shrink-0" aria-hidden="true" />
-                            <p class="text-sm text-amber-700 dark:text-amber-400">
-                                Nenhuma restrição ou alergia foi informada.. Desmarque a opção Informações de Saúde por favor
+                            <x-heroicon-o-exclamation-circle class="w-5 h-5 text-red-500 shrink-0" aria-hidden="true" />
+                            <p class="text-sm text-red-700 dark:text-red-400">
+                                Nenhuma restrição ou alergia foi informada. Desmarque a opção Informações de Saúde por favor.
                             </p>
                         </div>
 
