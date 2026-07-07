@@ -5,6 +5,7 @@ namespace App\Enums;
 enum TipoSituacao: string
 {
     case NOVA = 'N'; // criada pelos pais ou pelo candidato
+    case RESERVA = 'X'; // ficha em reserva/cadastro reserva
     case SELECIONADA = 'S'; // selecionada por atender aos requisitos
     case CONTATO = 'F'; // Contato feito com os responsaveis
     case AGUARDANDO = 'W'; // Aguardando resposta dos responsáveis
@@ -19,6 +20,7 @@ enum TipoSituacao: string
     {
         return match ($this) {
             self::NOVA => 'Nova',
+            self::RESERVA => 'Reserva',
             self::SELECIONADA => 'Selecionada',
             self::CONTATO => 'Contato',
             self::AGUARDANDO => 'Aguardando',
@@ -41,6 +43,14 @@ enum TipoSituacao: string
                 'border' => 'border-slate-200',
                 'light' => 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-950/40 dark:text-slate-300 dark:border-slate-800',
                 'border-l' => 'border-l-slate-300 dark:border-l-slate-600'
+            ],
+            self::RESERVA => [
+                'bg' => 'bg-orange-100 dark:bg-orange-900/40',
+                'text' => 'text-orange-800 dark:text-orange-300',
+                'hover' => 'hover:bg-orange-200 hover:border-orange-300',
+                'border' => 'border-orange-200',
+                'light' => 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-950/30 dark:text-orange-300 dark:border-orange-800',
+                'border-l' => 'border-l-orange-500 dark:border-l-orange-400'
             ],
             self::SELECIONADA => [
                 'bg' => 'bg-lime-100 dark:bg-lime-900/40',
