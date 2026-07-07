@@ -532,7 +532,7 @@ new class extends Component {
                             ATUALIZAR STATUS
                         </div>
                         
-                        <div class="grid grid-cols-4 gap-2">
+                        <div class="flex flex-row gap-2 w-full">
                             {{-- Contato Feito --}}
                             @php $isActive = $ficha->tip_situacao->value === 'F'; @endphp
                             <button 
