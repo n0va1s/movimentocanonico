@@ -346,7 +346,8 @@ new class extends Component {
         @else
 
     @if($evento && $evento->exists)
-        {{-- Cabeçalho do Evento Selecionado --}}
+        <div class="space-y-6">
+            {{-- Cabeçalho do Evento Selecionado --}}
         <div class="flex flex-row justify-between items-center gap-4 bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-700">
             <div class="text-left">
                 <flux:heading size="lg" class="mb-1.5">{{ $evento->des_evento }}</flux:heading>
@@ -359,53 +360,51 @@ new class extends Component {
 
         {{-- Barra de Filtros e Busca --}}
         @if ($this->podeDesignar())
-            <div class="flex flex-col gap-5">
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 w-full items-end">
-                    {{-- Busca --}}
-                    <div class="w-full">
-                        <flux:input 
-                            wire:model.live.debounce.300ms="search" 
-                            icon="magnifying-glass" 
-                            placeholder="Buscar candidatos..." 
-                            class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                    </div>
+            <div class="flex flex-col sm:flex-row items-end gap-5 w-full">
+                {{-- Busca --}}
+                <div class="w-full sm:flex-1">
+                    <flux:input 
+                        wire:model.live.debounce.300ms="search" 
+                        icon="magnifying-glass" 
+                        placeholder="Buscar candidatos..." 
+                        class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                </div>
 
-                    {{-- Filtro de Casal Designado --}}
-                    <div class="w-full">
-                        <flux:input 
-                            wire:model.live.debounce.300ms="visitadorSearch" 
-                            icon="users" 
-                            placeholder="Buscar por casal designado..." 
-                            class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                    </div>
+                {{-- Filtro de Casal Designado --}}
+                <div class="w-full sm:flex-1">
+                    <flux:input 
+                        wire:model.live.debounce.300ms="visitadorSearch" 
+                        icon="users" 
+                        placeholder="Buscar por casal designado..." 
+                        class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                </div>
 
-                    {{-- Situação --}}
-                    <div class="w-full">
-                        <flux:select 
-                            wire:model.live="situacao" 
-                            placeholder="Todas as Situações"
-                            class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
-                            <flux:select.option value="">Todas as Situações</flux:select.option>
-                            @foreach ([
-                                App\Enums\TipoSituacao::SELECIONADA, 
-                                App\Enums\TipoSituacao::CONTATO, 
-                                App\Enums\TipoSituacao::AGUARDANDO,
-                                App\Enums\TipoSituacao::VISITADA,
-                                App\Enums\TipoSituacao::CANCELADA
-                            ] as $sit)
-                                <flux:select.option value="{{ $sit->value }}">{{ $sit->label() }}</flux:select.option>
-                            @endforeach
-                        </flux:select>
-                    </div>
+                {{-- Situação --}}
+                <div class="w-full sm:flex-1">
+                    <flux:select 
+                        wire:model.live="situacao" 
+                        placeholder="Todas as Situações"
+                        class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                        <flux:select.option value="">Todas as Situações</flux:select.option>
+                        @foreach ([
+                            App\Enums\TipoSituacao::SELECIONADA, 
+                            App\Enums\TipoSituacao::CONTATO, 
+                            App\Enums\TipoSituacao::AGUARDANDO,
+                            App\Enums\TipoSituacao::VISITADA,
+                            App\Enums\TipoSituacao::CANCELADA
+                        ] as $sit)
+                            <flux:select.option value="{{ $sit->value }}">{{ $sit->label() }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
                 </div>
 
                 {{-- Botão de Designar Visitação --}}
                 @if (count($selectedFichas) > 0)
-                    <div class="flex justify-end mt-2">
-                        <flux:button wire:click="abrirModalVisitacao" icon="user-group" variant="primary" class="shrink-0 w-full sm:w-auto h-11 justify-center">
+                    <div class="w-full sm:w-auto shrink-0 transition-all duration-300">
+                        <flux:button wire:click="abrirModalVisitacao" icon="user-group" variant="primary" class="h-11 w-full justify-center">
                             Designar Visitação ({{ count($selectedFichas) }})
                         </flux:button>
                     </div>
@@ -705,6 +704,7 @@ new class extends Component {
             </form>
         </flux:modal>
     @endif
+        </div>
     @else
         {{-- TELA DE SELEÇÃO DO EVENTO --}}
         <div class="max-w-7xl mx-auto space-y-6 py-6">
@@ -745,7 +745,7 @@ new class extends Component {
                             </div>
 
                             <footer class="p-4 bg-gray-50 dark:bg-zinc-800/50 border-t border-gray-100 dark:border-zinc-700 mt-auto">
-                                <flux:button variant="primary" class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md">
+                                <flux:button variant="primary" class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md cursor-pointer">
                                     Selecionar Evento
                                 </flux:button>
                             </footer>
