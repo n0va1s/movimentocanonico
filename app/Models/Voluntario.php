@@ -35,7 +35,7 @@ class Voluntario extends Model
 
     public function equipe()
     {
-        return $this->belongsTo(TipoEquipe::class, 'idt_equipe');
+        return $this->belongsTo(TipoEquipe::class, 'idt_equipe')->withTrashed();
     }
 
     public function scopePendentes($query)
@@ -82,7 +82,7 @@ class Voluntario extends Model
                     // Mapeia apenas os dados necessários das equipes escolhidas
                     'equipes' => $itens->map(fn ($v) => (object) [
                         'idt_equipe' => $v->idt_equipe,
-                        'des_grupo' => $v->equipe->des_grupo,
+                        'des_grupo' => $v->equipe?->des_grupo ?? 'Equipe Indisponível',
                         'txt_habilidade' => $v->txt_habilidade,
                         'idt_voluntario' => $v->idt_voluntario,
                     ])->values(),
@@ -98,6 +98,7 @@ class Voluntario extends Model
             ->pendentes()
             ->with('equipe:idt_equipe,des_grupo')
             ->get()
-            ->pluck('equipe');
+            ->pluck('equipe')
+            ->filter();
     }
 }

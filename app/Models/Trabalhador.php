@@ -72,7 +72,7 @@ class Trabalhador extends Model
 
     public function equipe()
     {
-        return $this->belongsTo(TipoEquipe::class, 'idt_equipe');
+        return $this->belongsTo(TipoEquipe::class, 'idt_equipe')->withTrashed();
     }
 
     /**

@@ -117,7 +117,7 @@ new class extends Component {
                 })
                 ->orderBy('nom_pessoa')
                 ->paginate(12),
-            'equipes' => TipoEquipe::where('idt_movimento', $this->evento->movimento->idt_movimento)->get(),
+            'equipes' => TipoEquipe::where('idt_movimento', $this->evento->movimento->idt_movimento)->orderBy('des_grupo', 'asc')->get(),
         ];
     }
 }; ?>
@@ -180,7 +180,7 @@ new class extends Component {
                         @forelse ($pessoa->voluntarios as $inscricao)
                             <div class="bg-white dark:bg-zinc-800 p-2 rounded border border-zinc-200 dark:border-zinc-700 shadow-sm">
                                 <span class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase block mb-1">
-                                    {{ $inscricao->equipe->des_grupo }}
+                                    {{ $inscricao->equipe?->des_grupo ?? 'Equipe Indisponível' }}
                                 </span>
                                 @if($inscricao->txt_habilidade)
                                     <p class="text-xs text-zinc-500 leading-relaxed italic border-t border-zinc-100 dark:border-zinc-700 mt-1 pt-1">

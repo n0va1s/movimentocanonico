@@ -96,6 +96,40 @@ describe('Candidatura', function () {
             ])
             ->assertSessionHasErrors();
     });
+
+    test('usuario nao ve equipes com ind_voluntariar false no formulario', function () {
+        $equipeNaoVoluntariar = TipoEquipe::factory()->create([
+            'idt_movimento' => $this->evento->idt_movimento,
+            'ind_voluntariar' => false,
+            'des_grupo' => 'Comando Especial'
+        ]);
+
+        $this->actingAs($this->user)
+            ->get(route('trabalhadores.create', ['evento' => $this->evento->idt_evento]))
+            ->assertOk()
+            ->assertSee($this->equipe1->des_grupo)
+            ->assertDontSee($equipeNaoVoluntariar->des_grupo);
+    });
+
+    test('falha candidatura se selecionar equipe com ind_voluntariar false', function () {
+        $equipeNaoVoluntariar = TipoEquipe::factory()->create([
+            'idt_movimento' => $this->evento->idt_movimento,
+            'ind_voluntariar' => false,
+        ]);
+
+        $payload = makeValidPayload([
+            'equipes' => [
+                $equipeNaoVoluntariar->idt_equipe => [
+                    'selecionado' => '1',
+                    'habilidade' => 'Tentar burlar',
+                ]
+            ]
+        ]);
+
+        $this->actingAs($this->user)
+            ->post(route('trabalhadores.store'), $payload)
+            ->assertSessionHasErrors(['equipes']);
+    });
 });
 
 
