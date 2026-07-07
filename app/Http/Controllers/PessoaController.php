@@ -65,7 +65,12 @@ class PessoaController extends Controller
         $context = $this->getLogContext(request());
         Log::info('Acesso ao formulário de criação de pessoa', $context);
 
-        $pessoa = new Pessoa;
+        $user = auth()->user();
+        $pessoa = new Pessoa([
+            'nom_pessoa' => $user->name,
+            'eml_pessoa' => $user->email,
+            'tel_pessoa' => $user->phone,
+        ]);
         $restricoes = TipoRestricao::select(
             'idt_restricao',
             'tip_restricao',
