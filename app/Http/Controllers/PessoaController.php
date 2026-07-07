@@ -66,6 +66,14 @@ class PessoaController extends Controller
         Log::info('Acesso ao formulário de criação de pessoa', $context);
 
         $pessoa = new Pessoa;
+        
+        // Preenche automaticamente os dados se o usuário estiver completando o próprio cadastro
+        if (!auth()->user()->isAdmin()) {
+            $pessoa->nom_pessoa = auth()->user()->name;
+            $pessoa->eml_pessoa = auth()->user()->email;
+            $pessoa->tel_pessoa = auth()->user()->phone;
+        }
+
         $restricoes = TipoRestricao::select(
             'idt_restricao',
             'tip_restricao',
