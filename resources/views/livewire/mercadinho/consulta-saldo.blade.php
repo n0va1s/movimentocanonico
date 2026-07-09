@@ -85,20 +85,20 @@ new class extends Component {
     }
 }; ?>
 
-<div class="bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-gray-200 dark:border-zinc-700 overflow-hidden flex flex-col h-full">
-    <header class="px-6 py-4 border-b border-gray-100 dark:border-zinc-700 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-800/50">
-        <h2 class="font-bold text-gray-800 dark:text-white flex items-center gap-2">
-            <x-heroicon-s-magnifying-glass class="w-5 h-5 text-blue-600" />
-            Consulta de Saldo - Mercadinho
-        </h2>
+<div class="flex flex-col h-full">
+    <div class="px-6 py-4 flex justify-between items-center">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <x-heroicon-s-banknotes class="w-5 h-5 text-emerald-600" />
+            Consulta de Saldo
+        </h3>
         @if($resultado)
-            <button wire:click="limpar" class="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline">
+            <button wire:click="limpar" class="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 rounded">
                 Nova Consulta
             </button>
         @endif
-    </header>
+    </div>
 
-    <div class="p-6 flex-1 flex flex-col justify-between">
+    <div class="px-6 pb-6 flex-1 flex flex-col justify-between">
         @if(!$resultado)
             {{-- Formulário de Consulta --}}
             <form wire:submit.prevent="consultar" class="space-y-4 my-auto">

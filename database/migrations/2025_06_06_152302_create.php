@@ -50,7 +50,7 @@ return new class extends Migration
             $table->string('nom_movimento', 255);
             $table->string('des_sigla', 10);
             $table->date('dat_inicio')->nullable();
-            $table->boolean('ind_inscricao_aberta')->default(false);
+            $table->boolean('ind_inscricao_aberta')->default(false); //disponivel para inscricao na tela inicial
             $table->string('med_logo', 255)->nullable();
             $table->timestamps();
             $table->softDeletes();
@@ -62,6 +62,7 @@ return new class extends Migration
             $table->foreignId('idt_movimento')
                 ->constrained('tipo_movimento', 'idt_movimento');
             $table->string('des_grupo', 255);
+            $table->boolean('ind_disponivel_candidatura')->default(false); //disponível para voluntarios se candidatarem
             $table->text('txt_documento')->nullable();
             $table->timestamps();
             $table->softDeletes();

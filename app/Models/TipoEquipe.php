@@ -20,6 +20,7 @@ class TipoEquipe extends Model
         'idt_movimento',
         'des_grupo',
         'txt_documento',
+        'ind_disponivel_candidatura',
     ];
 
     public function movimento()

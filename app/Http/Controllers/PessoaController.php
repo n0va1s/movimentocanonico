@@ -67,12 +67,10 @@ class PessoaController extends Controller
 
         $pessoa = new Pessoa;
         
-        // Preenche automaticamente os dados se o usuário estiver completando o próprio cadastro
-        if (!auth()->user()->isAdmin()) {
-            $pessoa->nom_pessoa = auth()->user()->name;
-            $pessoa->eml_pessoa = auth()->user()->email;
-            $pessoa->tel_pessoa = auth()->user()->phone;
-        }
+        // Preenche automaticamente os dados vindos do usuário autenticado
+        $pessoa->nom_pessoa = auth()->user()->name;
+        $pessoa->eml_pessoa = auth()->user()->email;
+        $pessoa->tel_pessoa = auth()->user()->phone;
 
         $restricoes = TipoRestricao::select(
             'idt_restricao',
@@ -195,10 +193,6 @@ class PessoaController extends Controller
             'restricoes_registradas' => $countRestricoes,
             'duration_ms' => $duration,
         ]));
-
-        if (auth()->user()->isAdmin()) {
-            return redirect()->route('pessoas.index')->with('success', 'Pessoa cadastrada/atualizada com sucesso.');
-        }
 
         return redirect()->route('dashboard')->with('success', 'Pessoa cadastrada/atualizada com sucesso.');
     }
@@ -327,51 +321,7 @@ class PessoaController extends Controller
             'duration_ms' => $duration,
         ]));
 
-        if (auth()->user()->isAdmin()) {
-            return redirect()->route('pessoas.index')->with('success', 'Dados atualizados com sucesso.');
-        }
-
         return redirect()->route('dashboard')->with('success', 'Dados atualizados com sucesso.');
-    }
-
-    public function destroy($id): RedirectResponse
-    {
-        $start = microtime(true);
-        $context = $this->getLogContext(request());
-        Log::warning('Tentativa de exclusão de pessoa', array_merge($context, [
-            'pessoa_id' => $id,
-        ]));
-
-        try {
-            $duration = round((microtime(true) - $start) * 1000, 2);
-            Log::notice('Pessoa excluída com sucesso', array_merge($context, [
-                'pessoa_id' => $id,
-                'duration_ms' => $duration,
-            ]));
-
-            // Cascade
-            Pessoa::findOrFail($id)->delete();
-
-            return redirect()->route('pessoas.index')->with('success', 'Pessoa excluída com sucesso!');
-        } catch (QueryException $e) {
-            $duration = round((microtime(true) - $start) * 1000, 2);
-            Log::error('Erro de Query ao excluir pessoa', array_merge($context, [
-                'pessoa_id' => $id,
-                'sql_state' => $e->getCode(),
-                'exception' => get_class($e),
-                'message' => $e->getMessage(),
-                'duration_ms' => $duration,
-            ]));
-
-            if ($e->getCode() === '23000') {
-                return back()
-                    ->with('error', 'Não é possível excluir esta pessoa. È preciso apagar os dados associados.');
-            }
-
-            // Se for outro erro de banco
-            return back()
-                ->with('error', 'Erro ao tentar excluir a pessoa.');
-        }
     }
 
     public function buscaPorCpf($cpf)

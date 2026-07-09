@@ -122,9 +122,14 @@ class TrabalhadorController extends Controller
 
         if ($evento) {
             $equipes = TipoEquipe::where('idt_movimento', $evento->idt_movimento ?? null)
-                ->select('idt_equipe', 'des_grupo')->get();
+                ->where('ind_disponivel_candidatura', true)
+                ->select('idt_equipe', 'des_grupo')
+                ->orderBy('des_grupo')
+                ->get();
         } else {
-            $equipes = TipoEquipe::all();
+            $equipes = TipoEquipe::where('ind_disponivel_candidatura', true)
+                ->orderBy('des_grupo')
+                ->get();
         }
 
         $duration = round((microtime(true) - $start) * 1000, 2);

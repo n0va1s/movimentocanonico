@@ -34,6 +34,7 @@ new #[Title('Organização')] class extends Component {
     // ── Form: Equipe ──────────────────────────────────────────────────────────
     public ?int $editandoEquipe = null;
     public string $des_grupo = '';
+    public bool $ind_disponivel_candidatura = false;
 
     // ── Boot ──────────────────────────────────────────────────────────────────
     public function mount(): void
@@ -181,8 +182,9 @@ new #[Title('Organização')] class extends Component {
         $this->resetEquipeForm();
         if ($id) {
             $e = TipoEquipe::findOrFail($id);
-            $this->editandoEquipe = $id;
-            $this->des_grupo      = $e->des_grupo;
+            $this->editandoEquipe             = $id;
+            $this->des_grupo                  = $e->des_grupo;
+            $this->ind_disponivel_candidatura = (bool) $e->ind_disponivel_candidatura;
         }
         $this->modal('modal-equipe')->show();
     }
@@ -190,14 +192,16 @@ new #[Title('Organização')] class extends Component {
     public function salvarEquipe(): void
     {
         $this->validate([
-            'des_grupo' => 'required|string|max:255',
+            'des_grupo'                  => 'required|string|max:255',
+            'ind_disponivel_candidatura' => 'boolean',
         ]);
 
         TipoEquipe::updateOrCreate(
             ['idt_equipe' => $this->editandoEquipe],
             [
-                'idt_movimento' => $this->movimentoSelecionado,
-                'des_grupo'     => $this->des_grupo,
+                'idt_movimento'              => $this->movimentoSelecionado,
+                'des_grupo'                  => $this->des_grupo,
+                'ind_disponivel_candidatura' => $this->ind_disponivel_candidatura,
             ]
         );
 
@@ -212,8 +216,9 @@ new #[Title('Organização')] class extends Component {
 
     private function resetEquipeForm(): void
     {
-        $this->editandoEquipe = null;
-        $this->des_grupo = '';
+        $this->editandoEquipe             = null;
+        $this->des_grupo                  = '';
+        $this->ind_disponivel_candidatura = false;
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -406,7 +411,12 @@ new #[Title('Organização')] class extends Component {
                         @forelse ($equipes as $e)
                             <li wire:key="equipe-{{ $e->idt_equipe }}"
                                 class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-zinc-700 transition">
-                                <span class="text-sm text-gray-900 dark:text-gray-100 truncate">{{ $e->des_grupo }}</span>
+                                <div class="min-w-0 flex flex-col">
+                                    <span class="text-sm text-gray-900 dark:text-gray-100 truncate">{{ $e->des_grupo }}</span>
+                                    @if ($e->ind_disponivel_candidatura)
+                                        <flux:badge color="green" size="sm" class="mt-0.5 self-start">Disponível para candidatura</flux:badge>
+                                    @endif
+                                </div>
                                 <div class="flex items-center gap-1 ml-2 shrink-0">
                                     <flux:button size="sm" variant="ghost" icon="pencil-square"
                                         wire:click="abrirModalEquipe({{ $e->idt_equipe }})"
@@ -543,6 +553,19 @@ new #[Title('Organização')] class extends Component {
                 placeholder="Ex: Oração, Bandinha, Reportagem..."
                 required aria-required="true" id="des_grupo" />
             @error('des_grupo') <p class="text-red-500 text-xs -mt-3" role="alert">{{ $message }}</p> @enderror
+
+            <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-zinc-700 border border-gray-200 dark:border-zinc-600 mt-2">
+                <flux:checkbox wire:model="ind_disponivel_candidatura" id="ind_disponivel_candidatura"
+                    aria-describedby="desc-candidatura-equipe" />
+                <div class="flex-1">
+                    <label for="ind_disponivel_candidatura" class="text-sm font-medium text-gray-900 dark:text-gray-100 cursor-pointer">
+                        Disponível para Candidatura
+                    </label>
+                    <p id="desc-candidatura-equipe" class="text-xs text-gray-500 dark:text-gray-400">
+                        Marque se esta equipe aceita candidaturas de trabalhadores.
+                    </p>
+                </div>
+            </div>
 
             <div class="flex justify-end gap-3 pt-2">
                 <flux:button variant="ghost" x-on:click="$flux.modal('modal-equipe').close()">Cancelar</flux:button>

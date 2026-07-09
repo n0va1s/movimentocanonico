@@ -97,6 +97,10 @@ class HomeController extends Controller
             }
         }
 
+        if ($request->header('referer') && str_contains($request->header('referer'), '/dashboard')) {
+            return redirect()->route('dashboard')->with('success', 'Recebemos seu contato. Em breve retornaremos!');
+        }
+
         return redirect()->route('home')->with('success', 'Recebemos seu contato. Em breve retornaremos!');
     }
 

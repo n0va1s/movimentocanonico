@@ -33,6 +33,25 @@
             </div>
         </div>
 
+        {{-- Alertas de Sucesso / Erro --}}
+        @if (session('success'))
+            <div class="mb-8 p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-xl text-sm text-green-800 dark:text-green-200 whitespace-pre-line">
+                <div class="flex items-start gap-3">
+                    <x-heroicon-s-check-circle class="w-5 h-5 mt-0.5 shrink-0" />
+                    <div>{{ session('success') }}</div>
+                </div>
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div class="mb-8 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl text-sm text-red-800 dark:text-red-200 whitespace-pre-line">
+                <div class="flex items-start gap-3">
+                    <x-heroicon-s-x-circle class="w-5 h-5 mt-0.5 shrink-0" />
+                    <div>{{ session('error') }}</div>
+                </div>
+            </div>
+        @endif
+
         {{-- Grid de Uploads --}}
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
             
@@ -68,6 +87,9 @@
                                 @endforelse
                             </flux:select>
                             <span class="text-xs text-gray-400 dark:text-zinc-500 mt-1 block">Apenas eventos futuros ou em andamento são listados aqui.</span>
+                            @error('evento_id')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         {{-- Arquivo --}}
@@ -126,6 +148,9 @@
                                 @endforelse
                             </flux:select>
                             <span class="text-xs text-gray-400 dark:text-zinc-500 mt-1 block">Apenas eventos futuros ou em andamento são listados aqui.</span>
+                            @error('evento_id')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         {{-- Arquivo --}}
