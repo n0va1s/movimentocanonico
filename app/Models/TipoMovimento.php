@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TipoMovimento extends Model
 {
@@ -25,23 +27,32 @@ class TipoMovimento extends Model
     const SGM = 3;
 
     protected $fillable = [
+        'idt_paroquia',
         'nom_movimento',
         'des_sigla',
         'dat_inicio',
+        'ind_inscricao_aberta',
+        'med_logo',
     ];
 
     protected $casts = [
         'dat_inicio' => 'date',
+        'ind_inscricao_aberta' => 'boolean',
     ];
 
-    public function eventos()
+    public function paroquia(): BelongsTo
     {
-        return $this->hasMany(Evento::class, 'idt_movimento');
+        return $this->belongsTo(TipoParoquia::class, 'idt_paroquia', 'idt_paroquia');
     }
 
-    public function equipes()
+    public function equipes(): HasMany
     {
-        return $this->hasMany(TipoEquipe::class, 'idt_movimento');
+        return $this->hasMany(TipoEquipe::class, 'idt_movimento', 'idt_movimento');
+    }
+
+    public function eventos(): HasMany
+    {
+        return $this->hasMany(Evento::class, 'idt_movimento');
     }
 
     /**
@@ -51,4 +62,19 @@ class TipoMovimento extends Model
     {
         return $this->dat_inicio ? $this->dat_inicio->format('d/m/Y') : null;
     }
+
+    /**
+     * Retorna a cor base do movimento (Padrão Flux/Tailwind) 
+     * conforme as diretrizes do DESIGN.md
+     */
+    public function getCorBadgeAttribute(): string
+    {
+        return match(strtoupper($this->des_sigla)) {
+            'VEM'      => 'blue',
+            'ECC'      => 'green',
+            'SGM', 'SEGUE-ME' => 'purple',
+            default    => 'zinc',
+        };
+    }
+
 }

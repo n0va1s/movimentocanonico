@@ -7,16 +7,21 @@ description: Guia sênior de desenvolvimento frontend no ecossistema Laravel, fo
 
 Esta Skill define os padrões e as diretrizes inegociáveis para o desenvolvimento e manutenção das interfaces do usuário (UI/UX) do projeto PNSL-NTM. O objetivo é garantir interfaces extremamente rápidas, perfeitamente responsivas, totalmente acessíveis e alinhadas com as melhores práticas de Progressive Web Apps (PWA) e Componentes Flux.
 
+> [!IMPORTANT]
+> A **fonte de verdade** para identidade visual, paleta de cores, tipografia, tokens de design, jornadas de usuário e diretrizes completas de acessibilidade é o documento [DESIGN.md](file:///home/n0va1s/projects/movimentocanonico/docs/DESIGN.md). Esta Skill define os **princípios de implementação**; o DESIGN.md define **o quê** implementar.
+
 ---
 
 ## 1. Diretrizes de Arquitetura UI/UX
 
-### A. Acessibilidade Máxima (a11y)
-O sistema deve ser plenamente acessível a qualquer pessoa. Aplique rigorosamente:
-1. **Semântica HTML:** Use tags nativas (`<header>`, `<main>`, `<nav>`, `<footer>`, `<article>`, `<section>`) em vez de empilhar `<div>`.
-2. **Navegação via Teclado:** Todo componente interativo (botões, links, dropdowns) deve possuir estados de `:focus-visible` claros e permitir navegação fluida via `Tab`.
-3. **Atributos ARIA:** Insira `aria-label` em botões de ícone sem texto, `aria-expanded` em menus retráteis e `aria-live="polite"` em componentes assíncronos/Livewire de atualização em tempo real.
-4. **Contraste e Cores:** Mantenha contraste WCAG AA mínimo (4.5:1 para texto normal). Não use cores como única pista visual (adicione badges ou ícones de texto auxiliares).
+### A. Acessibilidade Máxima (a11y — WCAG 2.2 Nível AA)
+O sistema deve ser plenamente acessível a qualquer pessoa. Aplique rigorosamente (referência completa em [DESIGN.md §7](file:///home/n0va1s/projects/movimentocanonico/docs/DESIGN.md)):
+1. **Semântica HTML:** Use tags nativas (`<header>`, `<main>`, `<nav>`, `<footer>`, `<article>`, `<section>`) em vez de empilhar `<div>`. Um único `<h1>` por página, sem pular níveis de heading.
+2. **Navegação via Teclado:** Todo componente interativo (botões, links, dropdowns) deve possuir estados de `:focus-visible` claros e permitir navegação fluida via `Tab`. Inclua skip link "Pular para conteúdo" em todas as páginas.
+3. **Atributos ARIA:** Insira `aria-label` em botões de ícone sem texto, `aria-expanded` em menus retráteis, `aria-live="polite"` em componentes assíncronos/Livewire de atualização em tempo real, e `role="progressbar"` com `aria-valuenow` em barras de progresso.
+4. **Contraste e Cores:** Mantenha contraste WCAG AA mínimo (4.5:1 para texto normal, 3:1 para texto grande e componentes UI). Não use cores como única pista visual (adicione badges ou ícones de texto auxiliares). Valide em **ambos os temas** (light e dark).
+5. **Movimento Reduzido:** Respeite `prefers-reduced-motion` com regra CSS que desabilita animações. Nenhuma transição de UI deve durar mais que 300ms.
+6. **Zoom e Redimensionamento:** Layout funcional em zoom até 200%. Nunca use `user-scalable=no` no viewport meta. Prefira `rem`/`em` sobre `px` fixo para fontes.
 
 ### B. Carregamento Não Bloqueante e Leveza (Zero Render-Blocking)
 Para garantir velocidade instantânea e manter a UI interativa no primeiro segundo:
@@ -87,10 +92,54 @@ O projeto usa a biblioteca premium de componentes **Livewire Flux** (`livewire/f
 
 ---
 
-## 3. Checklist de Validação Frontend
+## 3. Tokens de Design (Referência Rápida)
+
+Consulte [DESIGN.md](file:///home/n0va1s/projects/movimentocanonico/docs/DESIGN.md) para a lista completa. Referência rápida:
+
+| Token | Valor | Tailwind |
+|:------|:------|:---------|
+| **Fonte** | Nunito (400, 500, 600, 700, 800) | `font-sans` |
+| **Primary** | `#6366f1` | `indigo-500` |
+| **Accent** | `#f472b6` | `pink-400` |
+| **Tertiary** | `#06b6d4` | `cyan-500` |
+| **Success** | `#10b981` | `emerald-500` |
+| **Warning** | `#f59e0b` | `amber-500` |
+| **Danger** | `#ef4444` | `red-500` |
+| **Border Radius (Card)** | `12px` | `rounded-lg` |
+| **Touch Target Mínimo** | `48×48px` | `min-h-12 min-w-12` |
+
+> Nunca use valores hex ad-hoc. Sempre referencie os tokens do DESIGN.md.
+
+---
+
+## 4. Checklist de Validação Frontend
 Antes de salvar qualquer modificação Blade, revise os seguintes tópicos:
-- [ ] **Acessibilidade:** Elementos interativos estão focáveis? Existem `aria-label` para ícones sozinhos?
-- [ ] **Mobile First:** A tela encolhe para 320px de largura sem scroll horizontal e as áreas de toque têm pelo menos 48px?
-- [ ] **Leveza:** Não foram adicionadas bibliotecas JS grandes (preferindo JS puro, Alpine.js ou Livewire nativo)?
-- [ ] **Flux:** Elementos genéricos de formulários foram substituídos pelos respectivos `<flux:input>`, `<flux:select>`, `<flux:checkbox>` ou `<flux:radio>`?
-- [ ] **PWA:** Recursos estáticos estão com tags corretas para cache de rede e imagens de fotos usam lazy load?
+
+### Acessibilidade (a11y)
+- [ ] Elementos interativos estão focáveis via `Tab`? `:focus-visible` visível?
+- [ ] Existem `aria-label` para botões de ícone sem texto?
+- [ ] Regiões Livewire dinâmicas possuem `aria-live="polite"`?
+- [ ] Barras de progresso possuem `role="progressbar"` + `aria-valuenow`?
+- [ ] Contraste ≥ 4.5:1 (texto normal) e ≥ 3:1 (texto grande) em ambos os temas?
+- [ ] `prefers-reduced-motion` é respeitado (animações desabilitadas)?
+- [ ] Heading hierarchy correta (h1 único, sem pular níveis)?
+- [ ] Skip link "Pular para conteúdo" presente?
+
+### Mobile First
+- [ ] A tela encolhe para 320px sem scroll horizontal?
+- [ ] Touch targets ≥ 48px em mobile?
+- [ ] Layout funcional em zoom 200%?
+
+### Design Tokens
+- [ ] Cores seguem a paleta do DESIGN.md (sem hex ad-hoc)?
+- [ ] Tipografia usa Nunito com pesos permitidos (400–800)?
+- [ ] Border radius segue os tokens definidos?
+
+### Componentes
+- [ ] Elementos genéricos substituídos por Flux (`<flux:input>`, `<flux:select>`, `<flux:checkbox>`, `<flux:radio>`)?
+- [ ] Conteúdo assíncrono exibe skeleton loading com `animate-pulse`?
+
+### Performance & PWA
+- [ ] Não foram adicionadas bibliotecas JS grandes (preferindo JS puro, Alpine.js ou Livewire nativo)?
+- [ ] Recursos estáticos com tags corretas para cache e imagens com lazy load?
+- [ ] SVGs usados em vez de imagens rasterizadas para ícones?

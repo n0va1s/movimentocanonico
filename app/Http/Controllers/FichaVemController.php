@@ -28,61 +28,7 @@ class FichaVemController extends Controller
     /**
      * Listagem das fichas.
      */
-    public function index(Request $request)
-    {
-        $start = microtime(true);
-        $context = $this->getLogContext($request);
 
-        $search = $request->get('search');
-        $eventoId = $request->get('evento');
-        $situacao = $request->get('situacao');
-        $evento = null;
-
-        Log::info('Requisição de listagem de fichas VEM iniciada', array_merge($context, [
-            'search_term' => $search,
-            'evento_filtro' => $eventoId,
-            'situacao_filtro' => $situacao,
-        ]));
-
-        if ($eventoId) {
-            $evento = Evento::find($eventoId);
-        }
-
-        $hoje = now()->startOfDay();
-        $eventos = Evento::where('idt_movimento', TipoMovimento::VEM)
-            ->ativos()
-            ->orderBy('dat_inicio', 'asc')
-            ->get();
-
-        $fichas = Ficha::with(['fichaVem', 'fichaSaude'])
-            ->when($search, function ($query, $search) {
-                return $query->where(function ($q) use ($search) {
-                    $q->where('nom_candidato', 'like', "%{$search}%")
-                        ->orWhere('nom_apelido', 'like', "%{$search}%");
-                });
-            })
-            ->when($eventoId, function ($query, $eventoId) {
-                return $query->where('idt_evento', $eventoId);
-            })
-            ->when($situacao, function ($query, $situacao) {
-                return $query->where('tip_situacao', $situacao);
-            })
-            ->whereHas('evento', function ($query) {
-                $query->where('idt_movimento', TipoMovimento::VEM);
-            })
-            ->orderBy('created_at', 'desc')
-            ->paginate(10)
-            ->withQueryString();
-
-        $duration = round((microtime(true) - $start) * 1000, 2);
-
-        Log::notice('Listagem de fichas VEM concluída com sucesso', array_merge($context, [
-            'total_fichas' => $fichas->total(),
-            'duration_ms' => $duration,
-        ]));
-
-        return view('ficha.listVEM', compact('fichas', 'search', 'evento', 'eventos', 'situacao'));
-    }
 
     /**
      * Formulário de criação.

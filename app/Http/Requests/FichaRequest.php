@@ -143,4 +143,20 @@ class FichaRequest extends FormRequest
             'txt_observacao.string' => 'As observações devem ser um texto válido.',
         ];
     }
+
+    public function after(): array
+    {
+        return [
+            function ($validator) {
+                if ($this->boolean('ind_restricao')) {
+                    $restricoes = $this->input('restricoes', []);
+                    $hasAnyTrue = collect($restricoes)->filter(fn($val) => filter_var($val, FILTER_VALIDATE_BOOLEAN))->isNotEmpty();
+                    
+                    if (!$hasAnyTrue) {
+                        $validator->errors()->add('ind_restricao', 'Você marcou que o candidato possui informações de saúde, portanto deve selecionar ao menos uma restrição.');
+                    }
+                }
+            }
+        ];
+    }
 }

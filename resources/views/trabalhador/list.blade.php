@@ -1,7 +1,12 @@
 <x-layouts.app :title="'Trabalhador'">
     <section class="p-6 w-full max-w-[80vw] ml-auto">
+        <flux:breadcrumbs class="mb-4">
+            <flux:breadcrumbs.item icon="home" href="/" />
+            <flux:breadcrumbs.item href="{{ route('eventos.index') }}">Eventos</flux:breadcrumbs.item>
+            <flux:breadcrumbs.item>Trabalhadores</flux:breadcrumbs.item>
+        </flux:breadcrumbs>
         <div class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Lista de Trabalhadores</h1>
+            <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">Lista de Trabalhadores</flux:heading>
             @if ($evento?->exists)
                 <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-1">
                     Evento: <b>{{ $evento->des_evento }}</b>
@@ -30,27 +35,18 @@
                         @endforeach
                     </select>
                 </div>
-                <button type="submit"
-                    class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                    <x-heroicon-c-arrow-long-right class="w-5 h-5 mr-2" />
+                <flux:button type="submit" variant="primary" class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md" icon="magnifying-glass">
                     Buscar
-                </button>
+                </flux:button>
 
                 @if ($search || $idt_equipe)
-                    <a href="{{ route('trabalhadores.index', ['evento' => $evento]) }}"
-                        class="inline-flex items-center px-4 py-2 bg-gray-300 hover:bg-gray-400">
-                        <x-heroicon-o-x-circle class="w-5 h-5 mr-2" />
+                    <flux:button href="{{ route('trabalhadores.index', ['evento' => $evento]) }}" variant="ghost" icon="x-circle">
                         Limpar
-                    </a>
+                    </flux:button>
                 @endif
             </form>
             <div class="flex justify-end mt-4">
-                <a href="{{ route('eventos.index') }}"
-                    class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-500 focus:ring-2 focus:ring-green-500 focus:outline-none"
-                    aria-label="Voltar para a lista de eventos">
-                    <x-heroicon-o-arrow-left class="w-5 h-5 mr-2" />
-                    Eventos
-                </a>
+                {{-- Botão Eventos removido em favor do Breadcrumb --}}
             </div>
         </div>
         <div class="overflow-x-auto mt-4">

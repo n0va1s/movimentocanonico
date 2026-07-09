@@ -5,11 +5,11 @@
     @include('partials.head')
 </head>
 
-<body class="min-h-screen bg-white dark:bg-zinc-800">
+<body class="min-h-screen bg-white dark:bg-zinc-800 font-sans antialiased text-zinc-900 dark:text-zinc-100">
     <flux:sidebar sticky stashable class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
         <flux:sidebar.toggle class="lg:hidden" icon="x-mark" />
-        <a href="{{ route('dashboard') }}" class="me-5 flex items-center space-x-2 rtl:space-x-reverse" wire:navigate>
-            <x-app-logo />
+        <a href="{{ route('dashboard') }}" class="me-5 flex items-center space-x-2 rtl:space-x-reverse" wire:navigate aria-label="Página Inicial do Sistema">
+            <x-app-logo aria-hidden="true" />
         </a>
         <flux:navlist variant="outline">
             <flux:navlist.group :heading="__('Acesse')" class="grid">
@@ -47,7 +47,7 @@
                         {{ __('Mensagens') }}
                     </flux:navlist.item>
                 @endif
-                @if (Auth::user() && Auth::user()->pessoa)
+                @if (Auth::user() && Auth::user()->pessoa?->idt_pessoa)
                     <flux:navlist.item icon="user"
                         :href="route('pessoas.edit', ['pessoa' => Auth::user()->pessoa->idt_pessoa])"
                         :current="request()->routeIs('pessoas.edit')" wire:navigate>
@@ -60,7 +60,7 @@
                         {{ __('Meus Dados') }}
                     </flux:navlist.item>
                 @endif
-                @if (Auth::user() && Auth::user()->hasRole('admin', 'visit'))
+                @if (Auth::user() && Auth::user()->podeAcessarMinhasFichas())
                     <flux:navlist.item icon="document-text" :href="route('minhas-fichas.index')"
                         :current="request()->routeIs('minhas-fichas.index')" wire:navigate>
                         {{ __('Minhas Fichas') }}
@@ -85,7 +85,7 @@
 
         <div class="flex items-center my-4 gap-2">
             <!-- Sun Icon (left) -->
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-600 dark:text-zinc-100" fill="none"
+            <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-600 dark:text-zinc-100" fill="none"
                 viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M12 3v1m0 16v1m8.66-13.66l-.71.71M4.05 19.07l-.71.71M21 12h-1M4 12H3m16.66 5.66l-.71-.71M4.05 4.93l-.71-.71M12 5a7 7 0 100 14 7 7 0 000-14z" />
@@ -101,11 +101,11 @@
                     class="absolute top-0 left-0 h-6 w-6 bg-white dark:bg-zinc-800 rounded-full shadow transition-transform duration-200"
                     :class="dark ? 'translate-x-6' : 'translate-x-0'"></span>
                 <span class="sr-only">
-                    {{ __('Toggle dark mode') }}
+                    {{ __('Alternar modo noturno') }}
                 </span>
             </button>
             <!-- Moon Icon (right) -->
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-zinc-800 dark:text-yellow-300" fill="none"
+            <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-zinc-800 dark:text-yellow-300" fill="none"
                 viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z" />

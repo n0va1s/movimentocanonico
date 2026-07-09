@@ -43,6 +43,14 @@ new class extends Component {
     public ?int $vendaAvulsaProdutoId = null;
     public int $vendaAvulsaQuantidade = 1;
 
+    // Performance (FCP/LCP fix)
+    public bool $readyToLoad = false;
+
+    public function loadData(): void
+    {
+        $this->readyToLoad = true;
+    }
+
     public function mount(?Evento $evento = null): void
     {
         if ($evento && $evento->exists) {
@@ -431,8 +439,12 @@ new class extends Component {
     {{-- Cabeçalho --}}
     <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Mercadinho</h1>
-            <p class="text-gray-600 mt-1 dark:text-gray-400">Gerencie produtos, estoque e as contas dos participantes e trabalhadores do evento.</p>
+            <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1" aria-label="Mercadinho">
+                Mercadinho
+            </flux:heading>
+            <p class="text-indigo-900/70 dark:text-indigo-300/70 mt-1 font-medium">
+                Gerencie produtos, estoque e as contas dos participantes e trabalhadores do evento.
+            </p>
         </div>
     </header>
     <style>
@@ -447,14 +459,25 @@ new class extends Component {
         }
     </style>
 
+    <div wire:init="loadData">
+        @if(!$readyToLoad)
+            <div class="flex items-center justify-center min-h-[50vh]">
+                <div class="animate-pulse flex flex-col items-center">
+                    <div class="w-12 h-12 border-4 border-zinc-200 dark:border-zinc-700 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <p class="mt-4 text-indigo-600 dark:text-indigo-400 font-medium tracking-tight">Carregando dados do Mercadinho...</p>
+                </div>
+            </div>
+        @else
+
     @if($evento && $evento->exists)
         {{-- Cabeçalho do Evento Selecionado --}}
         <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-700">
             <div>
-                <flux:heading size="lg">{{ $evento->des_evento }}</flux:heading>
-                <flux:subheading class="uppercase font-bold text-xs text-blue-600 dark:text-blue-400">
-                    Mercadinho &bull; {{ $evento->movimento->des_sigla }}
-                </flux:subheading>
+                <flux:heading size="lg" class="mb-1.5">{{ $evento->des_evento }}</flux:heading>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Mercadinho</span>
+                    <x-badge-movimento :sigla="$evento->movimento->des_sigla" />
+                </div>
             </div>
             <flux:button variant="ghost" size="sm" icon="arrow-left" wire:click="alterarEvento">
                 Voltar
@@ -462,22 +485,28 @@ new class extends Component {
         </div>
 
         {{-- Menu Local de Abas --}}
-        <div class="flex overflow-x-auto no-scrollbar border-b border-zinc-200 dark:border-zinc-700 whitespace-nowrap">
+        <div class="flex overflow-x-auto no-scrollbar border-b border-zinc-200 dark:border-zinc-700 whitespace-nowrap" role="tablist">
             <button 
                 wire:click="$set('activeSubTab', 'operacao')" 
-                class="px-4 py-2 font-semibold text-sm border-b-2 {{ $activeSubTab === 'operacao' ? 'border-blue-600 text-blue-600' : 'border-transparent text-zinc-500 hover:text-zinc-700' }}"
+                role="tab"
+                aria-selected="{{ $activeSubTab === 'operacao' ? 'true' : 'false' }}"
+                class="px-4 py-2 font-semibold text-sm border-b-2 {{ $activeSubTab === 'operacao' ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300' }}"
             >
                 Operar Mercadinho
             </button>
             <button 
                 wire:click="$set('activeSubTab', 'catalogo')" 
-                class="px-4 py-2 font-semibold text-sm border-b-2 {{ $activeSubTab === 'catalogo' ? 'border-blue-600 text-blue-600' : 'border-transparent text-zinc-500 hover:text-zinc-700' }}"
+                role="tab"
+                aria-selected="{{ $activeSubTab === 'catalogo' ? 'true' : 'false' }}"
+                class="px-4 py-2 font-semibold text-sm border-b-2 {{ $activeSubTab === 'catalogo' ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300' }}"
             >
                 Produtos e Estoque
             </button>
             <button 
                 wire:click="$set('activeSubTab', 'relatorio')" 
-                class="px-4 py-2 font-semibold text-sm border-b-2 {{ $activeSubTab === 'relatorio' ? 'border-blue-600 text-blue-600' : 'border-transparent text-zinc-500 hover:text-zinc-700' }}"
+                role="tab"
+                aria-selected="{{ $activeSubTab === 'relatorio' ? 'true' : 'false' }}"
+                class="px-4 py-2 font-semibold text-sm border-b-2 {{ $activeSubTab === 'relatorio' ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300' }}"
             >
                 Relatório de Vendas
             </button>
@@ -1220,7 +1249,7 @@ new class extends Component {
                             </div>
 
                             <footer class="p-4 bg-gray-50 dark:bg-zinc-800/50 border-t border-gray-100 dark:border-zinc-700 mt-auto">
-                                <flux:button variant="filled" color="blue" class="w-full pointer-events-none group-hover:bg-blue-700 dark:group-hover:bg-blue-600 transition-colors">
+                                <flux:button variant="primary" class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md">
                                     Selecionar Evento
                                 </flux:button>
                             </footer>
@@ -1230,4 +1259,6 @@ new class extends Component {
             @endif
         </div>
     @endif
+    @endif
+    </div>
 </div>

@@ -1,8 +1,8 @@
 <x-layouts.app :title="'Pessoa'">
     <section class="p-6 w-full max-w-[80vw] ml-auto">
         <div class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                {{ $pessoa->exists ? 'Atualizar Seus Dados' : 'Se Cadastrar' }}</h1>
+            <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">
+                {{ $pessoa->exists ? 'Atualizar Seus Dados' : 'Se Cadastrar' }}</flux:heading>
             <p class="text-gray-700 mt-1 dark:text-gray-400">
                 {{ $pessoa->exists ? 'Esses dados serão utilizados no próximo encontro' : 'Esses dados serão utilizados no próximo encontro' }}
             </p>
@@ -288,11 +288,11 @@
                         </h3>
 
                         <div x-show="mostrarRestricoes && !temRestricaoSelecionada" x-transition
-                            class="mb-4 flex items-center gap-2 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 px-4 py-3"
+                            class="mb-4 flex items-center gap-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 px-4 py-3"
                             role="alert">
-                            <x-heroicon-o-exclamation-triangle class="w-5 h-5 text-amber-500 shrink-0" aria-hidden="true" />
-                            <p class="text-sm text-amber-700 dark:text-amber-400">
-                                Nenhuma restrição ou alergia foi informada.. Desmarque a opção Informações de Saúde por favor
+                            <x-heroicon-o-exclamation-circle class="w-5 h-5 text-red-500 shrink-0" aria-hidden="true" />
+                            <p class="text-sm text-red-700 dark:text-red-400">
+                                Nenhuma restrição ou alergia foi informada. Desmarque a opção Informações de Saúde por favor.
                             </p>
                         </div>
 
@@ -357,10 +357,9 @@
                 </div>
 
                 <div class="flex gap-3 justify-end">
-                    <button type="submit"
-                        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                        <x-heroicon-o-check class="w-5 h-5 mr-2" /> Salvar
-                    </button>
+                    <flux:button type="submit" variant="primary" class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md" icon="check">
+                        Salvar
+                    </flux:button>
                 </div>
             </form>
         </div>

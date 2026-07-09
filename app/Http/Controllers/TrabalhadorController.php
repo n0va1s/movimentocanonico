@@ -404,6 +404,10 @@ class TrabalhadorController extends Controller
         $context = $this->getLogContext($request);
 
         $pessoa = Auth::user()->pessoa;
+        $membros = collect();
+        $evento = null;
+        $equipe = null;
+        $coordenacao = null;
 
         if (! $pessoa) {
             abort(403, 'Cadastro de pessoa não encontrado.');
@@ -495,14 +499,14 @@ class TrabalhadorController extends Controller
 
         $duration = round((microtime(true) - $start) * 1000, 2);
         Log::notice('Minha equipe carregada', array_merge($context, [
-            'pessoa_id' => $pessoa->idt_pessoa,
+            'pessoa_id' => $pessoa?->idt_pessoa,
             'evento_id' => $evento?->idt_evento,
             'equipe_id' => $equipe?->idt_equipe,
             'total_membros' => $membros->count(),
             'duration_ms' => $duration,
         ]));
 
-        return view('trabalhador.minha-equipe', compact('membros', 'evento', 'equipe', 'coordenacao'));
+        return view('trabalhador.minha-equipe', compact('membros', 'evento', 'equipe', 'coordenacao', 'pessoa'));
     }
 
     public function destroy($id)

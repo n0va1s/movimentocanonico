@@ -26,7 +26,7 @@
             @endif
             <div class="flex-1 min-w-0">
                 <div class="flex items-center justify-between gap-3">
-                    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 truncate">{{ $pessoa->nom_pessoa }}</h1>
+                    <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight truncate">{{ $pessoa->nom_pessoa }}</flux:heading>
                     @php $totalPontos = $pessoa->pontos->sum('qtd_pontos'); @endphp
                     <div class="flex-shrink-0 flex flex-col items-center justify-center bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg px-3 py-1.5 min-w-[52px]"
                         title="Pontos Aura">

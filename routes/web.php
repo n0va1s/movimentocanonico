@@ -11,7 +11,6 @@ use App\Http\Controllers\FichaVemController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\PessoaController;
-use App\Http\Controllers\TipoEquipeController;
 use App\Http\Controllers\TipoPerfilController;
 use App\Http\Controllers\TrabalhadorController;
 use Illuminate\Support\Facades\Artisan;
@@ -67,6 +66,14 @@ Route::get('/encerrar-eventos', function () {
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::post('/', [HomeController::class, 'contato'])->name('home.contato');
+
+// Formulários públicos de inscrição — acessíveis apenas a partir da welcome page.
+// O middleware EnsureFromWelcome valida o token de sessão gerado pelo HomeController::index().
+Route::middleware([\App\Http\Middleware\EnsureFromWelcome::class])->group(function () {
+    Route::get('/vem', [HomeController::class, 'fichaVem'])->name('home.ficha.vem');
+    Route::get('/ecc', [HomeController::class, 'fichaEcc'])->name('home.ficha.ecc');
+    Route::get('/sgm', [HomeController::class, 'fichaSgm'])->name('home.ficha.sgm');
+});
 Route::get('/fichas/{ficha}/autorizar', function (App\Models\Ficha $ficha) {
     if ($ficha->tip_situacao === App\Enums\TipoSituacao::ENVIADA) {
         $ficha->tip_situacao = App\Enums\TipoSituacao::RECEBIDA;
@@ -82,9 +89,7 @@ Route::get('/fichas/{ficha}/autorizar', function (App\Models\Ficha $ficha) {
 
 Route::middleware(['auth'])->group(function () {
 
-    Route::get('/vem', [HomeController::class, 'fichaVem'])->name('home.ficha.vem');
-    Route::get('/ecc', [HomeController::class, 'fichaEcc'])->name('home.ficha.ecc');
-    Route::get('/sgm', [HomeController::class, 'fichaSgm'])->name('home.ficha.sgm');
+
 
     // Submissão de fichas por candidatos (todos perfis autenticados)
     Route::post('/fichas/vem', [FichaVemController::class, 'store'])->name('vem.store');
@@ -184,7 +189,6 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/eventos/{evento}', [EventoController::class, 'destroy'])->name('eventos.destroy')->withTrashed();
 
         // Pessoas — listagem, busca e CRUD (create e store foram movidos para cima)
-        Volt::route('/pessoas', 'pessoas.index')->name('pessoas.index');
         Route::delete('/pessoas/{pessoa}', [PessoaController::class, 'destroy'])->name('pessoas.destroy');
 
         // Executado diariamente via command
@@ -196,7 +200,6 @@ Route::middleware(['auth'])->group(function () {
 
         Route::middleware(['dirig.movimento:2'])->group(function () {
             // Fichas VEM — listagem, aprovação e CRUD
-            Route::get('/fichas/vem', [FichaVemController::class, 'index'])->name('vem.index');
             Route::get('fichas/vem/{id}/approve', [FichaVemController::class, 'approve'])->name('vem.approve');
             Route::post('fichas/vem/{id}/situacao', [FichaVemController::class, 'updateSituacao'])->name('vem.situacao');
             Route::get('/fichas/vem/create', [FichaVemController::class, 'create'])->name('vem.create');
@@ -209,7 +212,6 @@ Route::middleware(['auth'])->group(function () {
 
         Route::middleware(['dirig.movimento:1'])->group(function () {
             // Fichas ECC — listagem, aprovação e CRUD
-            Route::get('/fichas/ecc', [FichaEccController::class, 'index'])->name('ecc.index');
             Route::get('fichas/ecc/{id}/approve', [FichaEccController::class, 'approve'])->name('ecc.approve');
             Route::post('fichas/ecc/{id}/situacao', [FichaEccController::class, 'updateSituacao'])->name('ecc.situacao');
             Route::get('/fichas/ecc/create', [FichaEccController::class, 'create'])->name('ecc.create');
@@ -222,7 +224,6 @@ Route::middleware(['auth'])->group(function () {
 
         Route::middleware(['dirig.movimento:3'])->group(function () {
             // Fichas SGM — listagem, aprovação e CRUD
-            Route::get('/fichas/sgm', [FichaSGMController::class, 'index'])->name('sgm.index');
             Route::get('fichas/sgm/{id}/approve', [FichaSGMController::class, 'approve'])->name('sgm.approve');
             Route::post('fichas/sgm/{id}/situacao', [FichaSGMController::class, 'updateSituacao'])->name('sgm.situacao');
             Route::get('/fichas/sgm/create', [FichaSGMController::class, 'create'])->name('sgm.create');
@@ -249,8 +250,8 @@ Route::middleware(['auth'])->group(function () {
         })->name('fichas.designar-visitador');
     });
 
-    Route::middleware(['role:admin,visit'])->group(function () {
-        Volt::route('/minhas-fichas', 'minhas-fichas.index')->name('minhas-fichas.index');
+    Route::middleware(['role:admin,visit,coord'])->group(function () {
+        Volt::route('/minhas-fichas/{evento?}', 'minhas-fichas.index')->name('minhas-fichas.index');
     });
 
     Route::middleware(['role:admin,sales'])->group(function () {
@@ -264,9 +265,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/configuracoes/role', [TipoPerfilController::class, 'store'])->name('role.store');
         Route::post('/configuracoes/role/change', [TipoPerfilController::class, 'change'])->name('role.change');
 
-        Route::resources([
-            'configuracoes/equipe' => TipoEquipeController::class,
-        ]);
+        Volt::route('configuracoes/organizacao', 'organizacao.index')->name('organizacao.index');
     });
 });
 

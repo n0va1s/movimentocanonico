@@ -1,7 +1,7 @@
 <x-layouts.app>
     <section class="p-6 w-full max-w-[80vw] ml-auto">
 
-        <h1 id="titulo-pagina" class="text-2xl font-bold mb-4">Lista de Tipos de Situação</h1>
+        <flux:heading size="xl" id="titulo-pagina" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-4">Lista de Tipos de Situação</flux:heading>
 
         {{-- Botão cadastrar --}}
         <div class="flex justify-end items-center mb-4">

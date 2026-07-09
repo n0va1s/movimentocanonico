@@ -5,7 +5,7 @@
         {{-- CABEÇALHO --}}
         <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Minha Equipe</h1>
+                <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">Minha Equipe</flux:heading>
                 @if ($evento && $equipe)
                     <p class="text-gray-600 mt-1 dark:text-gray-400">
                         {{ $evento->des_evento }}
@@ -16,7 +16,16 @@
             </div>
         </header>
 
-        @if (! $coordenacao)
+        @if (!$pessoa)
+            {{-- Estado de cadastro incompleto --}}
+            <div class="flex flex-col items-center justify-center text-center p-12 bg-white dark:bg-zinc-800 rounded-xl shadow border border-dashed border-gray-300 dark:border-zinc-600">
+                <x-heroicon-o-identification class="w-14 h-14 text-gray-400 dark:text-gray-500 mb-4" />
+                <p class="text-lg font-medium text-gray-600 dark:text-gray-300">Cadastro Incompleto</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Precisamos dos seus dados completos para saber em que equipe você está.
+                </p>
+            </div>
+        @elseif (! $coordenacao)
             {{-- Estado vazio: usuário não é coordenador em nenhum evento --}}
             <div class="flex flex-col items-center justify-center text-center p-12 bg-white dark:bg-zinc-800 rounded-xl shadow border border-dashed border-gray-300 dark:border-zinc-600">
                 <x-heroicon-o-user-group class="w-14 h-14 text-gray-400 dark:text-gray-500 mb-4" />
