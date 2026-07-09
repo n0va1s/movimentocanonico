@@ -62,7 +62,7 @@ return new class extends Migration
             $table->foreignId('idt_movimento')
                 ->constrained('tipo_movimento', 'idt_movimento');
             $table->string('des_grupo', 255);
-            $table->boolean('ind_disponivel_candidatura')->default(false); //disponível para voluntarios se candidatarem
+            $table->boolean('ind_disponivel_candidatura')->default(true); //disponível para voluntarios se candidatarem
             $table->text('txt_documento')->nullable();
             $table->timestamps();
             $table->softDeletes();
