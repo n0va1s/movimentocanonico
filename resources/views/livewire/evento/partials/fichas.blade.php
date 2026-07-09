@@ -268,6 +268,7 @@ new class extends Component {
 
         return [
             \App\Enums\TipoSituacao::NOVA->value => $counts[\App\Enums\TipoSituacao::NOVA->value] ?? 0,
+            \App\Enums\TipoSituacao::RESERVA->value => $counts[\App\Enums\TipoSituacao::RESERVA->value] ?? 0,
             \App\Enums\TipoSituacao::AGUARDANDO->value => $counts[\App\Enums\TipoSituacao::AGUARDANDO->value] ?? 0,
             \App\Enums\TipoSituacao::VISITADA->value => $counts[\App\Enums\TipoSituacao::VISITADA->value] ?? 0,
             \App\Enums\TipoSituacao::SELECIONADA->value => $counts[\App\Enums\TipoSituacao::SELECIONADA->value] ?? 0,
@@ -390,6 +391,14 @@ new class extends Component {
                 'activeClass' => 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950/20 border-blue-500',
             ],
             [
+                'status' => \App\Enums\TipoSituacao::RESERVA->value,
+                'label' => 'Reservas',
+                'color' => 'orange',
+                'icon' => 'clock',
+                'textClass' => 'text-orange-600 dark:text-orange-400',
+                'activeClass' => 'ring-2 ring-orange-500 bg-orange-50 dark:bg-orange-950/20 border-orange-500',
+            ],
+            [
                 'status' => \App\Enums\TipoSituacao::AGUARDANDO->value,
                 'label' => 'Aguardando',
                 'color' => 'amber',
@@ -432,7 +441,7 @@ new class extends Component {
         ];
     @endphp
 
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+    <div class="flex flex-wrap gap-4 mb-6 justify-center">
         @foreach ($statusCards as $card)
             @php
                 $isActive = $filtroSituacao === $card['status'];
@@ -440,7 +449,7 @@ new class extends Component {
             @endphp
             <div 
                 wire:click="toggleFiltroSituacao('{{ $card['status'] }}')"
-                class="cursor-pointer transition-all duration-200 rounded-xl p-3 flex flex-col border shadow-sm hover:shadow-md hover:-translate-y-0.5 {{ $isActive ? $card['activeClass'] : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700' }}"
+                class="flex-1 min-w-[130px] sm:min-w-[150px] max-w-[220px] cursor-pointer transition-all duration-200 rounded-xl p-3 flex flex-col border shadow-sm hover:shadow-md hover:-translate-y-0.5 {{ $isActive ? $card['activeClass'] : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700' }}"
             >
                 <div class="flex items-center gap-2">
                     <flux:icon name="{{ $card['icon'] }}" variant="outline" class="size-5 {{ $card['textClass'] }} shrink-0" />

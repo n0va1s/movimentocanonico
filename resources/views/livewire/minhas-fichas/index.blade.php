@@ -9,12 +9,10 @@ use App\Enums\TipoSituacao;
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\Computed;
 
 new class extends Component {
     use WithPagination;
 
-    public ?Evento $evento = null;
     public ?Evento $evento = null;
     public ?int $eventoId = null;
     public string $situacao = '';
@@ -269,20 +267,7 @@ new class extends Component {
             ->get();
 
         $fichasQuery = Ficha::with(['fichaVem', 'fichaEcc', 'fichaSGM', 'evento', 'visitador', 'visitador.parceiro']);
-        $fichasQuery = Ficha::with(['fichaVem', 'fichaEcc', 'fichaSGM', 'evento', 'visitador', 'visitador.parceiro']);
 
-        // A ficha só pode aparecer para a pessoa logada se for o visitador designado (ou seu parceiro/cônjuge),
-        // exceto se for administrador (admin) ou se puder designar, caso em que vê todas as fichas de visitação do evento.
-        if (!$this->podeDesignar()) {
-            if (!$pessoaId) {
-                $fichasQuery->whereRaw('1 = 0');
-            } else {
-                if ($parceiroId) {
-                    $fichasQuery->whereIn('idt_pessoa_visitacao', [$pessoaId, $parceiroId]);
-                } else {
-                    $fichasQuery->where('idt_pessoa_visitacao', $pessoaId);
-                }
-            }
         // A ficha só pode aparecer para a pessoa logada se for o visitador designado (ou seu parceiro/cônjuge),
         // exceto se for administrador (admin) ou se puder designar, caso em que vê todas as fichas de visitação do evento.
         if (!$this->podeDesignar()) {
@@ -298,24 +283,6 @@ new class extends Component {
         }
 
         $fichasQuery
-            ->when($this->search, function ($query) {
-                $query->where(function ($q) {
-                    $q->where('nom_candidato', 'like', '%' . $this->search . '%')
-                      ->orWhere('nom_apelido', 'like', '%' . $this->search . '%');
-                });
-            })
-            ->when($this->visitadorSearch, function ($query) {
-                $query->whereHas('visitador', function ($q) {
-                    $q->where(function ($inner) {
-                        $inner->where('nom_pessoa', 'like', '%' . $this->visitadorSearch . '%')
-                              ->orWhere('nom_apelido', 'like', '%' . $this->visitadorSearch . '%')
-                              ->orWhereHas('parceiro', function ($sp) {
-                                  $sp->where('nom_pessoa', 'like', '%' . $this->visitadorSearch . '%')
-                                    ->orWhere('nom_apelido', 'like', '%' . $this->visitadorSearch . '%');
-                              });
-                    });
-                });
-            })
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('nom_candidato', 'like', '%' . $this->search . '%')
