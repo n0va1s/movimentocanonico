@@ -268,6 +268,7 @@ new class extends Component {
 
         return [
             \App\Enums\TipoSituacao::NOVA->value => $counts[\App\Enums\TipoSituacao::NOVA->value] ?? 0,
+            \App\Enums\TipoSituacao::RESERVA->value => $counts[\App\Enums\TipoSituacao::RESERVA->value] ?? 0,
             \App\Enums\TipoSituacao::AGUARDANDO->value => $counts[\App\Enums\TipoSituacao::AGUARDANDO->value] ?? 0,
             \App\Enums\TipoSituacao::VISITADA->value => $counts[\App\Enums\TipoSituacao::VISITADA->value] ?? 0,
             \App\Enums\TipoSituacao::SELECIONADA->value => $counts[\App\Enums\TipoSituacao::SELECIONADA->value] ?? 0,
@@ -331,50 +332,52 @@ new class extends Component {
 <div class="space-y-4">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3">
                 <flux:heading size="lg">Fichas de Inscrição</flux:heading>
                 <flux:badge size="sm" color="zinc" inset="top bottom" title="Total filtrado">{{ $fichas->total() }}</flux:badge>
                 <flux:button wire:click="exportar" icon="arrow-down-tray" variant="outline" size="sm" title="Exportar CSV">
                     Exportar
                 </flux:button>
             </div>
-            <flux:subheading>Analise e aprove os candidatos para este evento.</flux:subheading>
+            <flux:subheading class="mt-1">Analise e aprove os candidatos para este evento.</flux:subheading>
         </div>
 
+        @if(count($selectedFichas) > 0)
+            <flux:button wire:click="abrirModalVisitacao" icon="user-group" variant="primary" class="w-full md:w-auto shrink-0">
+                Designar Visitação ({{ count($selectedFichas) }})
+            </flux:button>
+        @endif
+    </div>
 
-        <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto items-end md:items-center">
-            @if(count($selectedFichas) > 0)
-                <flux:button wire:click="abrirModalVisitacao" icon="user-group" variant="primary" class="w-full md:w-auto shrink-0">
-                    Designar Visitação ({{ count($selectedFichas) }})
+    {{-- Filtros e Busca --}}
+    <div class="flex flex-col md:flex-row justify-between gap-3 w-full border-t border-zinc-100 dark:border-zinc-700/50 pt-4">
+        <div class="flex gap-2 w-full md:w-auto">
+            <flux:select wire:model.live="generoFiltro" icon="funnel" placeholder="Todos os sexos" class="flex-1 md:flex-initial md:w-44">
+                <option value="">Todos os sexos</option>
+                <option value="M">Masculino</option>
+                <option value="F">Feminino</option>
+            </flux:select>
+
+            <flux:dropdown class="flex-1 md:flex-initial">
+                <flux:button icon="link" variant="outline" class="w-full md:w-44 justify-between">
+                    <span>Vínculos</span>
+                    @php
+                        $count = ($vinculoFiltroParoquiano ? 1 : 0) + ($vinculoFiltroRegiao ? 1 : 0);
+                    @endphp
+                    @if ($count > 0)
+                        <flux:badge size="sm" color="indigo" class="ml-2 shrink-0">{{ $count }}</flux:badge>
+                    @endif
                 </flux:button>
-            @endif
+                <flux:menu class="p-3 space-y-3 min-w-[14rem]">
+                    <flux:checkbox wire:model.live="vinculoFiltroParoquiano" label="Paroquialidade" />
+                    <flux:checkbox wire:model.live="vinculoFiltroRegiao" label="Região" />
+                </flux:menu>
+            </flux:dropdown>
+        </div>
 
-            <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto items-end">
-                <flux:select wire:model.live="generoFiltro" icon="funnel" placeholder="Todos os sexos" class="w-full sm:w-36">
-                    <option value="">Todos os sexos</option>
-                    <option value="M">Masculino</option>
-                    <option value="F">Feminino</option>
-                </flux:select>
-
-                <flux:dropdown>
-                    <flux:button icon="link" variant="outline" class="w-full sm:w-44 justify-between">
-                        <span>Vínculos</span>
-                        @php
-                            $count = ($vinculoFiltroParoquiano ? 1 : 0) + ($vinculoFiltroRegiao ? 1 : 0);
-                        @endphp
-                        @if ($count > 0)
-                            <flux:badge size="sm" color="indigo" class="ml-2 shrink-0">{{ $count }}</flux:badge>
-                        @endif
-                    </flux:button>
-                    <flux:menu class="p-3 space-y-3 min-w-[14rem]">
-                        <flux:checkbox wire:model.live="vinculoFiltroParoquiano" label="Paroquialidade" />
-                        <flux:checkbox wire:model.live="vinculoFiltroRegiao" label="Região" />
-                    </flux:menu>
-                </flux:dropdown>
-
-                <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" 
-                    placeholder="Buscar..." class="w-full sm:w-44" />
-            </div>
+        <div class="w-full md:w-72">
+            <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" 
+                placeholder="Buscar candidato..." class="w-full" />
         </div>
     </div>
 
@@ -388,6 +391,14 @@ new class extends Component {
                 'icon' => 'document-text',
                 'textClass' => 'text-blue-600 dark:text-blue-400',
                 'activeClass' => 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950/20 border-blue-500',
+            ],
+            [
+                'status' => \App\Enums\TipoSituacao::RESERVA->value,
+                'label' => 'Reservas',
+                'color' => 'orange',
+                'icon' => 'clock',
+                'textClass' => 'text-orange-600 dark:text-orange-400',
+                'activeClass' => 'ring-2 ring-orange-500 bg-orange-50 dark:bg-orange-950/20 border-orange-500',
             ],
             [
                 'status' => \App\Enums\TipoSituacao::AGUARDANDO->value,
@@ -432,7 +443,7 @@ new class extends Component {
         ];
     @endphp
 
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
         @foreach ($statusCards as $card)
             @php
                 $isActive = $filtroSituacao === $card['status'];

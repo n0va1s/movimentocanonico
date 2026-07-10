@@ -129,7 +129,7 @@ new class extends Component {
             <flux:subheading>Analise os candidatos e aloque-os nas equipes correspondentes.</flux:subheading>
         </div>
 
-        <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto items-end">
+        <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto sm:items-end">
             <flux:select label="Equipe de interesse" wire:model.live="equipeFiltroId" icon="funnel" placeholder="Todas as equipes" class="w-full sm:w-48">
                 <option value="">Todas as equipes</option>
                 @foreach ($equipes as $equipe)

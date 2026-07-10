@@ -120,12 +120,12 @@ new class extends Component {
                 $activeTabMeta = $tabs[$activeTab] ?? null;
             @endphp
             @if ($activeTabMeta)
-                <div class="flex gap-3">
-                    <flux:dropdown>
+                <div class="flex gap-3 w-full md:w-auto">
+                    <flux:dropdown class="w-full md:w-auto">
                         <flux:button 
                             icon="{{ $activeTabMeta['icon'] }}" 
                             icon-trailing="chevron-down" 
-                            class="min-w-64 justify-between"
+                            class="w-full md:min-w-64 justify-between"
                         >
                             {{ $activeTabMeta['label'] }}
                         </flux:button>
