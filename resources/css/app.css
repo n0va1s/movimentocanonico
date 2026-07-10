@@ -1,5 +1,20 @@
 @import 'tailwindcss';
 @import '../../vendor/livewire/flux/dist/flux.css';
+/* 
+  Safelist de Cores de Borda dos Status:
+  border-l-fuchsia-500 dark:border-l-fuchsia-400
+  border-l-orange-500 dark:border-l-orange-400
+  border-l-slate-300 dark:border-l-slate-600
+  border-l-lime-500 dark:border-l-lime-400
+  border-l-sky-500 dark:border-l-sky-400
+  border-l-amber-500 dark:border-l-amber-400
+  border-l-purple-600 dark:border-l-purple-400
+  border-l-cyan-500 dark:border-l-cyan-400
+  border-l-green-500 dark:border-l-green-400
+  border-l-emerald-600 dark:border-l-emerald-400
+  border-l-rose-500 dark:border-l-rose-400
+  border-l-teal-500 dark:border-l-teal-400
+*/
 
 @source '../views';
 @source '../../app/**/*.php';
@@ -53,7 +68,7 @@
 }
 
 [data-flux-label] {
-    @apply  !mb-0 !leading-tight;
+    @apply !mb-0 !leading-tight;
 }
 
 input:focus[data-flux-control],
