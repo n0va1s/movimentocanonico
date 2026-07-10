@@ -184,7 +184,7 @@ test('estornar transacao de compra restabelece o saldo e o estoque', function ()
 test('usuario gestor pode abrir painel de vendas e ver a pessoa do evento', function () {
     $this->actingAs($this->admin);
 
-    Volt::test('mercadinho.index', ['evento' => $this->evento])
+    Volt::test('mercadinho.index', ['evento' => $this->evento])->call('loadData')
         ->assertSet('activeSubTab', 'operacao')
         ->assertSee('Operar Mercadinho')
         ->assertSee('José da Silva');
@@ -220,7 +220,7 @@ test('gestor pode registrar compra no mercadinho usando o component Volt', funct
         'usu_inclusao' => $this->admin->id
     ]);
 
-    Volt::test('mercadinho.index', ['evento' => $this->evento])
+    Volt::test('mercadinho.index', ['evento' => $this->evento])->call('loadData')
         ->call('openCompra', $this->pessoa->idt_pessoa)
         ->call('adicionarAoCarrinho', $produto->idt_produto)
         ->call('finalizarCompra')
@@ -283,7 +283,7 @@ test('gestor pode filtrar compradores por equipe e cor da troca no component Vol
     ]);
 
     // Testar os filtros no componente
-    Volt::test('mercadinho.index', ['evento' => $this->evento])
+    Volt::test('mercadinho.index', ['evento' => $this->evento])->call('loadData')
         // Inicialmente vê as duas pessoas
         ->assertSee('José da Silva')
         ->assertSee('Maria Oliveira')
@@ -329,7 +329,7 @@ test('gestor pode registrar credito e quitar contas pelo componente Volt', funct
         'usu_inclusao' => $this->admin->id
     ]);
 
-    Volt::test('mercadinho.index', ['evento' => $this->evento])
+    Volt::test('mercadinho.index', ['evento' => $this->evento])->call('loadData')
         ->call('openCredito', $this->pessoa->idt_pessoa)
         ->set('tip_transacao_credito', 'P') // Pagamento/Quitação
         ->set('val_aporte', '10.00')
@@ -400,7 +400,7 @@ test('produtos sao ordenados com favoritos no topo no catalogo de compras', func
         'usu_inclusao' => $this->admin->id
     ]);
 
-    $component = Volt::test('mercadinho.index', ['evento' => $this->evento]);
+    $component = Volt::test('mercadinho.index', ['evento' => $this->evento])->call('loadData');
     
     $produtos = $component->get('produtosDisponiveis');
     
@@ -436,7 +436,7 @@ test('gestor pode filtrar por saldo devedor e credor', function() {
     ]);
 
     // Testar componente
-    $component = Volt::test('mercadinho.index', ['evento' => $this->evento]);
+    $component = Volt::test('mercadinho.index', ['evento' => $this->evento])->call('loadData');
     
     // Todos
     $component->assertSee('José da Silva')
@@ -503,7 +503,7 @@ test('gestor pode visualizar relatorio de vendas ordenado por quantidade', funct
         'usu_inclusao' => $this->admin->id
     ]);
 
-    $component = Volt::test('mercadinho.index', ['evento' => $this->evento]);
+    $component = Volt::test('mercadinho.index', ['evento' => $this->evento])->call('loadData');
     
     $relatorio = $component->get('relatorioVendas');
 

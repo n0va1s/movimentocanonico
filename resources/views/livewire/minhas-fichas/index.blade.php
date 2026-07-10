@@ -30,7 +30,7 @@ new class extends Component {
     public function mount(?Evento $evento = null): void
     {
         $user = auth()->user();
-        if (!$user || !$user->podeAcessarMinhasFichas()) {
+        if (!$user || !$user->autorizaVisit()) {
             abort(403, 'Acesso não autorizado.');
         }
 
@@ -554,13 +554,8 @@ new class extends Component {
                                     <span class="font-medium">{{ $resp['telefone'] }}</span>
                                 @endif
                             </div>
-                        @endif
                     </div>
 
-                    {{-- CTA: Visualizar Ficha Completa --}}
-                    <div class="mt-5">
-                        <a 
-                            href="{{ $ficha->getShowRoute() }}" 
                     {{-- CTA: Visualizar Ficha Completa --}}
                     <div class="mt-5">
                         <a 

@@ -163,7 +163,7 @@ foreach ($rotasAdminEspec as $rota) {
 }
 
 // ---------------------------------------------------------------------------
-// Rota /trabalhadores — admin e coord acessam, espec e user recebem 403
+// Rota /trabalhadores — apenas admin acessa, outros perfis recebem 403
 // ---------------------------------------------------------------------------
 
 test('admin acessa /trabalhadores', function () {
@@ -173,11 +173,10 @@ test('admin acessa /trabalhadores', function () {
         ->assertStatus(200);
 });
 
-test('coord acessa /trabalhadores', function () {
-    createMovimentos();
+test('coord recebe 403 em /trabalhadores', function () {
     $this->actingAs(userComRole('coord'))
         ->get('/trabalhadores')
-        ->assertStatus(200);
+        ->assertStatus(403);
 });
 
 test('dirig recebe 403 em /trabalhadores', function () {

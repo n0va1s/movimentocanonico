@@ -106,7 +106,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/termo-sgm', fn () => view('termos.termoSGM'))->name('termo.sgm');
     Route::get('/termo-vem', fn () => view('termos.termoVEM'))->name('termo.vem');
 
-    Route::middleware(['role:admin,coord,dirig,coord_equipe'])->group(function () {
+    Route::middleware(['role:admin,coord_equipe'])->group(function () {
         Route::get('/minha-equipe', [TrabalhadorController::class, 'minhaEquipe'])->name('trabalhadores.minha-equipe');
     });
     Route::get('/trabalhadores/create', [TrabalhadorController::class, 'create'])->name('trabalhadores.create');
@@ -130,7 +130,7 @@ Route::middleware(['auth'])->group(function () {
     // Admin + Coord
     // -----------------------------------------------------------------------
 
-    Route::middleware(['role:admin,coord'])->group(function () {
+    Route::middleware(['role:admin'])->group(function () {
         Route::get('/trabalhadores', [TrabalhadorController::class, 'index'])->name('trabalhadores.index');
     });
 
@@ -138,13 +138,13 @@ Route::middleware(['auth'])->group(function () {
     // Gerenciamento de evento: admin + coord + espec
     // -----------------------------------------------------------------------
 
-    Route::middleware(['role:admin,dirig,coord'])->group(function () {
+    Route::middleware(['role:admin,dirig'])->group(function () {
         Volt::route('eventos/{evento}/gerenciamento', 'evento.gerenciamento')
             ->name('eventos.gerenciamento')
             ->withTrashed();
     });
 
-    Route::middleware(['role:admin,coord,dirig'])->group(function () {
+    Route::middleware(['role:admin,dirig'])->group(function () {
         // Módulo de Mensagens
         Volt::route('mensagens', 'mensagens.index')->name('mensagens.index');
         Volt::route('mensagens/criar', 'mensagens.create')->name('mensagens.create');
@@ -250,7 +250,7 @@ Route::middleware(['auth'])->group(function () {
         })->name('fichas.designar-visitador');
     });
 
-    Route::middleware(['role:admin,visit,coord'])->group(function () {
+    Route::middleware(['role:admin,visit,dirig'])->group(function () {
         Volt::route('/minhas-fichas/{evento?}', 'minhas-fichas.index')->name('minhas-fichas.index');
     });
 

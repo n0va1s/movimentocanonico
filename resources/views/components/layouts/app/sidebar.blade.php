@@ -60,7 +60,7 @@
                         {{ __('Meus Dados') }}
                     </flux:navlist.item>
                 @endif
-                @if (Auth::user() && Auth::user()->podeAcessarMinhasFichas())
+                @if (Auth::user() && Auth::user()->autorizaVisit())
                     <flux:navlist.item icon="document-text" :href="route('minhas-fichas.index')"
                         :current="request()->routeIs('minhas-fichas.index')" wire:navigate>
                         {{ __('Minhas Fichas') }}

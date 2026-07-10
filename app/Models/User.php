@@ -25,68 +25,64 @@ class User extends Authenticatable
 
     const ROLE_DIRIG = 'dirig';
 
+    public function getRole(): string
+    {
+        $role = $this->role;
+        $roleValue = $role instanceof \BackedEnum ? $role->value : (string) $role;
+
+        return strtolower($roleValue);
+    }
+
     public function isAdmin(): bool
     {
-        $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
-
-        return strtolower($roleValue) === self::ROLE_ADMIN;
+        return $this->getRole() === self::ROLE_ADMIN;
     }
 
     public function isCoordenador(): bool
     {
-        $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
-
-        return strtolower($roleValue) === self::ROLE_COORDENADOR;
+        return $this->getRole() === self::ROLE_COORDENADOR;
     }
 
     public function isDirig(): bool
     {
-        $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
-
-        return strtolower($roleValue) === self::ROLE_DIRIG;
+        return $this->getRole() === self::ROLE_DIRIG;
     }
 
     public function isVisitacao(): bool
     {
-        if ($this->isAdmin()) {
-            return false;
-        }
-
-        return $this->podeAcessarMinhasFichas();
+        return !$this->isAdmin() && $this->autorizaVisit();
     }
 
     public function isSales(): bool
     {
-        return $this->pertenceAoMercadinho();
+        return $this->autorizaSales();
     }
 
     public function hasRole(string ...$roles): bool
     {
-        $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
-        $roleValue = strtolower($roleValue);
-
+        $roleValue = $this->getRole();
         $mappedRoles = array_map('strtolower', $roles);
 
         if (in_array($roleValue, $mappedRoles)) {
             return true;
         }
 
-        if (in_array('visit', $mappedRoles) && $this->podeAcessarMinhasFichas()) {
+        if (in_array('visit', $mappedRoles) && $this->autorizaVisit()) {
             return true;
         }
 
-        if (in_array('sales', $mappedRoles) && $this->pertenceAoMercadinho()) {
+        if (in_array('sales', $mappedRoles) && $this->autorizaSales()) {
             return true;
         }
 
-        if (in_array('coord_equipe', $mappedRoles) && $this->ehCoordenadorDeEquipe()) {
+        if (in_array('coord_equipe', $mappedRoles) && $this->autorizaCoord()) {
             return true;
         }
 
         return false;
     }
 
-    public function ehCoordenadorDeEquipe(): bool
+    public function autorizaCoord(): bool
     {
         $pessoa = $this->pessoa;
         if (! $pessoa) {
@@ -96,10 +92,37 @@ class User extends Authenticatable
         return Trabalhador::where('idt_pessoa', $pessoa->idt_pessoa)
             ->where('ind_coordenador', true)
             ->whereHas('evento', function ($query) {
-                $query->whereNull('deleted_at')
-                    ->when(!app()->runningUnitTests(), function ($q) {
-                        $q->where('dat_termino', '>', now());
-                    });
+                $query->whereNull('deleted_at');
+            })
+            ->exists();
+    }
+
+    public function autorizaVisit(): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return Trabalhador::where('idt_pessoa', $this->pessoa?->idt_pessoa)
+            ->whereHas('equipe', function ($q) {
+                $q->whereRaw('LOWER(des_grupo) LIKE ?', ['%visita%']);
+            })
+            ->exists();
+    }
+
+    public function autorizaSales(): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return Trabalhador::where('idt_pessoa', $this->pessoa?->idt_pessoa)
+            ->whereHas('equipe', function ($q) {
+                $q->where(function ($query) {
+                    $query->whereRaw('LOWER(des_grupo) LIKE ?', ['%vendinha%'])
+                        ->orWhereRaw('LOWER(des_grupo) LIKE ?', ['%mini-mercado%'])
+                        ->orWhereRaw('LOWER(des_grupo) LIKE ?', ['%minimercado%']);
+                });
             })
             ->exists();
     }
@@ -131,39 +154,6 @@ class User extends Authenticatable
             ->exists();
     }
 
-    public function podeAcessarMinhasFichas(): bool
-    {
-        if ($this->isAdmin()) {
-            return true;
-        }
-
-        return Trabalhador::where('idt_pessoa', $this->pessoa?->idt_pessoa)
-            ->whereHas('equipe', function ($q) {
-                $q->where('des_grupo', 'like', '%Visitação%');
-            })
-            ->exists();
-    }
-
-    public function pertenceAoMercadinho(): bool
-    {
-        if ($this->isAdmin()) {
-            return true;
-        }
-
-        return Trabalhador::where('idt_pessoa', $this->pessoa?->idt_pessoa)
-            ->whereHas('equipe', function ($q) {
-                $q->where(function ($query) {
-                    $query->where('des_grupo', 'like', '%vendinha%')
-                        ->orWhere('des_grupo', 'like', '%mini-mercado%')
-                        ->orWhere('des_grupo', 'like', '%Vendinha%')
-                        ->orWhere('des_grupo', 'like', '%Mini-mercado%')
-                        ->orWhere('des_grupo', 'like', '%VENDINHA%')
-                        ->orWhere('des_grupo', 'like', '%MINI-MERCADO%');
-                });
-            })
-            ->exists();
-    }
-
     public function pessoa()
     {
         return $this->hasOne(Pessoa::class, 'idt_usuario', 'id');
@@ -173,28 +163,6 @@ class User extends Authenticatable
     {
         return $this->belongsTo(TipoMovimento::class, 'idt_movimento', 'idt_movimento');
     }
-
-    /*protected static function boot()
-    {
-        parent::boot();
-
-        static::created(function (User $user) {
-            $pessoaCadastrada = Pessoa::where('eml_pessoa', $user->email)->first();
-
-            if (! $pessoaCadastrada) {
-                $user->pessoa()->create([
-                    'nom_pessoa' => $user->name,
-                    'eml_pessoa' => $user->email,
-                    'tel_pessoa' => $user->phone,
-                    'dat_nascimento' => '1900-01-01',
-                ]);
-            } else {
-                $pessoaCadastrada->idt_usuario = $user->id;
-                // Para evitar loop infinito, salvar a pessoa sem disparar eventos
-                $pessoaCadastrada->saveQuietly();
-            }
-        });
-    }*/
 
     /**
      * The attributes that are mass assignable.

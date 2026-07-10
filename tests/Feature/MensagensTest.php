@@ -51,12 +51,18 @@ describe('Autorização e Permissões', function () {
         $this->get(route('mensagens.create'))->assertStatus(403);
     });
 
-    test('gestores (admin, coord, dirig) podem acessar index de mensagens', function () {
-        foreach ([$this->admin, $this->coord, $this->dirig] as $usuario) {
+    test('gestores (admin, dirig) podem acessar index de mensagens', function () {
+        foreach ([$this->admin, $this->dirig] as $usuario) {
             $this->actingAs($usuario);
             $this->get(route('mensagens.index'))->assertStatus(200);
             $this->get(route('mensagens.create'))->assertStatus(200);
         }
+    });
+
+    test('coord recebe 403 ao acessar mensagens', function () {
+        $this->actingAs($this->coord);
+        $this->get(route('mensagens.index'))->assertStatus(403);
+        $this->get(route('mensagens.create'))->assertStatus(403);
     });
 });
 

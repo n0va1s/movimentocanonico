@@ -91,11 +91,11 @@ describe('Minhas Fichas Access Authorization', function () {
             ->assertForbidden();
     });
 
-    test('user with role dirig gets 403', function () {
+    test('user with role dirig gets 200', function () {
         $user = User::factory()->create(['role' => 'dirig']);
         $this->actingAs($user)
             ->get(route('minhas-fichas.index'))
-            ->assertForbidden();
+            ->assertStatus(200);
     });
 
     test('user with role visitacao gets 200', function () {
@@ -162,7 +162,7 @@ describe('Minhas Fichas Scoping and Filtering', function () {
 
         // Act & Assert using Volt
         $this->actingAs($visitorUser);
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
             ->assertSee('Assigned Candidate VEM')
             ->assertDontSee('Other Visitor Candidate VEM')
             ->assertDontSee('Unassigned Candidate VEM')
@@ -187,31 +187,11 @@ describe('Minhas Fichas Scoping and Filtering', function () {
         ]);
 
         $this->actingAs($visitorUserA);
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
             ->assertSee('Spouse Assigned Candidate');
     });
 
-    test('visitor can see fichas assigned to their spouse/partner', function () {
-        $visitorUserA = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
-        $visitorPessoaA = $visitorUserA->pessoa;
 
-        $visitorUserB = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
-        $visitorPessoaB = $visitorUserB->pessoa;
-
-        $visitorPessoaA->update(['idt_parceiro' => $visitorPessoaB->idt_pessoa]);
-        $visitorPessoaB->update(['idt_parceiro' => $visitorPessoaA->idt_pessoa]);
-
-        $ficha = Ficha::factory()->create([
-            'idt_evento' => $this->eventoVem->idt_evento,
-            'idt_pessoa_visitacao' => $visitorPessoaB->idt_pessoa,
-            'nom_candidato' => 'Spouse Assigned Candidate',
-            'tip_situacao' => TipoSituacao::SELECIONADA
-        ]);
-
-        $this->actingAs($visitorUserA);
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
-            ->assertSee('Spouse Assigned Candidate');
-    });
     test('ficha disappears from the visitor list when marked as VISITADA', function () {
         $visitorUser = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
         $visitorPessoa = $visitorUser->pessoa;
@@ -225,12 +205,12 @@ describe('Minhas Fichas Scoping and Filtering', function () {
 
         $this->actingAs($visitorUser);
         
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
             ->assertSee('Visitada Candidate');
  
         $ficha->update(['tip_situacao' => TipoSituacao::VISITADA]);
  
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
             ->assertDontSee('Visitada Candidate');
     });
 
@@ -258,7 +238,7 @@ describe('Minhas Fichas Scoping and Filtering', function () {
         ]);
 
         $this->actingAs($adminUser);
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
             ->assertSee('Ficha for Admin')
             ->assertSee('Ficha for Visitor');
     });
@@ -293,7 +273,7 @@ describe('Minhas Fichas Scoping and Filtering', function () {
         $this->actingAs($visitorUser);
  
         // By default, the first active event (eventoVem) is selected
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
             ->assertSee('Candidate in Event One')
             ->assertDontSee('Candidate in Event Two')
             // Change the filter to the second event
@@ -316,7 +296,7 @@ describe('Minhas Fichas Actions', function () {
     });
 
     test('can change status to Fiz Contato (F)', function () {
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
             ->call('alterarSituacao', $this->ficha->idt_ficha, 'F')
             ->assertHasNoErrors();
  
@@ -324,7 +304,7 @@ describe('Minhas Fichas Actions', function () {
     });
  
     test('can change status to Aguardando Resposta (W)', function () {
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
             ->call('alterarSituacao', $this->ficha->idt_ficha, 'W')
             ->assertHasNoErrors();
  
@@ -332,7 +312,7 @@ describe('Minhas Fichas Actions', function () {
     });
  
     test('can change status to Cancelada (C)', function () {
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
             ->call('alterarSituacao', $this->ficha->idt_ficha, 'C')
             ->assertHasNoErrors();
  
