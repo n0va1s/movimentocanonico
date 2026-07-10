@@ -85,7 +85,7 @@ new class extends Component {
     }
 }; ?>
 
-<div class="flex flex-col h-full">
+<div class="space-y-6">
     <div class="px-6 py-4 flex justify-between items-center">
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <x-heroicon-s-banknotes class="w-5 h-5 text-emerald-600" />
@@ -98,10 +98,10 @@ new class extends Component {
         @endif
     </div>
 
-    <div class="px-6 pb-6 flex-1 flex flex-col justify-between">
+    <div class="px-6 pb-6">
         @if(!$resultado)
             {{-- Formulário de Consulta --}}
-            <form wire:submit.prevent="consultar" class="space-y-4 my-auto">
+            <form wire:submit.prevent="consultar" class="space-y-4">
                 {{-- Dropdown de Eventos Ativos --}}
                 <flux:select wire:model="idt_evento" label="Evento" placeholder="Selecione o evento..." required>
                     @forelse($this->eventosAtivos as $ev)
@@ -123,7 +123,7 @@ new class extends Component {
             </form>
         @else
             {{-- Resultado da Consulta --}}
-            <div class="space-y-5 flex-1 overflow-y-auto max-h-[400px] pr-1">
+            <div class="space-y-5 overflow-y-auto max-h-[400px] pr-1">
                 {{-- Resumo da Conta --}}
                 <div class="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-700 text-center space-y-2">
                     <div class="text-xs font-bold text-zinc-400 uppercase tracking-wider">

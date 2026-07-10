@@ -10,23 +10,23 @@
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Essa é a força da sua comunidade</p>
             </div>
 
-            <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
                 {{-- Consultar Saldo --}}
-                <flux:modal.trigger name="modal-mercadinho">
+                <flux:modal.trigger name="modal-mercadinho" class="w-full sm:w-auto">
                     <flux:button variant="primary" icon="magnifying-glass"
-                        class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 border-none shadow-md">
+                        class="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 border-none shadow-md">
                         Consultar Saldo
                     </flux:button>
                 </flux:modal.trigger>
 
                 {{-- Pessoas Evangelizadas --}}
-                <div class="flex items-center gap-3 px-5 py-3 bg-white dark:bg-zinc-800 rounded-2xl border border-gray-100 dark:border-zinc-700 shadow-sm">
+                <div class="flex items-center gap-3 px-5 py-3 bg-white dark:bg-zinc-800 rounded-2xl border border-gray-100 dark:border-zinc-700 shadow-sm w-full sm:w-auto">
                     <div class="flex items-center justify-center h-10 w-10 rounded-xl bg-green-50 dark:bg-green-900/20">
                         <x-heroicon-o-users class="h-5 w-5 text-green-600" />
                     </div>
-                    <div>
+                    <div class="flex-1 sm:flex-initial">
                         <p class="text-[10px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest">Pessoas Evangelizadas</p>
-                        <p class="text-2xl font-black text-gray-900 dark:text-white tabular-nums leading-none">{{ $qtdParticipantesCadastrados }}</p>
+                        <p class="text-2xl font-black text-gray-900 dark:text-white tabular-nums leading-none mt-0.5">{{ $qtdParticipantesCadastrados }}</p>
                     </div>
                 </div>
             </div>
@@ -57,7 +57,7 @@
                             <p class="text-sm text-gray-400 dark:text-gray-500">Nenhum aniversariante nesta semana.</p>
                         </div>
                     @else
-                        <ul class="divide-y divide-gray-100 dark:divide-zinc-700 -my-3 max-h-[45vh] overflow-y-auto pr-1"
+                        <ul class="divide-y divide-gray-100 dark:divide-zinc-700 -my-3 max-h-[45vh] overflow-y-auto overflow-x-hidden pr-1"
                             role="list">
                             @foreach ($aniversariantes as $pessoa)
                                 @php
@@ -129,7 +129,7 @@
                             <p class="text-sm text-gray-400 dark:text-gray-500">Nenhum líder com pontuação registrada.</p>
                         </div>
                     @else
-                        <ol class="space-y-2 max-h-[45vh] overflow-y-auto pr-1" role="list">
+                        <ol class="space-y-2 max-h-[45vh] overflow-y-auto overflow-x-hidden pr-1" role="list">
                             @foreach ($lideresAura as $index => $lider)
                                 @php
                                     $posicao = $index + 1;
