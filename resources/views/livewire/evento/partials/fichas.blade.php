@@ -541,7 +541,7 @@ new class extends Component {
                 <flux:table.cell>
                     <select
                         wire:change="atualizarSituacao({{ $ficha->idt_ficha }}, $event.target.value)"
-                        class="w-40 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 px-2.5 py-1.5 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 border-l-[5px] {{ $ficha->tip_situacao?->badge()['border-l'] ?? 'border-l-zinc-200 dark:border-l-zinc-700' }}">
+                        class="w-40 rounded-lg bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 px-2.5 py-1.5 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 border-t border-r border-b border-l-[5px] border-t-zinc-200 border-r-zinc-200 border-b-zinc-200 dark:border-t-zinc-700 dark:border-r-zinc-700 dark:border-b-zinc-700 {{ $ficha->tip_situacao?->badge()['border-l'] ?? 'border-l-zinc-200 dark:border-l-zinc-700' }}">
                         @foreach (\App\Enums\TipoSituacao::cases() as $situacao)
                             <option value="{{ $situacao->value }}" @selected($ficha->tip_situacao === $situacao) class="text-zinc-800 bg-white dark:bg-zinc-900 dark:text-zinc-200">
                                 {{ $situacao->label() }}
