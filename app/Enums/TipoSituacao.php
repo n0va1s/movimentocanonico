@@ -45,12 +45,12 @@ enum TipoSituacao: string
                 'border-l' => 'border-l-slate-300 dark:border-l-slate-600'
             ],
             self::RESERVA => [
-                'bg' => 'bg-orange-100 dark:bg-orange-900/40',
-                'text' => 'text-orange-800 dark:text-orange-300',
-                'hover' => 'hover:bg-orange-200 hover:border-orange-300',
-                'border' => 'border-orange-200',
-                'light' => 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-950/30 dark:text-orange-300 dark:border-orange-800',
-                'border-l' => 'border-l-orange-500 dark:border-l-orange-400'
+                'bg' => 'bg-fuchsia-100 dark:bg-fuchsia-900/40',
+                'text' => 'text-fuchsia-800 dark:text-fuchsia-300',
+                'hover' => 'hover:bg-fuchsia-200 hover:border-fuchsia-300',
+                'border' => 'border-fuchsia-200',
+                'light' => 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200 dark:bg-fuchsia-950/30 dark:text-fuchsia-300 dark:border-fuchsia-800',
+                'border-l' => 'border-l-fuchsia-500 dark:border-l-fuchsia-400'
             ],
             self::SELECIONADA => [
                 'bg' => 'bg-lime-100 dark:bg-lime-900/40',

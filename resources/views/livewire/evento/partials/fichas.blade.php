@@ -395,10 +395,10 @@ new class extends Component {
             [
                 'status' => \App\Enums\TipoSituacao::RESERVA->value,
                 'label' => 'Reservas',
-                'color' => 'orange',
-                'icon' => 'clock',
-                'textClass' => 'text-orange-600 dark:text-orange-400',
-                'activeClass' => 'ring-2 ring-orange-500 bg-orange-50 dark:bg-orange-950/20 border-orange-500',
+                'color' => 'fuchsia',
+                'icon' => 'bookmark',
+                'textClass' => 'text-fuchsia-600 dark:text-fuchsia-400',
+                'activeClass' => 'ring-2 ring-fuchsia-500 bg-fuchsia-50 dark:bg-fuchsia-950/20 border-fuchsia-500',
             ],
             [
                 'status' => \App\Enums\TipoSituacao::AGUARDANDO->value,
