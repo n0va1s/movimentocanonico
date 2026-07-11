@@ -22,7 +22,7 @@ new class extends Component {
         
         if ($this->paroquiaId) {
             $movimentos = TipoMovimento::where('idt_paroquia', $this->paroquiaId)
-                ->orderBy('nom_movimento')
+                ->orderBy('idt_movimento')
                 ->get();
         }
 

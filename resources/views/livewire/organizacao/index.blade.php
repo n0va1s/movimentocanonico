@@ -231,7 +231,7 @@ new #[Title('Organização')] class extends Component {
             'paroquias' => TipoParoquia::orderBy('nom_paroquia')->get(),
             'movimentos' => $this->paroquiaSelecionada
                 ? TipoMovimento::where('idt_paroquia', $this->paroquiaSelecionada)
-                    ->orderBy('nom_movimento')->get()
+                    ->orderBy('idt_movimento')->get()
                 : collect(),
             'equipes' => $this->movimentoSelecionado
                 ? TipoEquipe::where('idt_movimento', $this->movimentoSelecionado)
