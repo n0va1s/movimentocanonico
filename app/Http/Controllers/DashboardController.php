@@ -25,8 +25,8 @@ class DashboardController extends Controller
 
         // ── Próximos Eventos ────────────────────────────────────────────
         $proximoseventos = Evento::with(['movimento:idt_movimento,des_sigla'])
-            ->where('dat_inicio', '>=', today())
-            ->when(auth()->user()->isEspec(), function ($q) {
+            ->where('dat_inicio', '>=', now())
+            ->when(auth()->user()->isDirig(), function ($q) {
                 $q->where('idt_movimento', auth()->user()->idt_movimento);
             })
             ->orderBy('dat_inicio', 'asc')
@@ -34,9 +34,12 @@ class DashboardController extends Controller
             ->select('idt_evento', 'des_evento', 'dat_inicio', 'idt_movimento')
             ->get();
 
+       
+
+        // Otimização 4: Se o banco crescer muito, considere Cache::remember nestes contadores de distinct
         // ── Pessoas Evangelizadas (distinct participantes) ──────────────
         $qtdParticipantesCadastrados = Participante::distinct('idt_pessoa')
-            ->when(auth()->user()->isEspec(), function ($q) {
+            ->when(auth()->user()->isDirig(), function ($q) {
                 $q->whereHas('evento', function ($eq) {
                     $eq->where('idt_movimento', auth()->user()->idt_movimento);
                 });

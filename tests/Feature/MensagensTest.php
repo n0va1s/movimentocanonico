@@ -22,8 +22,8 @@ beforeEach(function () {
     // Criar usuários
     $this->admin = User::factory()->create(['role' => 'admin']);
     $this->coord = User::factory()->create(['role' => 'coord']);
-    $this->espec = User::factory()->create([
-        'role' => 'espec',
+    $this->dirig = User::factory()->create([
+        'role' => 'dirig',
         'idt_movimento' => $this->movimento->idt_movimento,
     ]);
     $this->user = User::factory()->create(['role' => 'user']);
@@ -51,12 +51,18 @@ describe('Autorização e Permissões', function () {
         $this->get(route('mensagens.create'))->assertStatus(403);
     });
 
-    test('gestores (admin, coord, espec) podem acessar index de mensagens', function () {
-        foreach ([$this->admin, $this->coord, $this->espec] as $usuario) {
+    test('gestores (admin, dirig) podem acessar index de mensagens', function () {
+        foreach ([$this->admin, $this->dirig] as $usuario) {
             $this->actingAs($usuario);
             $this->get(route('mensagens.index'))->assertStatus(200);
             $this->get(route('mensagens.create'))->assertStatus(200);
         }
+    });
+
+    test('coord recebe 403 ao acessar mensagens', function () {
+        $this->actingAs($this->coord);
+        $this->get(route('mensagens.index'))->assertStatus(403);
+        $this->get(route('mensagens.create'))->assertStatus(403);
     });
 });
 

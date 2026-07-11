@@ -9,10 +9,11 @@ Este documento descreve o que cada perfil de usuário pode acessar no sistema. O
 | Perfil | Identificador | Descrição |
 |--------|--------------|-----------|
 | Administrador | `admin` | Acesso total ao sistema (todas as funcionalidades de todos os movimentos). Acesso geral. |
-| Especialista | `espec` | Acesso ao gerenciamento de eventos ativos (restrito ao seu movimento). Deve ter um movimento associado. Pode configurar informações e gerenciar contatos de seu movimento. |
-| Coordenador | `coord` | Responsável por uma equipe em um evento anual. Pode ver os dados da sua equipe (Minha Equipe) e avaliá-los. Possui também as opções do perfil `user`. |
-| Mercadinho | `sales` | Integrantes pelo mercadinho de um evento. Podem ver os integrantes de sua equipe (Minha Equipe). Coordenadores veem catálogo e relatório de vendas. Possui também as opções de `user`. |
-| Visitação | `visit` | Integrantes responsáveis por um conjunto de fichas atribuídas. Podem usar a funcionalidade "Minhas Fichas". Possui também as opções de `user`. |
+| Dirigente | `dirig` | Acesso ao gerenciamento de eventos ativos (restrito ao seu movimento). Deve ter um movimento associado. Pode configurar informações e gerenciar contatos de seu movimento. |
+| Coordenador (Estático) | `coord` | Perfil estático com privilégios intermediários (módulo de mensagens e abas operacionais do gerenciamento do evento em que estiver trabalhando). |
+| Coordenador de Equipe (Dinâmico) | `coord_equipe` | Qualquer usuário que for designado como coordenador de alguma equipe no evento ativo (`ind_coordenador = true`). Possui acesso à página de sua equipe (`/minha-equipe`). |
+| Mercadinho (Dinâmico) | `sales` | Integrantes do mercadinho de um evento. O acesso é dinâmico com base na equipe em que estão alocados. Podem operar o mercadinho. |
+| Visitação (Dinâmico) | `visit` | Integrantes responsáveis por um conjunto de fichas atribuídas. O acesso é dinâmico com base na equipe em que estão alocados. Podem usar a funcionalidade "Minhas Fichas". |
 | Usuário | `user` | Acesso básico pós-login (timeline, inscrição em eventos, etc.). |
 
 ---
@@ -28,7 +29,7 @@ Acessíveis por qualquer visitante, sem necessidade de login.
 
 ---
 
-## Todos os perfis autenticados (`user`, `coord`, `espec`, `admin`)
+## Todos os perfis autenticados (`user`, `coord`, `dirig`, `admin`)
 
 Qualquer usuário logado tem acesso às rotas abaixo.
 
@@ -102,7 +103,7 @@ Qualquer usuário logado tem acesso às rotas abaixo.
 
 ---
 
-## Coordenador e Administrador (`coord`, `admin`)
+## Somente Administrador (`admin`)
 
 Além de tudo que o perfil autenticado básico acessa.
 
@@ -113,39 +114,40 @@ Além de tudo que o perfil autenticado básico acessa.
 
 ---
 
-## Especialista e Administrador (`espec`, `admin`)
+## Dirigente, Coordenador (Estático) e Administrador (`dirig`, `coord`, `admin`)
 
 Além de tudo que os perfis básicos acessam.
 
 | Rota | Descrição |
 |------|-----------|
-| `GET /eventos/{evento}/gerenciamento` | Gerenciamento de um evento específico |
+| `GET /eventos/{evento}/gerenciamento` | Gerenciamento de um evento específico (Coordenador tem acesso apenas às abas operacionais dos eventos de seu movimento) |
 
-> **Observação:** Para `espec`, o acesso ao gerenciamento é restrito ao movimento indicado em `idt_movimento` na tabela `users`. O perfil `coord` não possui acesso a esta rota. Para `admin`, o acesso é irrestrito.
+> **Observação:** Para `dirig` e `coord`, o acesso ao gerenciamento é restrito ao movimento indicado em `idt_movimento` na tabela `users`. Para `admin`, o acesso é irrestrito.
 
 ### Abas do gerenciamento de evento
 
-| Aba | `espec` | `admin` |
-|-----|---------|---------|
-| Resumo | ✓* | ✓ |
-| Participantes | ✓* | ✓ |
-| Trabalhadores | ✓* | ✓ |
-| Presença | ✓* | ✓ |
-| Crachás | ✓* | ✓ |
-| Quadrante | ✓* | ✓ |
-| Fichas | ✓* | ✓ |
-| Voluntários | ✓* | ✓ |
-| Prestação de Contas | ✓* | ✓ |
+| Aba | `coord` | `dirig` | `admin` |
+|-----|---------|---------|---------|
+| Resumo | ✓* | ✓* | ✓ |
+| Participantes | ✓* | ✓* | ✓ |
+| Trabalhadores | ✓* | ✓* | ✓ |
+| Presença | ✓* | ✓* | ✓ |
+| Crachás | ✗ | ✓* | ✓ |
+| Quadrante | ✓* | ✓* | ✓ |
+| Fichas | ✗ | ✓* | ✓ |
+| Voluntários | ✗ | ✓* | ✓ |
+| Prestação de Contas | ✗ | ✓* | ✓ |
+| Restrições | ✓* | ✓* | ✓ |
 
-> `*` Restrito a eventos associados ao movimento do especialista.
+> `*` Restrito ao movimento associado para `dirig` e `coord`.
 
 ---
 
-## Coordenador, Especialista, Mercadinho e Administrador (`coord`, `espec`, `sales`, `admin`)
+## Dirigente, Coordenador de Equipe e Administrador (`dirig`, `coord_equipe`, `admin`)
 
 | Rota | Descrição |
 |------|-----------|
-| `GET /minha-equipe` | Visualização dos membros da equipe coordenada ou integrada pelo usuário |
+| `GET /minha-equipe` | Visualização dos membros da equipe coordenada pelo usuário |
 
 ---
 
@@ -154,8 +156,6 @@ Além de tudo que os perfis básicos acessam.
 | Rota | Descrição |
 |------|-----------|
 | `GET /mercadinho/{evento?}` | Visualização e operação do mercadinho (vendas, catálogo, etc.) |
-
-> **Observação:** Apenas os coordenadores de equipe e administradores podem ver o catálogo de produtos e o relatório de vendas dentro do mercadinho.
 
 ---
 
@@ -167,9 +167,9 @@ Além de tudo que os perfis básicos acessam.
 
 ---
 
-## Especialista, Visitação e Administrador (`espec`, `visit`, `admin`)
+## Dirigente, Visitação e Administrador (`dirig`, `visit`, `admin`)
 
-Acesso ao CRUD e listagem das Fichas de inscrição (VEM, ECC, SGM). O acesso para Especialistas e Visitação é restrito aos seus movimentos/fichas.
+Acesso ao CRUD e listagem das Fichas de inscrição (VEM, ECC, SGM). O acesso para Dirigentes e Visitação é restrito aos seus movimentos/fichas.
 
 ### Fichas VEM, ECC e SGM
 
@@ -248,44 +248,44 @@ Acesso exclusivo a todas as operações de criação, edição, exclusão e visu
 ## Resumo visual
 
 ```
-Rota / Recurso                  │ user │ espec │ coord │ sales │ visit │ admin
-────────────────────────────────┼──────┼───────┼───────┼───────┼───────┼──────
-Home / Contato                  │  ✓   │   ✓   │   ✓   │   ✓   │   ✓   │  ✓
-Dashboard / Timeline            │  ✓   │   ✓   │   ✓   │   ✓   │   ✓   │  ✓
-Aniversário / Quadrante         │  ✓   │   ✓   │   ✓   │   ✓   │   ✓   │  ✓
-Montagem (visualizar)           │  ✓   │   ✓   │   ✓   │   ✓   │   ✓   │  ✓
-Avaliação                       │  ✓   │   ✓   │   ✓   │   ✓   │   ✓   │  ✓
-Termos SGM / VEM                │  ✓   │   ✓   │   ✓   │   ✓   │   ✓   │  ✓
-Fichas (formulário inscrição)   │  ✓   │   ✓   │   ✓   │   ✓   │   ✓   │  ✓
-Participantes                   │  ✓   │   ✓   │   ✓   │   ✓   │   ✓   │  ✓
-Trabalhadores (inscrição)       │  ✓   │   ✓   │   ✓   │   ✓   │   ✓   │  ✓
-Eventos (listagem)              │  ✓   │   ✓   │   ✓   │   ✓   │   ✓   │  ✓
-Pessoa (editar próprios dados)  │  ✓   │   ✓   │   ✓   │   ✓   │   ✓   │  ✓
-Settings pessoais               │  ✓   │   ✓   │   ✓   │   ✓   │   ✓   │  ✓
-────────────────────────────────┼──────┼───────┼───────┼───────┼───────┼──────
-Trabalhadores (listagem)        │  ✗   │   ✗   │   ✓   │   ✗   │   ✗   │  ✓
-Montagem (confirmar)            │  ✗   │   ✗   │   ✓   │   ✗   │   ✗   │  ✓
-────────────────────────────────┼──────┼───────┼───────┼───────┼───────┼──────
-Minha Equipe                    │  ✗   │   ✓   │   ✓   │   ✓   │   ✗   │  ✓
-Mercadinho                      │  ✗   │   ✗   │   ✗   │   ✓   │   ✗   │  ✓
-Minhas Fichas                   │  ✗   │   ✗   │   ✗   │   ✗   │   ✓   │  ✓
-────────────────────────────────┼──────┼───────┼───────┼───────┼───────┼──────
-Gerenciamento de evento         │  ✗   │   ✓*  │   ✗   │   ✗   │   ✗   │  ✓
-  └ Resumo                      │  ✗   │   ✓*  │   ✗   │   ✗   │   ✗   │  ✓
-  └ Participantes               │  ✗   │   ✓*  │   ✗   │   ✗   │   ✗   │  ✓
-  └ Trabalhadores               │  ✗   │   ✓*  │   ✗   │   ✗   │   ✗   │  ✓
-  └ Presença                    │  ✗   │   ✓*  │   ✗   │   ✗   │   ✗   │  ✓
-  └ Crachás                     │  ✗   │   ✓*  │   ✗   │   ✗   │   ✗   │  ✓
-  └ Quadrante                   │  ✗   │   ✓*  │   ✗   │   ✗   │   ✗   │  ✓
-  └ Fichas                      │  ✗   │   ✓*  │   ✗   │   ✗   │   ✗   │  ✓
-  └ Voluntários                 │  ✗   │   ✓*  │   ✗   │   ✗   │   ✗   │  ✓
-  └ Prestação de Contas         │  ✗   │   ✓*  │   ✗   │   ✗   │   ✗   │  ✓
-────────────────────────────────┼──────┼───────┼───────┼───────┼───────┼──────
-Contatos                        │  ✗   │   ✗   │   ✗   │   ✗   │   ✗   │  ✓
-Pessoas (CRUD completo)         │  ✗   │   ✗   │   ✗   │   ✗   │   ✗   │  ✓
-Fichas VEM/ECC/SGM (CRUD)       │  ✗   │   ✓*  │   ✗   │   ✗   │   ✓   │  ✓
-Eventos (CRUD)                  │  ✗   │   ✗   │   ✗   │   ✗   │   ✗   │  ✓
-Configurações do sistema        │  ✗   │   ✗   │   ✗   │   ✗   │   ✗   │  ✓
+Rota / Recurso                  │ user │ dirig │ coord │ coord_equipe │ sales │ visit │ admin
+────────────────────────────────┼──────┼───────┼───────┼──────────────┼───────┼───────┼──────
+Home / Contato                  │  ✓   │   ✓   │   ✓   │      ✓       │   ✓   │   ✓   │  ✓
+Dashboard / Timeline            │  ✓   │   ✓   │   ✓   │      ✓       │   ✓   │   ✓   │  ✓
+Aniversário / Quadrante         │  ✓   │   ✓   │   ✓   │      ✓       │   ✓   │   ✓   │  ✓
+Montagem (visualizar)           │  ✓   │   ✓   │   ✓   │      ✓       │   ✓   │   ✓   │  ✓
+Avaliação                       │  ✓   │   ✓   │   ✓   │      ✓       │   ✓   │   ✓   │  ✓
+Termos SGM / VEM                │  ✓   │   ✓   │   ✓   │      ✓       │   ✓   │   ✓   │  ✓
+Fichas (formulário inscrição)   │  ✓   │   ✓   │   ✓   │      ✓       │   ✓   │   ✓   │  ✓
+Participantes                   │  ✓   │   ✓   │   ✓   │      ✓       │   ✓   │   ✓   │  ✓
+Trabalhadores (inscrição)       │  ✓   │   ✓   │   ✓   │      ✓       │   ✓   │   ✓   │  ✓
+Eventos (listagem)              │  ✓   │   ✓   │   ✓   │      ✓       │   ✓   │   ✓   │  ✓
+Pessoa (editar próprios dados)  │  ✓   │   ✓   │   ✓   │      ✓       │   ✓   │   ✓   │  ✓
+Settings pessoais               │  ✓   │   ✓   │   ✓   │      ✓       │   ✓   │   ✓   │  ✓
+────────────────────────────────┼──────┼───────┼───────┼──────────────┼───────┼───────┼──────
+Trabalhadores (listagem)        │  ✗   │   ✗   │   ✗   │      ✗       │   ✗   │   ✗   │  ✓
+Montagem (confirmar)            │  ✗   │   ✗   │   ✗   │      ✗       │   ✗   │   ✗   │  ✓
+────────────────────────────────┼──────┼───────┼───────┼──────────────┼───────┼───────┼──────
+Minha Equipe                    │  ✗   │   ✓   │   ✗   │      ✓       │   ✗   │   ✗   │  ✓
+Mercadinho                      │  ✗   │   ✗   │   ✗   │      ✗       │   ✓   │   ✗   │  ✓
+Minhas Fichas                   │  ✗   │   ✗   │   ✗   │      ✗       │   ✗   │   ✓   │  ✓
+────────────────────────────────┼──────┼───────┼───────┼──────────────┼───────┼───────┼──────
+Gerenciamento de evento         │  ✗   │   ✓*  │   ✓*  │      ✗       │   ✗   │   ✗   │  ✓
+  └ Resumo                      │  ✗   │   ✓*  │   ✓*  │      ✗       │   ✗   │   ✗   │  ✓
+  └ Participantes               │  ✗   │   ✓*  │   ✓*  │      ✗       │   ✗   │   ✗   │  ✓
+  └ Trabalhadores               │  ✗   │   ✓*  │   ✓*  │      ✗       │   ✗   │   ✗   │  ✓
+  └ Presença                    │  ✗   │   ✓*  │   ✓*  │      ✗       │   ✗   │   ✗   │  ✓
+  └ Crachás                     │  ✗   │   ✓*  │   ✗   │      ✗       │   ✗   │   ✗   │  ✓
+  └ Quadrante                   │  ✗   │   ✓*  │   ✓*  │      ✗       │   ✗   │   ✗   │  ✓
+  └ Fichas                      │  ✗   │   ✓*  │   ✗   │      ✗       │   ✗   │   ✗   │  ✓
+  └ Voluntários                 │  ✗   │   ✓*  │   ✗   │      ✗       │   ✗   │   ✗   │  ✓
+  └ Prestação de Contas         │  ✗   │   ✓*  │   ✗   │      ✗       │   ✗   │   ✗   │  ✓
+────────────────────────────────┼──────┼───────┼───────┼──────────────┼───────┼───────┼──────
+Contatos                        │  ✗   │   ✗   │   ✗   │      ✗       │   ✗   │   ✗   │  ✓
+Pessoas (CRUD completo)         │  ✗   │   ✗   │   ✗   │      ✗       │   ✗   │   ✗   │  ✓
+Fichas VEM/ECC/SGM (CRUD)       │  ✗   │   ✓*  │   ✗   │      ✗       │   ✗   │   ✓   │  ✓
+Eventos (CRUD)                  │  ✗   │   ✗   │   ✗   │      ✗       │   ✗   │   ✗   │  ✓
+Configurações do sistema        │  ✗   │   ✗   │   ✗   │      ✗       │   ✗   │   ✗   │  ✓
 ```
 
-> `*` Restrito ao movimento associado.
+> `*` Restrito ao movimento associado para dirig e coord.

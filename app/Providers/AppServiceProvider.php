@@ -46,14 +46,14 @@ class AppServiceProvider extends ServiceProvider
                 return true;
             }
 
-            if ($user->isEspec()) {
+            if ($user->isDirig() || $user->isCoordenador()) {
                 return ! is_null($user->idt_movimento) && (int) $evento->idt_movimento === (int) $user->idt_movimento;
             }
 
             return false;
         });
 
-        // Abas do gerenciamento — coord e espec só têm acesso se estiverem trabalhando no evento
+        // Abas do gerenciamento — coord e dirig só têm acesso se forem do mesmo movimento
         foreach (Perfil::abasPermitidas() as $aba => $perfisPermitidos) {
             Gate::define("evento-tab-{$aba}", function ($user, $evento) use ($perfisPermitidos) {
                 if (! $user->hasRole(...$perfisPermitidos)) {
@@ -65,7 +65,7 @@ class AppServiceProvider extends ServiceProvider
                     return true;
                 }
 
-                if ($user->isEspec()) {
+                if ($user->isDirig() || $user->isCoordenador()) {
                     return ! is_null($user->idt_movimento) && (int) $evento->idt_movimento === (int) $user->idt_movimento;
                 }
 

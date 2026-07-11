@@ -269,6 +269,7 @@ new class extends Component {
         return [
             \App\Enums\TipoSituacao::NOVA->value => $counts[\App\Enums\TipoSituacao::NOVA->value] ?? 0,
             \App\Enums\TipoSituacao::RESERVA->value => $counts[\App\Enums\TipoSituacao::RESERVA->value] ?? 0,
+            \App\Enums\TipoSituacao::RESERVA->value => $counts[\App\Enums\TipoSituacao::RESERVA->value] ?? 0,
             \App\Enums\TipoSituacao::AGUARDANDO->value => $counts[\App\Enums\TipoSituacao::AGUARDANDO->value] ?? 0,
             \App\Enums\TipoSituacao::VISITADA->value => $counts[\App\Enums\TipoSituacao::VISITADA->value] ?? 0,
             \App\Enums\TipoSituacao::SELECIONADA->value => $counts[\App\Enums\TipoSituacao::SELECIONADA->value] ?? 0,
@@ -451,7 +452,7 @@ new class extends Component {
             @endphp
             <div 
                 wire:click="toggleFiltroSituacao('{{ $card['status'] }}')"
-                class="cursor-pointer transition-all duration-200 rounded-xl p-3 flex flex-col border shadow-sm hover:shadow-md hover:-translate-y-0.5 {{ $isActive ? $card['activeClass'] : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700' }}"
+                class="flex-1 min-w-[130px] sm:min-w-[150px] max-w-[220px] cursor-pointer transition-all duration-200 rounded-xl p-3 flex flex-col border shadow-sm hover:shadow-md hover:-translate-y-0.5 {{ $isActive ? $card['activeClass'] : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700' }}"
             >
                 <div class="flex items-center gap-2">
                     <flux:icon name="{{ $card['icon'] }}" variant="outline" class="size-5 {{ $card['textClass'] }} shrink-0" />

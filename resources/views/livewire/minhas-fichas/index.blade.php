@@ -30,7 +30,7 @@ new class extends Component {
     public function mount(?Evento $evento = null): void
     {
         $user = auth()->user();
-        if (!$user || !$user->podeAcessarMinhasFichas()) {
+        if (!$user || !$user->autorizaVisit()) {
             abort(403, 'Acesso não autorizado.');
         }
 
@@ -450,9 +450,37 @@ new class extends Component {
                                     {{ $ficha->nom_candidato }}
                                 </a>
                             </h3>
+                        {{-- Nome --}}
+                        <div class="mt-2">
+                            <h3 class="text-xl font-bold text-zinc-900 dark:text-zinc-100 leading-snug">
+                                <a href="{{ $ficha->getShowRoute() }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                    {{ $ficha->nom_candidato }}
+                                </a>
+                            </h3>
                             @if ($ficha->nom_apelido)
                                 <p class="text-sm text-zinc-500 dark:text-zinc-400 font-medium">({{ $ficha->nom_apelido }})</p>
+                                <p class="text-sm text-zinc-500 dark:text-zinc-400 font-medium">({{ $ficha->nom_apelido }})</p>
                             @endif
+                        </div>
+
+                        @php
+                            $isDeMaior = $ficha->dat_nascimento && \Carbon\Carbon::parse($ficha->dat_nascimento)->age >= 18;
+                        @endphp
+
+                        {{-- Telefone do Jovem (se de maior) --}}
+                        @if ($isDeMaior && $ficha->tel_candidato)
+                            <div class="flex items-start gap-2 text-zinc-500 dark:text-zinc-400 text-sm mt-4">
+                                <flux:icon.phone class="size-4 shrink-0 text-zinc-400 dark:text-zinc-500 mt-0.5" />
+                                <a href="https://wa.me/55{{ \App\Services\PhoneService::clean($ficha->tel_candidato) }}" target="_blank" class="hover:underline hover:text-blue-600 dark:hover:text-blue-400 leading-relaxed font-medium">
+                                    {{ $ficha->tel_candidato }}
+                                </a>
+                            </div>
+                        @endif
+
+                        {{-- Endereço --}}
+                        <div class="flex items-start gap-2 text-zinc-500 dark:text-zinc-400 text-sm {{ $isDeMaior && $ficha->tel_candidato ? 'mt-2' : 'mt-4' }}">
+                            <flux:icon.map-pin class="size-4 shrink-0 text-zinc-400 dark:text-zinc-500 mt-0.5" />
+                            <span class="leading-relaxed">{{ $ficha->des_endereco ?? 'Endereço não informado' }}</span>
                         </div>
 
                         @php
@@ -490,6 +518,21 @@ new class extends Component {
                             </div>
                         @endif
 
+                        {{-- Informações extras para admin --}}
+                        @if ($this->podeDesignar() && $ficha->visitador)
+                            @php
+                                $v = $ficha->visitador;
+                                $nomeLabel = $v->nom_pessoa;
+                                if ($v->parceiro) {
+                                    $nomeLabel .= ' & ' . $v->parceiro->nom_pessoa;
+                                }
+                            @endphp
+                            <div class="flex items-start gap-2 text-zinc-500 dark:text-zinc-400 text-xs mt-3 bg-zinc-50 dark:bg-zinc-900/30 p-2 rounded-lg border border-zinc-100 dark:border-zinc-800/40">
+                                <flux:icon.user-circle class="size-4 shrink-0 text-zinc-400 mt-0.5" />
+                                <span>Designado: <strong class="text-zinc-700 dark:text-zinc-300 font-semibold">{{ $nomeLabel }}</strong></span>
+                            </div>
+                        @endif
+
                         {{-- Contacts Box --}}
                         @php
                             $resp = $ficha->responsavel_info;
@@ -511,7 +554,6 @@ new class extends Component {
                                     <span class="font-medium">{{ $resp['telefone'] }}</span>
                                 @endif
                             </div>
-                        </div>
                     </div>
 
                     {{-- CTA: Visualizar Ficha Completa --}}
@@ -603,8 +645,10 @@ new class extends Component {
             <flux:icon.document-text class="w-12 h-12 text-zinc-400 dark:text-zinc-500 mb-4" />
             <flux:heading size="lg" class="text-zinc-700 dark:text-zinc-300">
                 Nenhuma ficha encontrada
+                Nenhuma ficha encontrada
             </flux:heading>
             <flux:subheading class="mt-1">
+                Não existem fichas designadas para a sua conta ou compatíveis com os filtros selecionados.
                 Não existem fichas designadas para a sua conta ou compatíveis com os filtros selecionados.
             </flux:subheading>
         </div>

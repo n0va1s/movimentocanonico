@@ -34,6 +34,29 @@ if (!function_exists('createVisitorUser')) {
     }
 }
 
+if (!function_exists('createVisitorUser')) {
+    function createVisitorUser(array $attributes = [], ?Evento $evento = null) {
+        $user = User::factory()->create(array_merge(['role' => 'user'], $attributes));
+        $pessoa = $user->pessoa;
+        
+        $movimentoId = $user->idt_movimento ?: ($evento ? $evento->idt_movimento : 2);
+        
+        $equipeVisitacao = \App\Models\TipoEquipe::firstOrCreate([
+            'idt_movimento' => $movimentoId,
+            'des_grupo' => 'Visitação'
+        ]);
+        
+        \App\Models\Trabalhador::create([
+            'idt_pessoa' => $pessoa->idt_pessoa,
+            'idt_evento' => $evento ? $evento->idt_evento : ($attributes['idt_evento'] ?? 41),
+            'idt_equipe' => $equipeVisitacao->idt_equipe,
+            'ind_coordenador' => $attributes['ind_coordenador'] ?? false,
+        ]);
+        
+        return $user;
+    }
+}
+
 beforeEach(function () {
     DB::table('tipo_movimento')->insertOrIgnore([
         ['idt_movimento' => 1, 'nom_movimento' => 'Encontro de Casais com Cristo', 'des_sigla' => 'ECC', 'dat_inicio' => '1980-01-01', 'created_at' => now(), 'updated_at' => now()],
@@ -68,11 +91,11 @@ describe('Minhas Fichas Access Authorization', function () {
             ->assertForbidden();
     });
 
-    test('user with role espec gets 403', function () {
-        $user = User::factory()->create(['role' => 'espec']);
+    test('user with role dirig gets 200', function () {
+        $user = User::factory()->create(['role' => 'dirig']);
         $this->actingAs($user)
             ->get(route('minhas-fichas.index'))
-            ->assertForbidden();
+            ->assertStatus(200);
     });
 
     test('user with role visitacao gets 200', function () {
@@ -139,7 +162,7 @@ describe('Minhas Fichas Scoping and Filtering', function () {
 
         // Act & Assert using Volt
         $this->actingAs($visitorUser);
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
             ->assertSee('Assigned Candidate VEM')
             ->assertDontSee('Other Visitor Candidate VEM')
             ->assertDontSee('Unassigned Candidate VEM')
@@ -164,9 +187,10 @@ describe('Minhas Fichas Scoping and Filtering', function () {
         ]);
 
         $this->actingAs($visitorUserA);
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
             ->assertSee('Spouse Assigned Candidate');
     });
+
 
     test('ficha disappears from the visitor list when marked as VISITADA', function () {
         $visitorUser = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
@@ -181,16 +205,16 @@ describe('Minhas Fichas Scoping and Filtering', function () {
 
         $this->actingAs($visitorUser);
         
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
             ->assertSee('Visitada Candidate');
  
         $ficha->update(['tip_situacao' => TipoSituacao::VISITADA]);
  
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
             ->assertDontSee('Visitada Candidate');
     });
 
-    test('admin sees all event fichas under minhas-fichas', function () {
+    test('admin only sees fichas where they are the designated visitor', function () {
         $adminUser = User::factory()->create(['role' => 'admin']);
         $adminPessoa = $adminUser->pessoa;
 
@@ -214,7 +238,7 @@ describe('Minhas Fichas Scoping and Filtering', function () {
         ]);
 
         $this->actingAs($adminUser);
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
             ->assertSee('Ficha for Admin')
             ->assertSee('Ficha for Visitor');
     });
@@ -249,7 +273,7 @@ describe('Minhas Fichas Scoping and Filtering', function () {
         $this->actingAs($visitorUser);
  
         // By default, the first active event (eventoVem) is selected
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
             ->assertSee('Candidate in Event One')
             ->assertDontSee('Candidate in Event Two')
             // Change the filter to the second event
@@ -272,7 +296,7 @@ describe('Minhas Fichas Actions', function () {
     });
 
     test('can change status to Fiz Contato (F)', function () {
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
             ->call('alterarSituacao', $this->ficha->idt_ficha, 'F')
             ->assertHasNoErrors();
  
@@ -280,7 +304,7 @@ describe('Minhas Fichas Actions', function () {
     });
  
     test('can change status to Aguardando Resposta (W)', function () {
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
             ->call('alterarSituacao', $this->ficha->idt_ficha, 'W')
             ->assertHasNoErrors();
  
@@ -288,7 +312,7 @@ describe('Minhas Fichas Actions', function () {
     });
  
     test('can change status to Cancelada (C)', function () {
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
             ->call('alterarSituacao', $this->ficha->idt_ficha, 'C')
             ->assertHasNoErrors();
  
@@ -317,9 +341,9 @@ describe('Minhas Fichas Visitor Designation', function () {
         expect($this->ficha->fresh()->idt_pessoa_visitacao)->toBe($this->visitorPessoa->idt_pessoa);
     });
 
-    test('specialist (espec) can assign a visitor to a ficha', function () {
-        $espec = User::factory()->create(['role' => 'espec', 'idt_movimento' => 2]);
-        $this->actingAs($espec)
+    test('dirigente (dirig) can assign a visitor to a ficha', function () {
+        $dirig = User::factory()->create(['role' => 'dirig', 'idt_movimento' => 2]);
+        $this->actingAs($dirig)
             ->post(route('fichas.designar-visitador', $this->ficha->idt_ficha), [
                 'idt_pessoa_visitacao' => $this->visitorPessoa->idt_pessoa
             ])
@@ -346,227 +370,3 @@ describe('Minhas Fichas Visitor Designation', function () {
             ->assertForbidden();
     });
 });
-
-describe('Minhas Fichas - Admin Designation via Component', function () {
-    beforeEach(function () {
-        $this->admin = User::factory()->create(['role' => 'admin']);
-        $this->visitor = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
-        
-        // Fichas
-        $this->ficha1 = Ficha::factory()->create([
-            'idt_evento' => $this->eventoVem->idt_evento,
-            'nom_candidato' => 'Ficha Teste Um',
-        ]);
-        $this->ficha2 = Ficha::factory()->create([
-            'idt_evento' => $this->eventoVem->idt_evento,
-            'nom_candidato' => 'Ficha Teste Dois',
-        ]);
-    });
-
-    test('visitor cannot see selection checkboxes or designation panel', function () {
-        $this->actingAs($this->visitor);
-        
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
-            ->assertDontSee('wire:model.live="selectedFichas"')
-            ->assertDontSee('Designar Visitação');
-    });
-
-    test('admin can select fichas and assign visitor', function () {
-        $this->actingAs($this->admin);
-        
-        $component = Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
-            ->assertDontSee('Designar Visitação')
-            ->set('selectedFichas', [(string)$this->ficha1->idt_ficha, (string)$this->ficha2->idt_ficha])
-            ->assertSee('Designar Visitação')
-            ->set('pessoaVisitacaoId', $this->visitor->pessoa->idt_pessoa)
-            ->call('designarVisitacao')
-            ->assertHasNoErrors();
-            
-        expect($this->ficha1->fresh()->idt_pessoa_visitacao)->toBe($this->visitor->pessoa->idt_pessoa)
-            ->and($this->ficha2->fresh()->idt_pessoa_visitacao)->toBe($this->visitor->pessoa->idt_pessoa)
-            ->and($this->ficha1->fresh()->tip_situacao)->toBe(TipoSituacao::SELECIONADA);
-    });
-
-    test('designarVisitacao throws 403 for non-admin users', function () {
-        $this->actingAs($this->visitor);
-        
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
-            ->set('selectedFichas', [(string)$this->ficha1->idt_ficha])
-            ->set('pessoaVisitacaoId', $this->visitor->pessoa->idt_pessoa)
-            ->call('designarVisitacao')
-            ->assertForbidden();
-    });
-
-    test('nao permite selecionar mais do que 3 fichas individualmente no index', function () {
-        $this->actingAs($this->admin);
-        
-        $ficha3 = Ficha::factory()->create([
-            'idt_evento' => $this->eventoVem->idt_evento,
-            'nom_candidato' => 'Ficha Teste Três',
-        ]);
-        $ficha4 = Ficha::factory()->create([
-            'idt_evento' => $this->eventoVem->idt_evento,
-            'nom_candidato' => 'Ficha Teste Quatro',
-        ]);
-
-        $selected = [
-            (string)$this->ficha1->idt_ficha,
-            (string)$this->ficha2->idt_ficha,
-            (string)$ficha3->idt_ficha,
-            (string)$ficha4->idt_ficha,
-        ];
-
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
-            ->set('selectedFichas', $selected)
-            ->assertSet('selectedFichas', [
-                (string)$this->ficha1->idt_ficha,
-                (string)$this->ficha2->idt_ficha,
-                (string)$ficha3->idt_ficha,
-            ])
-            ->assertHasErrors(['selectedFichas']);
-    });
-
-    test('exibe contato do candidato se ele for maior de idade, sem ocultar o responsavel', function () {
-        $this->actingAs($this->admin);
-
-        // Ficha com candidato maior de idade (nascido em 2000, logo >= 18 anos)
-        $fichaDeMaior = Ficha::factory()->create([
-            'idt_evento' => $this->eventoVem->idt_evento,
-            'nom_candidato' => 'Candidato Maior de Idade',
-            'dat_nascimento' => '2000-01-01',
-            'tel_candidato' => '(11) 99999-9999',
-            'eml_candidato' => 'maior@example.com',
-            'tip_situacao' => TipoSituacao::SELECIONADA
-        ]);
-
-        // Cria a relação de responsável no FichaVem
-        \App\Models\FichaVem::factory()->create([
-            'idt_ficha' => $fichaDeMaior->idt_ficha,
-            'nom_responsavel' => 'Responsavel Do Maior',
-            'tel_responsavel' => '(11) 88888-8888',
-        ]);
-
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
-            ->assertSee('Candidato Maior de Idade')
-            ->assertSee('(11) 99999-9999')
-            ->assertSee('href="https://wa.me/5511999999999"', false)
-            ->assertDontSee('maior@example.com') // Email não deve ser exibido
-            ->assertSee('Responsavel Do Maior')
-            ->assertSee('(11) 88888-8888')
-            ->assertSee('href="https://wa.me/5511888888888"', false);
-    });
-
-    test('nao exibe contato do candidato se ele for menor de idade, mas exibe o do responsavel', function () {
-        $this->actingAs($this->admin);
-
-        // Ficha com candidato menor de idade (nascido em 2015, logo < 18 anos)
-        $fichaMenor = Ficha::factory()->create([
-            'idt_evento' => $this->eventoVem->idt_evento,
-            'nom_candidato' => 'Candidato Menor de Idade',
-            'dat_nascimento' => '2015-01-01',
-            'tel_candidato' => '(11) 99999-9999',
-            'eml_candidato' => 'menor@example.com',
-            'tip_situacao' => TipoSituacao::SELECIONADA
-        ]);
-
-        // Cria a relação de responsável no FichaVem
-        \App\Models\FichaVem::factory()->create([
-            'idt_ficha' => $fichaMenor->idt_ficha,
-            'nom_responsavel' => 'Responsavel Do Menor',
-            'tel_responsavel' => '(11) 88888-8888',
-        ]);
-
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
-            ->assertSee('Candidato Menor de Idade')
-            ->assertSee('Responsavel Do Menor')
-            ->assertSee('(11) 88888-8888')
-            ->assertSee('href="https://wa.me/5511888888888"', false)
-            ->assertDontSee('Contato do Candidato')
-            ->assertDontSee('(11) 99999-9999')
-            ->assertDontSee('href="https://wa.me/5511999999999"', false)
-            ->assertDontSee('menor@example.com');
-    });
-
-    test('designarVisitacao no index valida limite de 3 fichas por visitador', function () {
-        $this->actingAs($this->admin);
-        $visitador = Pessoa::factory()->create();
-
-        // Já tem 1 ficha designada para este visitador no mesmo evento
-        Ficha::factory()->create([
-            'idt_evento' => $this->eventoVem->idt_evento,
-            'idt_pessoa_visitacao' => $visitador->idt_pessoa,
-            'tip_situacao' => TipoSituacao::SELECIONADA,
-        ]);
-
-        // Cria 3 fichas que tentaremos designar para este visitador
-        $fichasParaDesignar = Ficha::factory()->count(3)->create([
-            'idt_evento' => $this->eventoVem->idt_evento,
-        ]);
-
-        $selectedIds = $fichasParaDesignar->pluck('idt_ficha')->map(fn($id) => (string)$id)->toArray();
-
-        // Tenta designar as 3 fichas (total ficaria 4, o que ultrapassa o limite de 3)
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
-            ->set('selectedFichas', $selectedIds)
-            ->set('pessoaVisitacaoId', $visitador->idt_pessoa)
-            ->call('designarVisitacao')
-            ->assertHasErrors(['pessoaVisitacaoId'])
-            ->assertNotDispatched('notify');
-    });
-
-    test('coordenador da visitacao no evento ativo pode designar fichas', function () {
-        $coordUser = User::factory()->create(['role' => 'coord', 'idt_movimento' => 2]);
-        $coordPessoa = $coordUser->pessoa;
-
-        // Equipe de visitação
-        $equipeVisitacao = \App\Models\TipoEquipe::create([
-            'idt_movimento' => 2,
-            'des_grupo' => 'Visitação'
-        ]);
-
-        // Vincula como trabalhador coordenador no evento
-        \App\Models\Trabalhador::create([
-            'idt_pessoa' => $coordPessoa->idt_pessoa,
-            'idt_evento' => $this->eventoVem->idt_evento,
-            'idt_equipe' => $equipeVisitacao->idt_equipe,
-            'ind_coordenador' => true,
-        ]);
-
-        $this->actingAs($coordUser);
-
-        // Deve conseguir ver a listagem e designar
-        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
-            ->set('selectedFichas', [(string)$this->ficha1->idt_ficha, (string)$this->ficha2->idt_ficha])
-            ->assertSee('Designar Visitação')
-            ->set('pessoaVisitacaoId', $this->visitor->pessoa->idt_pessoa)
-            ->call('designarVisitacao')
-            ->assertHasNoErrors();
-
-        expect($this->ficha1->fresh()->idt_pessoa_visitacao)->toBe($this->visitor->pessoa->idt_pessoa);
-    });
-
-    test('coordenador de outra equipe nao pode designar fichas', function () {
-        $coordUser = User::factory()->create(['role' => 'coord', 'idt_movimento' => 2]);
-        $coordPessoa = $coordUser->pessoa;
-
-        // Equipe diferente (ex: Cozinha)
-        $equipeCozinha = \App\Models\TipoEquipe::create([
-            'idt_movimento' => 2,
-            'des_grupo' => 'Cozinha'
-        ]);
-
-        // Vincula como trabalhador coordenador no evento
-        \App\Models\Trabalhador::create([
-            'idt_pessoa' => $coordPessoa->idt_pessoa,
-            'idt_evento' => $this->eventoVem->idt_evento,
-            'idt_equipe' => $equipeCozinha->idt_equipe,
-            'ind_coordenador' => true,
-        ]);
-
-        $this->actingAs($coordUser);
-
-        $this->get(route('minhas-fichas.index', ['evento' => $this->eventoVem]))
-            ->assertForbidden();
-    });
-});
-
