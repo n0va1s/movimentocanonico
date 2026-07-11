@@ -261,3 +261,34 @@ test('dirig acessa gerenciamento de evento inativo/deletado do seu movimento', f
         ->get("/eventos/{$evento->idt_evento}/gerenciamento")
         ->assertStatus(200);
 });
+
+test('coord acessa gerenciamento de evento do seu movimento', function () {
+    createMovimentos();
+    $evento = createEvento();
+    $user = User::factory()->create([
+        'role' => 'coord',
+        'idt_movimento' => $evento->idt_movimento
+    ]);
+    $this->actingAs($user)
+        ->get("/eventos/{$evento->idt_evento}/gerenciamento")
+        ->assertStatus(200);
+});
+
+test('coord de outro movimento recebe 403 em gerenciamento de evento', function () {
+    createMovimentos();
+    $evento = createEvento();
+    $user = User::factory()->create([
+        'role' => 'coord',
+        'idt_movimento' => $evento->idt_movimento === 1 ? 2 : 1
+    ]);
+    $this->actingAs($user)
+        ->get("/eventos/{$evento->idt_evento}/gerenciamento")
+        ->assertStatus(403);
+});
+
+test('coord recebe 403 em minha-equipe', function () {
+    $user = User::factory()->create(['role' => 'coord']);
+    $this->actingAs($user)
+        ->get('/minha-equipe')
+        ->assertStatus(403);
+});

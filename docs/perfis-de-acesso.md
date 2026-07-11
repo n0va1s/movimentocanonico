@@ -10,7 +10,7 @@ Este documento descreve o que cada perfil de usuário pode acessar no sistema. O
 |--------|--------------|-----------|
 | Administrador | `admin` | Acesso total ao sistema (todas as funcionalidades de todos os movimentos). Acesso geral. |
 | Dirigente | `dirig` | Acesso ao gerenciamento de eventos ativos (restrito ao seu movimento). Deve ter um movimento associado. Pode configurar informações e gerenciar contatos de seu movimento. |
-| Coordenador (Estático) | `coord` | Perfil estático com privilégios intermediários (módulo de mensagens, listagem de trabalhadores e abas operacionais do gerenciamento do evento em que estiver trabalhando). |
+| Coordenador (Estático) | `coord` | Perfil estático com privilégios intermediários (módulo de mensagens e abas operacionais do gerenciamento do evento em que estiver trabalhando). |
 | Coordenador de Equipe (Dinâmico) | `coord_equipe` | Qualquer usuário que for designado como coordenador de alguma equipe no evento ativo (`ind_coordenador = true`). Possui acesso à página de sua equipe (`/minha-equipe`). |
 | Mercadinho (Dinâmico) | `sales` | Integrantes do mercadinho de um evento. O acesso é dinâmico com base na equipe em que estão alocados. Podem operar o mercadinho. |
 | Visitação (Dinâmico) | `visit` | Integrantes responsáveis por um conjunto de fichas atribuídas. O acesso é dinâmico com base na equipe em que estão alocados. Podem usar a funcionalidade "Minhas Fichas". |
@@ -103,7 +103,7 @@ Qualquer usuário logado tem acesso às rotas abaixo.
 
 ---
 
-## Coordenador (Estático) e Administrador (`coord`, `admin`)
+## Somente Administrador (`admin`)
 
 Além de tudo que o perfil autenticado básico acessa.
 
@@ -143,7 +143,7 @@ Além de tudo que os perfis básicos acessam.
 
 ---
 
-## Coordenador (Estático), Dirigente, Coordenador de Equipe e Administrador (`coord`, `dirig`, `coord_equipe`, `admin`)
+## Dirigente, Coordenador de Equipe e Administrador (`dirig`, `coord_equipe`, `admin`)
 
 | Rota | Descrição |
 |------|-----------|
@@ -263,10 +263,10 @@ Eventos (listagem)              │  ✓   │   ✓   │   ✓   │      ✓ 
 Pessoa (editar próprios dados)  │  ✓   │   ✓   │   ✓   │      ✓       │   ✓   │   ✓   │  ✓
 Settings pessoais               │  ✓   │   ✓   │   ✓   │      ✓       │   ✓   │   ✓   │  ✓
 ────────────────────────────────┼──────┼───────┼───────┼──────────────┼───────┼───────┼──────
-Trabalhadores (listagem)        │  ✗   │   ✗   │   ✓   │      ✗       │   ✗   │   ✗   │  ✓
-Montagem (confirmar)            │  ✗   │   ✗   │   ✓   │      ✗       │   ✗   │   ✗   │  ✓
+Trabalhadores (listagem)        │  ✗   │   ✗   │   ✗   │      ✗       │   ✗   │   ✗   │  ✓
+Montagem (confirmar)            │  ✗   │   ✗   │   ✗   │      ✗       │   ✗   │   ✗   │  ✓
 ────────────────────────────────┼──────┼───────┼───────┼──────────────┼───────┼───────┼──────
-Minha Equipe                    │  ✗   │   ✓   │   ✓   │      ✓       │   ✗   │   ✗   │  ✓
+Minha Equipe                    │  ✗   │   ✓   │   ✗   │      ✓       │   ✗   │   ✗   │  ✓
 Mercadinho                      │  ✗   │   ✗   │   ✗   │      ✗       │   ✓   │   ✗   │  ✓
 Minhas Fichas                   │  ✗   │   ✗   │   ✗   │      ✗       │   ✗   │   ✓   │  ✓
 ────────────────────────────────┼──────┼───────┼───────┼──────────────┼───────┼───────┼──────

@@ -97,6 +97,11 @@ class User extends Authenticatable
             ->exists();
     }
 
+    public function ehCoordenadorDeEquipe(): bool
+    {
+        return $this->autorizaCoord();
+    }
+
     public function autorizaVisit(): bool
     {
         if ($this->isAdmin()) {

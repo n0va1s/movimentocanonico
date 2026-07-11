@@ -446,21 +446,6 @@ class TrabalhadorController extends Controller
                         ->first();
                 }
             }
-        } elseif ($user->isCoordenador()) {
-            // Coordenador estático vê a equipe coord (Coordenação Geral / Coordenação) do seu movimento no evento ativo mais recente
-            if (!is_null($user->idt_movimento)) {
-                $evento = Evento::where('idt_movimento', $user->idt_movimento)
-                    ->orderByDesc('idt_evento')
-                    ->first();
-                if ($evento) {
-                    $equipe = TipoEquipe::where('idt_movimento', $user->idt_movimento)
-                        ->where(function ($q) {
-                            $q->where('des_grupo', 'like', '%Coordenação%')
-                              ->orWhere('des_grupo', 'like', '%Coordenador%');
-                        })
-                        ->first();
-                }
-            }
         } elseif ($user->ehCoordenadorDeEquipe()) {
             // Coordenador de equipe dinâmico: vê a equipe que ele coordena no evento ativo mais recente
             $coordenacao = Trabalhador::with('evento', 'equipe')
