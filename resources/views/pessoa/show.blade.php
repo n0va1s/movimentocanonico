@@ -7,7 +7,7 @@
             <flux:breadcrumbs.item href="/">Início</flux:breadcrumbs.item>
             @if (Auth::user()->isAdmin())
                 <flux:breadcrumbs.item :href="route('pessoas.index')">Pessoas</flux:breadcrumbs.item>
-            @else
+            @elseif (Auth::user()->hasRole('coord_equipe'))
                 <flux:breadcrumbs.item :href="route('trabalhadores.minha-equipe')">Minha Equipe</flux:breadcrumbs.item>
             @endif
             <flux:breadcrumbs.item>{{ $pessoa->nom_apelido ?? $pessoa->nom_pessoa }}</flux:breadcrumbs.item>

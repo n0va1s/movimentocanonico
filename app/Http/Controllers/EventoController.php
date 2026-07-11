@@ -326,7 +326,7 @@ class EventoController extends Controller
     {
         $user = Auth::user();
         if (! $user->isAdmin() && (! $user->pessoa || $user->pessoa->idt_pessoa !== $pessoa->idt_pessoa)) {
-            abort(403);
+            abort(403, 'Sem autorização');
         }
 
         $this->eventoService->confirmarParticipacao($evento, $pessoa);

@@ -72,7 +72,7 @@
                         {{ __('Mercadinho') }}
                     </flux:navlist.item>
                 @endif
-                @if (Auth::user() && Auth::user()->hasRole('admin', 'coord', 'dirig', 'sales', 'coord_equipe'))
+                @if (Auth::user() && Auth::user()->hasRole('admin', 'dirig', 'sales', 'coord_equipe'))
                     <flux:navlist.item icon="user-group" :href="route('trabalhadores.minha-equipe')"
                         :current="request()->routeIs('trabalhadores.minha-equipe')" wire:navigate>
                         {{ __('Minha Equipe') }}

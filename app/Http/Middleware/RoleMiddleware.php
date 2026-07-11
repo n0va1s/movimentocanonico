@@ -19,7 +19,8 @@ class RoleMiddleware
     {
         abort_unless(
             auth()->check() && auth()->user()->hasRole(...$roles),
-            403
+            403,
+            'Sem autorização'
         );
 
         return $next($request);
