@@ -198,6 +198,10 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware(['role:admin,dirig,visit'])->group(function () {
 
+        Route::get('fichas/vem', fn () => redirect()->route('minhas-fichas.index'))->name('vem.index');
+        Route::get('fichas/ecc', fn () => redirect()->route('minhas-fichas.index'))->name('ecc.index');
+        Route::get('fichas/sgm', fn () => redirect()->route('minhas-fichas.index'))->name('sgm.index');
+
         Route::middleware(['dirig.movimento:2'])->group(function () {
             // Fichas VEM — listagem, aprovação e CRUD
             Route::get('fichas/vem/{id}/approve', [FichaVemController::class, 'approve'])->name('vem.approve');

@@ -34,29 +34,6 @@ if (!function_exists('createVisitorUser')) {
     }
 }
 
-if (!function_exists('createVisitorUser')) {
-    function createVisitorUser(array $attributes = [], ?Evento $evento = null) {
-        $user = User::factory()->create(array_merge(['role' => 'user'], $attributes));
-        $pessoa = $user->pessoa;
-        
-        $movimentoId = $user->idt_movimento ?: ($evento ? $evento->idt_movimento : 2);
-        
-        $equipeVisitacao = \App\Models\TipoEquipe::firstOrCreate([
-            'idt_movimento' => $movimentoId,
-            'des_grupo' => 'Visitação'
-        ]);
-        
-        \App\Models\Trabalhador::create([
-            'idt_pessoa' => $pessoa->idt_pessoa,
-            'idt_evento' => $evento ? $evento->idt_evento : ($attributes['idt_evento'] ?? 41),
-            'idt_equipe' => $equipeVisitacao->idt_equipe,
-            'ind_coordenador' => $attributes['ind_coordenador'] ?? false,
-        ]);
-        
-        return $user;
-    }
-}
-
 beforeEach(function () {
     DB::table('tipo_movimento')->insertOrIgnore([
         ['idt_movimento' => 1, 'nom_movimento' => 'Encontro de Casais com Cristo', 'des_sigla' => 'ECC', 'dat_inicio' => '1980-01-01', 'created_at' => now(), 'updated_at' => now()],
