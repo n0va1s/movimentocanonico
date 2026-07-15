@@ -151,8 +151,8 @@ new class extends Component {
     {
         $fichas = \App\Models\Ficha::with(['visitador', 'fichaVem', 'fichaEcc', 'fichaSGM'])
             ->where('idt_evento', $this->evento->idt_evento)
-            ->when($this->situacao, function ($query) {
-                $query->where('tip_situacao', $this->situacao);
+            ->when($this->filtroSituacao, function ($query) {
+                $query->where('tip_situacao', $this->filtroSituacao);
             })
             ->when($this->generoFiltro, function ($query) {
                 $query->where('tip_genero', $this->generoFiltro);
