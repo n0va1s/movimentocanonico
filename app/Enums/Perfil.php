@@ -58,7 +58,7 @@ enum Perfil: string
             'presenca' => [self::ADMIN->value, self::COORD->value, self::DIRIG->value],
             'crachas' => [self::ADMIN->value, self::DIRIG->value],
             'quadrante' => [self::ADMIN->value, self::COORD->value, self::DIRIG->value],
-            'fichas' => [self::ADMIN->value, self::DIRIG->value],
+            'fichas' => [self::ADMIN->value, self::COORD->value, self::DIRIG->value],
             'voluntarios' => [self::ADMIN->value, self::DIRIG->value],
             'contas' => [self::ADMIN->value, self::DIRIG->value],
             'restricoes' => [self::ADMIN->value, self::COORD->value, self::DIRIG->value],
