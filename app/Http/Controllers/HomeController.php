@@ -34,7 +34,8 @@ class HomeController extends Controller
         $movimentos = TipoMovimento::select(
             'idt_movimento',
             'nom_movimento',
-            'des_sigla'
+            'des_sigla',
+            'ind_inscricao_aberta'
         )->get();
 
         $proximoseventos = Evento::with(['movimento'])
@@ -51,6 +52,10 @@ class HomeController extends Controller
             'proximos_eventos' => $proximoseventos->pluck('idt_evento')->toArray(),
             'duration_ms' => $duration,
         ]));
+
+        // Gera token de sessão que autoriza o acesso às fichas públicas (/vem, /ecc, /sgm).
+        // O middleware EnsureFromWelcome valida e consome esse token (uso único por navegação).
+        session()->put('welcome_access_token', true);
 
         return view('welcome', compact('proximoseventos', 'movimentos'));
     }
@@ -90,6 +95,10 @@ class HomeController extends Controller
                     Log::error("Erro ao enviar notificação pro Telegram (Chat ID: {$chatId}): ".$e->getMessage());
                 }
             }
+        }
+
+        if ($request->header('referer') && str_contains($request->header('referer'), '/dashboard')) {
+            return redirect()->route('dashboard')->with('success', 'Recebemos seu contato. Em breve retornaremos!');
         }
 
         return redirect()->route('home')->with('success', 'Recebemos seu contato. Em breve retornaremos!');

@@ -1,13 +1,17 @@
 <x-layouts.app title="Importar Planilhas de Eventos">
     <section class="p-6 w-full max-w-7xl mx-auto">
-        <x-session-alert />
+        <flux:breadcrumbs class="mb-4">
+            <flux:breadcrumbs.item icon="home" href="/" />
+            <flux:breadcrumbs.item href="{{ route('configuracoes.index') }}">Configurações</flux:breadcrumbs.item>
+            <flux:breadcrumbs.item>Importar Planilhas</flux:breadcrumbs.item>
+        </flux:breadcrumbs>
 
         {{-- Cabeçalho Principal --}}
         <header class="mb-8 border-b border-gray-200 dark:border-zinc-700 pb-5">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-3">
+            <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1 flex items-center gap-3">
                 <x-heroicon-o-cloud-arrow-up class="w-8 h-8 text-blue-500" />
                 Importar Planilhas de Eventos
-            </h1>
+            </flux:heading>
             <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm md:text-base">
                 Cadastre e atualize participantes e trabalhadores em lote (lotes de 50) vinculados a um evento ativo. O sistema verifica automaticamente duplicidades por CPF ou e-mail, vincula usuários e pessoas, e gera logs detalhados do processamento.
             </p>
@@ -28,6 +32,25 @@
                 </div>
             </div>
         </div>
+
+        {{-- Alertas de Sucesso / Erro --}}
+        @if (session('success'))
+            <div class="mb-8 p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-xl text-sm text-green-800 dark:text-green-200 whitespace-pre-line">
+                <div class="flex items-start gap-3">
+                    <x-heroicon-s-check-circle class="w-5 h-5 mt-0.5 shrink-0" />
+                    <div>{{ session('success') }}</div>
+                </div>
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div class="mb-8 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl text-sm text-red-800 dark:text-red-200 whitespace-pre-line">
+                <div class="flex items-start gap-3">
+                    <x-heroicon-s-x-circle class="w-5 h-5 mt-0.5 shrink-0" />
+                    <div>{{ session('error') }}</div>
+                </div>
+            </div>
+        @endif
 
         {{-- Grid de Uploads --}}
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
@@ -60,10 +83,13 @@
                                         {{ $ev->des_evento }} ({{ $ev->movimento->des_sigla }} - {{ $ev->getDataInicioFormatada() }})
                                     </flux:select.option>
                                 @empty
-                                    <flux:select.option value="" disabled>Nenhum evento ativo cadastrado</flux:select.option>
+                                    <flux:select.option value="" disabled>{{ __('messages.empty.evento.no_active') }}</flux:select.option>
                                 @endforelse
                             </flux:select>
                             <span class="text-xs text-gray-400 dark:text-zinc-500 mt-1 block">Apenas eventos futuros ou em andamento são listados aqui.</span>
+                            @error('evento_id')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         {{-- Arquivo --}}
@@ -83,8 +109,7 @@
                     </div>
 
                     <div class="pt-4 border-t border-gray-100 dark:border-zinc-700/50 mt-6">
-                        <flux:button type="submit" color="indigo" class="w-full flex justify-center items-center gap-2" loading>
-                            <x-heroicon-m-arrow-up-on-square class="w-4 h-4" />
+                        <flux:button type="submit" variant="primary" class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md" icon="arrow-up-on-square" loading>
                             Iniciar Importação de Participantes
                         </flux:button>
                     </div>
@@ -119,10 +144,13 @@
                                         {{ $ev->des_evento }} ({{ $ev->movimento->des_sigla }} - {{ $ev->getDataInicioFormatada() }})
                                     </flux:select.option>
                                 @empty
-                                    <flux:select.option value="" disabled>Nenhum evento ativo cadastrado</flux:select.option>
+                                    <flux:select.option value="" disabled>{{ __('messages.empty.evento.no_active') }}</flux:select.option>
                                 @endforelse
                             </flux:select>
                             <span class="text-xs text-gray-400 dark:text-zinc-500 mt-1 block">Apenas eventos futuros ou em andamento são listados aqui.</span>
+                            @error('evento_id')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         {{-- Arquivo --}}
@@ -142,8 +170,7 @@
                     </div>
 
                     <div class="pt-4 border-t border-gray-100 dark:border-zinc-700/50 mt-6">
-                        <flux:button type="submit" color="emerald" class="w-full flex justify-center items-center gap-2" loading>
-                            <x-heroicon-m-arrow-up-on-square class="w-4 h-4" />
+                        <flux:button type="submit" variant="primary" class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md" icon="arrow-up-on-square" loading>
                             Iniciar Importação de Trabalhadores
                         </flux:button>
                     </div>

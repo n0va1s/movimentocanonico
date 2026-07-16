@@ -21,10 +21,44 @@
                 }
             }">
 
+        {{-- ===== BREADCRUMBS ===== --}}
+        @php
+            $previousUrl = url()->previous();
+            $isMinhasFichas = str_contains($previousUrl, 'minhas-fichas');
+            $isGerenciamento = str_contains($previousUrl, 'gerenciamento');
+            
+            // Fallback baseado no perfil se a origem for desconhecida ou houver refresh (F5)
+            if (!$isMinhasFichas && !$isGerenciamento && Auth::user()) {
+                if (Auth::user()->hasRole('admin', 'espec', 'coord')) {
+                    $isGerenciamento = true;
+                } else {
+                    $isMinhasFichas = true;
+                }
+            }
+        @endphp
+
+        @if (Auth::user())
+            <flux:breadcrumbs class="mb-6">
+                <flux:breadcrumbs.item href="{{ route('home') }}">Início</flux:breadcrumbs.item>
+                
+                @if ($isGerenciamento)
+                    @if ($ficha->idt_evento)
+                        <flux:breadcrumbs.item href="{{ route('eventos.gerenciamento', $ficha->idt_evento) }}">Gerenciamento</flux:breadcrumbs.item>
+                    @else
+                        <flux:breadcrumbs.item href="{{ route('eventos.index') }}">Eventos</flux:breadcrumbs.item>
+                    @endif
+                @else
+                    <flux:breadcrumbs.item href="{{ route('minhas-fichas.index') }}">Minhas Fichas</flux:breadcrumbs.item>
+                @endif
+                
+                <flux:breadcrumbs.item>Ficha do Segue-me</flux:breadcrumbs.item>
+            </flux:breadcrumbs>
+        @endif
+
         {{-- ===== CABEÇALHO ===== --}}
         <div class="mb-6 space-y-4">
             <div class="mb-6">
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Ficha do Segue-me</h1>
+                <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">Ficha do Segue-me</flux:heading>
                 <p class="text-gray-700 dark:text-gray-500 mt-1">Paróquia Nossa Senhora do Lago</p>
             </div>
 
@@ -173,19 +207,9 @@
             </div>
         </div>
 
-        {{-- ===== BOTÃO VOLTAR (admin) ===== --}}
-        @if (Auth::user()?->isAdmin())
-            <div class="flex justify-end mb-4">
-                <a href="{{ route('sgm.index') }}"
-                    class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-500 focus:ring-2 focus:ring-green-500 focus:outline-none focus-visible:ring-offset-2"
-                    aria-label="Voltar para a lista de fichas">
-                    <x-heroicon-o-arrow-left class="w-5 h-5 mr-2" aria-hidden="true" />
-                    Fichas
-                </a>
-            </div>
-        @endif
 
-        @if (Auth::user()?->hasRole('admin', 'espec', 'coord') && $ficha->exists)
+
+        @if (Auth::user()?->hasRole('admin', 'dirig', 'coord') && $ficha->exists)
             <div class="bg-white dark:bg-zinc-800 rounded-xl shadow border border-gray-200 dark:border-zinc-700 p-4 sm:p-6 mb-6">
                 <p class="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-3">Mudar Situação para:</p>
                 <div class="flex flex-wrap gap-2">
@@ -199,7 +223,7 @@
                         @endphp
                         
                         @if($isCurrent)
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold text-white {{ $style['bg'] }} shadow-sm">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold {{ $style['light'] }} shadow-sm">
                                 <x-heroicon-s-check class="w-4 h-4" />
                                 {{ $situacao->label() }}
                                 @if($situacao->mail()[0] === 'Sim')
@@ -242,7 +266,7 @@
                         @endif
                     @endforeach
                 </div>
-                @if(Auth::user()?->hasRole('admin', 'espec'))
+                @if(Auth::user()?->hasRole('admin', 'dirig'))
                     <div class="mt-4 border-t border-gray-100 dark:border-zinc-700 pt-4">
                         <form method="POST" action="{{ route('fichas.designar-visitador', $ficha->idt_ficha) }}">
                             @csrf
@@ -250,12 +274,21 @@
                                 <label for="idt_pessoa_visitacao" class="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Responsável pela Visitação:</label>
                                 <div class="flex items-center gap-2 w-full sm:w-auto">
                                     <select name="idt_pessoa_visitacao" id="idt_pessoa_visitacao" 
-                                        class="text-xs rounded-md border border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 text-gray-900 dark:text-gray-100 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        class="text-xs rounded-md border border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 text-gray-900 dark:text-gray-100 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:max-w-md">
                                         <option value="">Sem responsável designado</option>
                                         @if(isset($visitadores))
                                             @foreach($visitadores as $v)
-                                                <option value="{{ $v->idt_pessoa }}" @selected($ficha->idt_pessoa_visitacao === $v->idt_pessoa)>
-                                                    {{ $v->nom_pessoa }}
+                                                @php
+                                                    $nomeLabel = $v->nom_pessoa;
+                                                    if ($v->parceiro) {
+                                                        $nomeLabel .= ' & ' . $v->parceiro->nom_pessoa;
+                                                    }
+                                                    if ($v->des_endereco) {
+                                                        $nomeLabel .= ' — ' . $v->des_endereco;
+                                                    }
+                                                @endphp
+                                                <option value="{{ $v->idt_pessoa }}" @selected($ficha->idt_pessoa_visitacao == $v->idt_pessoa || ($v->idt_parceiro && $ficha->idt_pessoa_visitacao == $v->idt_parceiro))>
+                                                    {{ $nomeLabel }}
                                                 </option>
                                             @endforeach
                                         @endif
@@ -273,6 +306,7 @@
 
         {{-- ===== FORMULÁRIO ===== --}}
         @if ($eventos->count() > 0)
+
             <form method="POST" enctype="multipart/form-data" @submit="setTimeout(() => enviando = true, 50)"
                 action="{{ $ficha->exists ? route('sgm.update', $ficha) : route('sgm.store') }}" class="space-y-8">
                 @csrf
@@ -797,25 +831,34 @@
                                     <input type="checkbox" name="ind_batismo" value="1"
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_batismo', optional($ficha->fichaSgm)->ind_batismo) ? 'checked' : '' }}
-                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_batismo') border-red-500 @enderror">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">Batismo</span>
                                 </label>
+                                @error('ind_batismo')
+                                    <p class="text-sm text-red-600" role="alert">{{ $message }}</p>
+                                @enderror
                                 <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_eucaristia" value="0">
                                     <input type="checkbox" name="ind_eucaristia" value="1"
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_eucaristia', optional($ficha->fichaSgm)->ind_eucaristia) ? 'checked' : '' }}
-                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_eucaristia') border-red-500 @enderror">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">Eucaristia</span>
                                 </label>
+                                @error('ind_eucaristia')
+                                    <p class="text-sm text-red-600" role="alert">{{ $message }}</p>
+                                @enderror
                                 <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_crisma" value="0">
                                     <input type="checkbox" name="ind_crisma" value="1"
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_crisma', optional($ficha->fichaSgm)->ind_crisma) ? 'checked' : '' }}
-                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_crisma') border-red-500 @enderror">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">Crisma</span>
                                 </label>
+                                @error('ind_crisma')
+                                    <p class="text-sm text-red-600" role="alert">{{ $message }}</p>
+                                @enderror
                             </div>
                         </div>
 
@@ -911,7 +954,25 @@
                 </div>
 
                 {{-- ===== SAÚDE E RESTRIÇÕES ===== --}}
-                <div x-data="{ mostrarRestricoes: {{ old('ind_restricao', $ficha->ind_restricao ?? false) ? 'true' : 'false' }} }">
+                <div x-data="{
+                        mostrarRestricoes: {{ old('ind_restricao', $ficha->ind_restricao ?? false) ? 'true' : 'false' }},
+                        temRestricaoSelecionada: true,
+                        verificarRestricoes() {
+                            if (!this.mostrarRestricoes) {
+                                this.temRestricaoSelecionada = true;
+                                return;
+                            }
+                            const container = this.$refs.restricoesContainer;
+                            if (!container) return;
+                            const checkboxes = container.querySelectorAll('input[type=\'checkbox\'][name^=\'restricoes\']:checked');
+                            const inputs = Array.from(container.querySelectorAll('input[type=\'text\'][name^=\'complementos\']')).filter(i => i.value.trim() !== '');
+                            this.temRestricaoSelecionada = checkboxes.length > 0 || inputs.length > 0;
+                        }
+                    }"
+                    @change="verificarRestricoes"
+                    @input="verificarRestricoes"
+                    x-init="setTimeout(() => verificarRestricoes(), 100)"
+                >
                     <label
                         class="flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-colors
                         border-amber-300 bg-amber-50 hover:bg-amber-100
@@ -936,13 +997,27 @@
                         <x-heroicon-o-heart class="w-6 h-6 text-amber-400 dark:text-amber-500 ml-auto shrink-0"
                             aria-hidden="true" />
                     </label>
+                    @error('ind_restricao')
+                        <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                    @enderror
 
                     <div x-show="mostrarRestricoes" x-transition
+                        x-ref="restricoesContainer"
                         class="mt-3 bg-gray-50 dark:bg-zinc-700 rounded-md p-4" role="region"
                         aria-label="Restrições e Alergias">
                         <h3 class="text-base sm:text-lg font-medium mb-3 text-gray-900 dark:text-gray-100">
                             Restrições e Alergias
                         </h3>
+
+                        <div x-show="mostrarRestricoes && !temRestricaoSelecionada" x-transition
+                            class="mb-4 flex items-center gap-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 px-4 py-3"
+                            role="alert">
+                            <x-heroicon-o-exclamation-circle class="w-5 h-5 text-red-500 shrink-0" aria-hidden="true" />
+                            <p class="text-sm text-red-700 dark:text-red-400">
+                                Nenhuma restrição ou alergia foi informada. Desmarque a opção Informações de Saúde por favor.
+                            </p>
+                        </div>
+
                         <div class="space-y-4">
                             @php
                                 $restricoesSelecionadas = $ficha->fichaSaude->pluck('idt_restricao')->toArray();

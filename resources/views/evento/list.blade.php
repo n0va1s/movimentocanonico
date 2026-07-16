@@ -1,11 +1,10 @@
 <x-layouts.app title="Evento">
     <section class="p-6 w-full max-w-7xl mx-auto">
-        <x-session-alert />
 
         {{-- Cabeçalho --}}
         <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Eventos</h1>
+                <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">Eventos</flux:heading>
                 <p class="text-gray-600 mt-1 dark:text-gray-400">Visualize os próximos encontros, pós-encontros e desafios.</p>
                 <p class="text-sm text-yellow-600 dark:text-yellow-400 mt-2 flex items-center gap-1">
                     <x-heroicon-o-information-circle class="w-4 h-4" />
@@ -14,14 +13,14 @@
             </div>
 
             @if (Auth::user()->isAdmin())
-                <flux:button href="{{ route('eventos.create') }}" variant="primary" icon="plus" color="green">
+                <flux:button href="{{ route('eventos.create') }}" variant="primary" icon="plus" class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md">
                     Novo Evento
                 </flux:button>
             @endif
         </header>
 
         {{-- Abas Ativos / Encerrados para Admin e Espec --}}
-        @if (Auth::user()?->isAdmin() || Auth::user()?->isEspec())
+        @if (Auth::user()?->isAdmin() || Auth::user()?->isDirig())
             <div class="border-b border-gray-200 dark:border-zinc-700 mb-6">
                 <nav class="-mb-px flex space-x-8" aria-label="Tabs">
                     <a href="{{ route('eventos.index', array_merge(request()->except('page'), ['status' => 'ativos'])) }}" 
@@ -157,7 +156,6 @@
                             <div class="flex items-center text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">
                                 <x-heroicon-o-tag class="w-4 h-4 mr-2 shrink-0" />
                                 <span class="flex-1">{{ $evento->tip_evento->label() }}</span>
-                                @if (Auth::user()?->isAdmin() || (Auth::user()?->isEspec() && (int) Auth::user()->idt_movimento === (int) $evento->idt_movimento))
                                     @can('acessar-gerenciamento-evento', $evento)
                                         <a href="{{ route('eventos.gerenciamento', $evento) }}"
                                            title="Gerenciamento"
@@ -165,7 +163,6 @@
                                             <x-heroicon-o-cog-6-tooth class="w-8 h-8" />
                                         </a>
                                     @endcan
-                                @endif
                             </div>
                         </div>
                     </div>
@@ -183,7 +180,7 @@
                             @endphp
 
                             @if ($tipoValue === 'E' && auth()->user()->pessoa)
-                                <flux:button href="{{ route('trabalhadores.create', ['evento' => $evento]) }}" color="green" class="w-full">
+                                <flux:button href="{{ route('trabalhadores.create', ['evento' => $evento]) }}" variant="primary" class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md">
                                     Quero Trabalhar
                                 </flux:button>
                             @elseif (Auth::user()->pessoa)
@@ -193,12 +190,12 @@
 
                                 <form method="POST" action="{{ route('participantes.confirm', ['evento' => $evento, 'pessoa' => Auth::user()->pessoa]) }}">
                                     @csrf
-                                    <flux:button type="submit" color="green" class="w-full" loading>
+                                    <flux:button type="submit" variant="primary" class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md" loading>
                                         {{ $textoBotao }}
                                     </flux:button>
                                 </form>
                             @else
-                                <flux:button href="{{ route('pessoas.create') }}" color="blue" class="w-full">
+                                <flux:button href="{{ route('pessoas.create') }}" variant="primary" class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md">
                                     Completar Cadastro
                                 </flux:button>
                             @endif

@@ -1,6 +1,5 @@
 <x-layouts.app :title="'Aura — Sua Jornada'">
     <section class="p-4 md:p-8 w-full max-w-7xl mx-auto space-y-8">
-        <x-session-alert />
 
         <div class="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-purple-700 to-indigo-900 rounded-[2rem] p-6 md:p-10 shadow-2xl text-white">
             <div class="absolute top-0 right-0 -mt-10 -mr-10 opacity-10 rotate-12">
@@ -12,7 +11,10 @@
                     <div class="relative group">
                         <div class="w-28 h-28 rounded-3xl p-1 bg-gradient-to-tr from-yellow-400 to-orange-500 shadow-lg transform group-hover:rotate-3 transition-transform">
                             <img src="{{ $pessoa->foto ? asset('storage/' . $pessoa->foto->med_foto) : asset('images/default-avatar.png') }}"
-     class="w-full h-full rounded-[1.4rem] object-cover border-4 border-indigo-700 shadow-inner">
+     class="w-full h-full rounded-[1.4rem] object-cover border-4 border-indigo-700 shadow-inner"
+     alt="Avatar de {{ $pessoa->nom_apelido ?? $pessoa->nom_pessoa }}"
+     fetchpriority="high"
+     decoding="sync">
                         </div>
                         <div class="absolute -bottom-2 -right-2 bg-yellow-400 text-indigo-900 text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-tighter shadow-xl">
                             Lv. {{ floor(($pessoa->qtd_pontos_total ?? 0) / 1000) + 1 }}
@@ -21,8 +23,8 @@
 
                     <div>
                         <div class="flex items-center justify-center md:justify-start gap-2 mb-1">
-                            <h1 class="text-3xl font-black tracking-tight">{{ $pessoa->nom_apelido ?? $pessoa->nom_pessoa }}</h1>
-                            <x-heroicon-s-check-badge class="w-6 h-6 text-blue-400" />
+                            <h1 class="text-3xl font-black tracking-tight" aria-label="Nome do usuário: {{ $pessoa->nom_apelido ?? $pessoa->nom_pessoa }}">{{ $pessoa->nom_apelido ?? $pessoa->nom_pessoa }}</h1>
+                            <x-heroicon-s-check-badge class="w-6 h-6 text-blue-400" aria-label="Conta verificada" />
                         </div>
                         <p class="text-indigo-100 font-medium opacity-90 max-w-sm">
                             Sua Aura reflete sua dedicação. Participe de eventos para desbloquear novas conquistas!
@@ -67,7 +69,7 @@
 
             <aside class="lg:col-span-3 space-y-6 lg:sticky lg:top-8">
                 <div class="bg-white dark:bg-zinc-800 rounded-3xl p-6 border border-gray-100 dark:border-zinc-700 shadow-sm">
-                    <h3 class="text-sm font-black uppercase text-gray-400 dark:text-zinc-500 mb-4 flex items-center gap-2">
+                    <h3 class="text-sm font-black uppercase text-gray-400 dark:text-zinc-500 mb-4 flex items-center gap-2" aria-hidden="true">
                         <x-heroicon-o-chart-bar class="w-4 h-4" /> Resumo de Atividades
                     </h3>
                     <div class="space-y-4">
@@ -90,7 +92,7 @@
                 <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-3xl p-6 border border-indigo-100 dark:border-indigo-800/50">
                     <h3 class="text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-3">Próximo Desafio?</h3>
                     <p class="text-xs text-indigo-700 dark:text-indigo-400 mb-4 italic">"Onde dois ou três estiverem reunidos..."</p>
-                    <a href="{{ route('eventos.index') }}">
+                    <a href="{{ route('eventos.index') }}" aria-label="Acessar página de eventos">
                        <button class="w-full py-2 bg-white dark:bg-zinc-800 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-black uppercase shadow-sm hover:shadow-md transition-all">Ver Eventos</button>
                     </a>
                 </div>

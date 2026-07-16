@@ -11,6 +11,7 @@ new class extends Component {
 
     public Evento $evento;
     public string $search = '';
+    public string $corTroca = '';
 
     public function mount(Evento $evento): void
     {
@@ -18,6 +19,11 @@ new class extends Component {
     }
 
     public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedCorTroca(): void
     {
         $this->resetPage();
     }
@@ -49,6 +55,15 @@ new class extends Component {
             ->select('participante.*')
             ->join('pessoa', 'participante.idt_pessoa', '=', 'pessoa.idt_pessoa')
             ->where('participante.idt_evento', $eventoId)
+            ->when($this->corTroca, function ($query) {
+                $query->where('participante.tip_cor_troca', $this->corTroca);
+            })
+            ->when($this->search, function ($query) {
+                $query->where(function ($q) {
+                    $q->where('pessoa.nom_pessoa', 'like', '%' . $this->search . '%')
+                        ->orWhere('pessoa.nom_apelido', 'like', '%' . $this->search . '%');
+                });
+            })
             ->with([
                 'pessoa.restricoes',
                 'pessoa.fichas' => function ($query) use ($eventoId) {
@@ -147,6 +162,18 @@ new class extends Component {
         return $response;
     }
 
+    /**
+     * Retorna a contagem de participantes agrupada por cor da troca.
+     */
+    public function getQuantidadePorCor(): array
+    {
+        return \App\Models\Participante::where('idt_evento', $this->evento->idt_evento)
+            ->select('tip_cor_troca', \DB::raw('count(*) as total'))
+            ->groupBy('tip_cor_troca')
+            ->pluck('total', 'tip_cor_troca')
+            ->toArray();
+    }
+
     public function with(): array
     {
         return [
@@ -162,6 +189,9 @@ new class extends Component {
                             ->with(['fichaVem', 'fichaSGM']);
                     }
                 ])
+                ->when($this->corTroca, function ($query) {
+                    $query->where('participante.tip_cor_troca', $this->corTroca);
+                })
                 ->when($this->search, function ($query) {
                     $query->where(function ($q) {
                         $q->where('pessoa.nom_pessoa', 'like', '%' . $this->search . '%')
@@ -179,6 +209,7 @@ new class extends Component {
         <div>
             <div class="flex items-center gap-3">
                 <flux:heading size="lg">Participantes Confirmados</flux:heading>
+                <flux:badge size="sm" color="zinc" inset="top bottom" title="Total filtrado">{{ $participantes->total() }}</flux:badge>
                 <flux:button wire:click="exportar" icon="arrow-down-tray" variant="outline" size="sm" title="Exportar CSV">
                     Exportar
                 </flux:button>
@@ -186,18 +217,35 @@ new class extends Component {
             <flux:subheading>Gerencie as cores das trocas e informações básicas.</flux:subheading>
         </div>
 
-        <flux:input
-            wire:model.live.debounce.300ms="search"
-            icon="magnifying-glass"
-            placeholder="Nome ou apelido..."
-            class="w-full md:max-w-xs"
-        />
+        @php
+            $quantidades = $this->getQuantidadePorCor();
+            $totalParticipantes = \App\Models\Participante::where('idt_evento', $this->evento->idt_evento)->count();
+        @endphp
+
+        <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+            <flux:select wire:model.live="corTroca" icon="funnel" placeholder="Todas as cores" class="w-full sm:w-64">
+                <option value="">Todas as cores ({{ $totalParticipantes }})</option>
+                @foreach (CorTroca::cases() as $cor)
+                    @php
+                        $qtd = $quantidades[strtolower($cor->value)] ?? $quantidades[ucfirst($cor->value)] ?? $quantidades[$cor->value] ?? 0;
+                    @endphp
+                    <option value="{{ $cor->value }}">{{ $cor->label() }} ({{ $qtd }})</option>
+                @endforeach
+            </flux:select>
+
+            <flux:input
+                wire:model.live.debounce.300ms="search"
+                icon="magnifying-glass"
+                placeholder="Nome ou apelido..."
+                class="w-full sm:w-64"
+            />
+        </div>
     </div>
 
     <flux:table>
         <flux:table.columns>
             <flux:table.column>Nome</flux:table.column>
-            <flux:table.column>Cor da Troca</flux:table.column>
+            <flux:table.column>Cor do Grupo</flux:table.column>
             <flux:table.column>Camiseta</flux:table.column>
             <flux:table.column>Responsável</flux:table.column>
             <flux:table.column align="end">Ações</flux:table.column>
@@ -221,16 +269,15 @@ new class extends Component {
 
                     {{-- Cor da Troca --}}
                     <flux:table.cell>
-                        <flux:select
+                        <select
                             wire:change="atualizarTroca({{ $p->idt_participante }}, $event.target.value)"
-                            size="sm"
-                            class="w-32">
+                            class="w-32 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 px-2.5 py-1.5 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 border-l-[5px] {{ \App\Enums\CorTroca::tryFrom(strtolower($p->tip_cor_troca))?->borderLClass() ?? 'border-l-zinc-200 dark:border-l-zinc-700' }}">
                             @foreach (CorTroca::cases() as $cor)
-                                <option value="{{ $cor->value }}" @selected(strtolower($p->tip_cor_troca) === $cor->value)>
+                                <option value="{{ $cor->value }}" @selected(strtolower($p->tip_cor_troca) === $cor->value) class="text-zinc-800 bg-white dark:bg-zinc-900 dark:text-zinc-200">
                                     {{ $cor->label() }}
                                 </option>
                             @endforeach
-                        </flux:select>
+                        </select>
                     </flux:table.cell>
 
                     {{-- Camiseta --}}

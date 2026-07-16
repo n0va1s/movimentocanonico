@@ -6,20 +6,16 @@ enum Perfil: string
 {
     case ADMIN = 'admin';
     case COORD = 'coord';
-    case ESPEC = 'espec';
+    case DIRIG = 'dirig';
     case USER = 'user';
-    case VISIT = 'visit';
-    case SALES = 'sales';
 
     public function label(): string
     {
         return match ($this) {
             self::ADMIN => 'Administrador',
             self::COORD => 'Coordenador',
-            self::ESPEC => 'Especialista',
+            self::DIRIG => 'Dirigente',
             self::USER => 'Usuário',
-            self::VISIT => 'Visitação',
-            self::SALES => 'Mercadinho',
         };
     }
 
@@ -28,10 +24,8 @@ enum Perfil: string
         return match ($this) {
             self::ADMIN => 'shield-exclamation',
             self::COORD => 'users',
-            self::ESPEC => 'wrench-screwdriver',
+            self::DIRIG => 'wrench-screwdriver',
             self::USER => 'user',
-            self::VISIT => 'document-text',
-            self::SALES => 'shopping-cart',
         };
     }
 
@@ -48,7 +42,7 @@ enum Perfil: string
      */
     public static function gestores(): array
     {
-        return [self::ADMIN->value, self::COORD->value, self::ESPEC->value];
+        return [self::ADMIN->value, self::COORD->value, self::DIRIG->value];
     }
 
     /**
@@ -58,16 +52,16 @@ enum Perfil: string
     public static function abasPermitidas(): array
     {
         return [
-            'resumo' => [self::ADMIN->value, self::COORD->value, self::ESPEC->value],
-            'participantes' => [self::ADMIN->value, self::COORD->value, self::ESPEC->value],
-            'trabalhadores' => [self::ADMIN->value, self::COORD->value, self::ESPEC->value],
-            'presenca' => [self::ADMIN->value, self::COORD->value, self::ESPEC->value],
-            'crachas' => [self::ADMIN->value, self::COORD->value, self::ESPEC->value],
-            'quadrante' => [self::ADMIN->value, self::COORD->value, self::ESPEC->value],
-            'fichas' => [self::ADMIN->value, self::ESPEC->value],
-            'voluntarios' => [self::ADMIN->value, self::ESPEC->value],
-            'contas' => [self::ADMIN->value, self::ESPEC->value],
-            'restricoes' => [self::ADMIN->value, self::COORD->value, self::ESPEC->value],
+            'resumo' => [self::ADMIN->value, self::COORD->value, self::DIRIG->value],
+            'participantes' => [self::ADMIN->value, self::COORD->value, self::DIRIG->value],
+            'trabalhadores' => [self::ADMIN->value, self::COORD->value, self::DIRIG->value],
+            'presenca' => [self::ADMIN->value, self::COORD->value, self::DIRIG->value],
+            'crachas' => [self::ADMIN->value, self::DIRIG->value],
+            'quadrante' => [self::ADMIN->value, self::COORD->value, self::DIRIG->value],
+            'fichas' => [self::ADMIN->value, self::DIRIG->value],
+            'voluntarios' => [self::ADMIN->value, self::DIRIG->value],
+            'contas' => [self::ADMIN->value, self::DIRIG->value],
+            'restricoes' => [self::ADMIN->value, self::COORD->value, self::DIRIG->value],
         ];
     }
 }

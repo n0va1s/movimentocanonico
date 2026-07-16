@@ -53,7 +53,7 @@
 
         {{-- Cabeçalho e Ações --}}
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-            <h1 id="page-title" class="text-2xl font-bold text-gray-900 dark:text-gray-100">Documentos Legais</h1>
+            <flux:heading size="xl" id="page-title" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">Documentos Legais</flux:heading>
 
             <div class="flex items-center gap-3">
                 <a href="{{ url()->previous() }}"
@@ -150,7 +150,7 @@
                 <p class="doc-subitem"><strong>7.2</strong> Eventuais critérios para reembolso de taxas de inscrição, se aplicável, serão definidos e comunicados no regulamento específico de cada edição do encontro.</p>
 
                 <p class="doc-article-title">8. Alterações nos Termos</p>
-                <p class="doc-p">A Paróquia Nossa Senhora do Lago reserva-se o direito de atualizar estes termos a qualquer tempo, para melhor atender às exigências legais e às necessidades de organização. Alterações substanciais serão comunicadas ao participante pelos canais de contato cadastrados com antecedência razoável.</p>
+                <p class="doc-p">{{ __('messages.terms.formSGM.updates') }}</p>
             </div>
 
             {{-- ABA 2: POLÍTICA DE PRIVACIDADE --}}
@@ -199,7 +199,7 @@
                 <p class="doc-article-title">6. Armazenamento, Segurança e Retenção</p>
                 <p class="doc-subitem"><strong>6.1</strong> Os dados serão armazenados em ambiente seguro, com acesso controlado por credenciais, adotando-se medidas técnicas e administrativas adequadas à proteção contra acesso não autorizado, destruição, perda ou alteração indevida, conforme Art. 46 da LGPD.</p>
                 <p class="doc-subitem"><strong>6.2</strong> Os dados serão retidos pelo período necessário ao cumprimento das finalidades descritas neste documento ou pelo prazo mínimo exigido por obrigação legal.</p>
-                <p class="doc-subitem"><strong>6.3</strong> Após o término da relação do participante com o movimento, os dados serão anonimizados ou eliminados, salvo quando sua conservação for obrigatória por lei.</p>
+                <p class="doc-subitem"><strong>6.3</strong> {{ __('messages.terms.formSGM.data_retention') }}</p>
             </div>
 
             {{-- ABA 3: TERMO DE CONSENTIMENTO --}}
@@ -399,7 +399,7 @@
                 subItem('7.2  Eventuais critérios para reembolso de taxas de inscrição, se aplicável, serão definidos e comunicados no regulamento específico de cada edição do encontro.');
 
                 articleTitle('8. ALTERAÇÕES NOS TERMOS');
-                p('A Paróquia Nossa Senhora do Lago reserva-se o direito de atualizar estes termos a qualquer tempo, para melhor atender às exigências legais e às necessidades de organização. Alterações substanciais serão comunicadas ao participante pelos canais de contato cadastrados com antecedência razoável.');
+                p('{{ __('messages.terms.formSGM.updates') }}');
 
                 y += 4;
                 hr();
@@ -446,7 +446,7 @@
                 articleTitle('6. ARMAZENAMENTO, SEGURANÇA E RETENÇÃO');
                 subItem('6.1  Os dados serão armazenados em ambiente seguro, com acesso controlado por credenciais, adotando-se medidas técnicas e administrativas adequadas à proteção contra acesso não autorizado, destruição, perda ou alteração indevida, conforme Art. 46 da LGPD.');
                 subItem('6.2  Os dados serão retidos pelo período necessário ao cumprimento das finalidades descritas neste documento ou pelo prazo mínimo exigido por obrigação legal.');
-                subItem('6.3  Após o término da relação do participante com o movimento, os dados serão anonimizados ou eliminados, salvo quando sua conservação for obrigatória por lei.');
+                subItem('6.3  {{ __('messages.terms.formSGM.data_retention') }}');
 
                 y += 4;
                 hr();

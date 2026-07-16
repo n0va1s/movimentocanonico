@@ -153,6 +153,17 @@ class Ficha extends Model
         );
     }
 
+    public function getShowRoute(): string
+    {
+        $movimentoId = (int) ($this->evento?->idt_movimento);
+        return match ($movimentoId) {
+            TipoMovimento::ECC => route('ecc.show', $this->idt_ficha),
+            TipoMovimento::VEM => route('vem.show', $this->idt_ficha),
+            TipoMovimento::SGM => route('sgm.show', $this->idt_ficha),
+            default => '#',
+        };
+    }
+
     public function getEditRoute(): string
     {
         $movimentoId = (int) ($this->evento?->idt_movimento);

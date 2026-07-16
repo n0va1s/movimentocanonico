@@ -58,7 +58,7 @@ foreach ($rotasAuth as $rota) {
 $rotasAdmin = [
     '/contatos',
     '/configuracoes/role',
-    '/configuracoes/equipe',
+    '/configuracoes/organizacao',
     '/eventos/create',
     '/pessoas',
     '/aniversario',
@@ -72,7 +72,7 @@ foreach ($rotasAdmin as $rota) {
             ->assertStatus(200);
     });
 
-    foreach (['coord', 'espec', 'user'] as $perfil) {
+    foreach (['coord', 'dirig', 'user'] as $perfil) {
         test("{$perfil} recebe 403 em {$rota}", function () use ($rota, $perfil) {
             $response = $this->actingAs(userComRole($perfil))->get($rota);
             $response->assertStatus(403);
@@ -81,7 +81,7 @@ foreach ($rotasAdmin as $rota) {
 }
 
 // ---------------------------------------------------------------------------
-// Rotas ADMIN e ESPEC — outros perfis recebem 403
+// Rotas ADMIN e DIRIG — outros perfis recebem 403
 // ---------------------------------------------------------------------------
 
 $rotasAdminEspec = [
@@ -96,14 +96,14 @@ $rotasAdminEspec = [
 ];
 
 foreach ($rotasAdminEspec as $rota) {
-    test("admin acessa {$rota} (admin,espec)", function () use ($rota) {
+    test("admin acessa {$rota} (admin,dirig)", function () use ($rota) {
         createMovimentos();
         $this->actingAs(userComRole('admin'))
             ->get($rota)
             ->assertStatus(200);
     });
 
-    test("espec acessa {$rota} (admin,espec)", function () use ($rota) {
+    test("dirig acessa {$rota} (admin,dirig)", function () use ($rota) {
         createMovimentos();
         
         $idtMovimento = null;
@@ -118,7 +118,7 @@ foreach ($rotasAdminEspec as $rota) {
         }
 
         $user = User::factory()->create([
-            'role' => 'espec',
+            'role' => 'dirig',
             'idt_movimento' => $idtMovimento
         ]);
 
@@ -127,7 +127,7 @@ foreach ($rotasAdminEspec as $rota) {
             ->assertStatus(200);
     });
 
-    test("espec de outro movimento recebe 403 em {$rota}", function () use ($rota) {
+    test("dirig de outro movimento recebe 403 em {$rota}", function () use ($rota) {
         createMovimentos();
         
         $idtMovimento = null;
@@ -141,7 +141,7 @@ foreach ($rotasAdminEspec as $rota) {
         
         if ($idtMovimento) {
             $user = User::factory()->create([
-                'role' => 'espec',
+                'role' => 'dirig',
                 'idt_movimento' => $idtMovimento
             ]);
             
@@ -154,7 +154,7 @@ foreach ($rotasAdminEspec as $rota) {
     });
 
     foreach (['coord', 'user'] as $perfil) {
-        test("{$perfil} recebe 403 em {$rota} (admin,espec)", function () use ($rota, $perfil) {
+        test("{$perfil} recebe 403 em {$rota} (admin,dirig)", function () use ($rota, $perfil) {
             $this->actingAs(userComRole($perfil))
                 ->get($rota)
                 ->assertStatus(403);
@@ -163,7 +163,7 @@ foreach ($rotasAdminEspec as $rota) {
 }
 
 // ---------------------------------------------------------------------------
-// Rota /trabalhadores — admin e coord acessam, espec e user recebem 403
+// Rota /trabalhadores — apenas admin acessa, outros perfis recebem 403
 // ---------------------------------------------------------------------------
 
 test('admin acessa /trabalhadores', function () {
@@ -173,15 +173,14 @@ test('admin acessa /trabalhadores', function () {
         ->assertStatus(200);
 });
 
-test('coord acessa /trabalhadores', function () {
-    createMovimentos();
+test('coord recebe 403 em /trabalhadores', function () {
     $this->actingAs(userComRole('coord'))
         ->get('/trabalhadores')
-        ->assertStatus(200);
+        ->assertStatus(403);
 });
 
-test('espec recebe 403 em /trabalhadores', function () {
-    $this->actingAs(userComRole('espec'))
+test('dirig recebe 403 em /trabalhadores', function () {
+    $this->actingAs(userComRole('dirig'))
         ->get('/trabalhadores')
         ->assertStatus(403);
 });
@@ -204,7 +203,7 @@ $rotasListagem = [
 ];
 
 foreach ($rotasListagem as $rota) {
-    foreach (['admin', 'coord', 'espec', 'user'] as $perfil) {
+    foreach (['admin', 'coord', 'dirig', 'user'] as $perfil) {
         test("{$perfil} acessa listagem {$rota}", function () use ($rota, $perfil) {
             createMovimentos();
             $this->actingAs(userComRole($perfil))
@@ -250,15 +249,46 @@ test('admin acessa gerenciamento de evento inativo/deletado', function () {
         ->assertStatus(200);
 });
 
-test('espec acessa gerenciamento de evento inativo/deletado do seu movimento', function () {
+test('dirig acessa gerenciamento de evento inativo/deletado do seu movimento', function () {
     createMovimentos();
     $evento = createEvento();
     $evento->delete();
     $user = User::factory()->create([
-        'role' => 'espec',
+        'role' => 'dirig',
         'idt_movimento' => $evento->idt_movimento
     ]);
     $this->actingAs($user)
         ->get("/eventos/{$evento->idt_evento}/gerenciamento")
         ->assertStatus(200);
+});
+
+test('coord acessa gerenciamento de evento do seu movimento', function () {
+    createMovimentos();
+    $evento = createEvento();
+    $user = User::factory()->create([
+        'role' => 'coord',
+        'idt_movimento' => $evento->idt_movimento
+    ]);
+    $this->actingAs($user)
+        ->get("/eventos/{$evento->idt_evento}/gerenciamento")
+        ->assertStatus(200);
+});
+
+test('coord de outro movimento recebe 403 em gerenciamento de evento', function () {
+    createMovimentos();
+    $evento = createEvento();
+    $user = User::factory()->create([
+        'role' => 'coord',
+        'idt_movimento' => $evento->idt_movimento === 1 ? 2 : 1
+    ]);
+    $this->actingAs($user)
+        ->get("/eventos/{$evento->idt_evento}/gerenciamento")
+        ->assertStatus(403);
+});
+
+test('coord recebe 403 em minha-equipe', function () {
+    $user = User::factory()->create(['role' => 'coord']);
+    $this->actingAs($user)
+        ->get('/minha-equipe')
+        ->assertStatus(403);
 });

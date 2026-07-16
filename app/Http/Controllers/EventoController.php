@@ -34,7 +34,7 @@ class EventoController extends Controller
         $tip_evento = $request->input('tip_evento') ?? $request->input('eventTypeFilter');
 
         $status = $request->input('status') ?? 'ativos';
-        $isStaff = Auth::user() && (Auth::user()->isAdmin() || Auth::user()->isEspec());
+        $isStaff = Auth::user() && (Auth::user()->isAdmin() || Auth::user()->isDirig());
 
         if ($status === 'encerrados' && $isStaff) {
             $query = Evento::onlyTrashed();
@@ -326,7 +326,7 @@ class EventoController extends Controller
     {
         $user = Auth::user();
         if (! $user->isAdmin() && (! $user->pessoa || $user->pessoa->idt_pessoa !== $pessoa->idt_pessoa)) {
-            abort(403);
+            abort(403, 'Sem autorização');
         }
 
         $this->eventoService->confirmarParticipacao($evento, $pessoa);
@@ -342,7 +342,7 @@ class EventoController extends Controller
     /**
      * Linha do Tempo Otimizada.
      */
-    public function timeline()
+    public function timeline(): View|RedirectResponse
     {
         $start = microtime(true);
         $pessoa = Auth::user()->pessoa;

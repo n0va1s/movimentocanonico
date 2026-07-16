@@ -22,14 +22,28 @@ class ContatoController extends Controller
         $context = $this->getLogContext($request);
 
         $search = $request->get('search');
+        $status = $request->get('status', 'pendentes');
+        $idt_movimento = $request->get('idt_movimento');
 
         Log::info('Requisição de listagem de contatos iniciada', array_merge($context, [
             'search' => $search,
+            'status' => $status,
+            'idt_movimento' => $idt_movimento,
         ]));
 
         $contatos = Contato::with(['movimento'])
+            ->when($status === 'resolvidos', function ($query) {
+                return $query->onlyTrashed();
+            })
+            ->when($status !== 'resolvidos', function ($query) {
+                // Como usa softdeletes, withoutTrashed já é o default, mas fica explícito
+                return $query->withoutTrashed();
+            })
             ->when($search, function ($query, $search) {
                 return $query->search($search);
+            })
+            ->when($idt_movimento, function ($query, $idt_movimento) {
+                return $query->where('idt_movimento', $idt_movimento);
             })
             ->select(
                 'idt_contato',
@@ -37,11 +51,15 @@ class ContatoController extends Controller
                 'eml_contato',
                 'tel_contato',
                 'txt_mensagem',
-                'idt_movimento'
+                'idt_movimento',
+                'created_at',
+                'deleted_at'
             )
             ->orderBy('created_at', 'desc')
             ->paginate(10)
             ->withQueryString();
+
+        $movimentos = \App\Models\TipoMovimento::orderBy('nom_movimento')->get();
 
         $duration = round((microtime(true) - $start) * 1000, 2);
 
@@ -54,7 +72,10 @@ class ContatoController extends Controller
             'contato.list',
             compact(
                 'contatos',
-                'search'
+                'search',
+                'status',
+                'idt_movimento',
+                'movimentos'
             )
         );
     }

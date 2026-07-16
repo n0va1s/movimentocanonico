@@ -35,7 +35,7 @@ class FichaRequest extends FormRequest
             'idt_evento' => 'required|exists:evento,idt_evento',
             'tip_genero' => 'required|string|max:3',
             'num_cpf_candidato' => [
-                'nullable',
+                'required',
                 'string',
                 'max:20',
                 new Cpf,
@@ -57,7 +57,7 @@ class FichaRequest extends FormRequest
                         ->exists();
 
                     if ($exists) {
-                        $fail('Já existe ficha ativa cadastrada pra este CPF neste movimento.');
+                        $fail($this->messages()['num_cpf_candidato.unique'] ?? 'Já existe ficha ativa cadastrada pra este CPF neste movimento.');
                     }
                 },
             ],
@@ -92,6 +92,7 @@ class FichaRequest extends FormRequest
             'tip_genero.max' => 'O gênero deve ter no máximo 3 caracteres.',
 
             // CPF
+            'num_cpf_candidato.required' => 'O CPF do candidato é obrigatório.',
             'num_cpf_candidato.string' => 'O CPF do candidato deve ser um texto.',
             'num_cpf_candidato.max' => 'O CPF do candidato deve ter no máximo 20 caracteres.',
             'num_cpf_candidato.unique' => 'Já existe ficha cadastrada pra este CPF.',
@@ -140,6 +141,22 @@ class FichaRequest extends FormRequest
 
             // Observações
             'txt_observacao.string' => 'As observações devem ser um texto válido.',
+        ];
+    }
+
+    public function after(): array
+    {
+        return [
+            function ($validator) {
+                if ($this->boolean('ind_restricao')) {
+                    $restricoes = $this->input('restricoes', []);
+                    $hasAnyTrue = collect($restricoes)->filter(fn($val) => filter_var($val, FILTER_VALIDATE_BOOLEAN))->isNotEmpty();
+                    
+                    if (!$hasAnyTrue) {
+                        $validator->errors()->add('ind_restricao', 'Você marcou que o candidato possui informações de saúde, portanto deve selecionar ao menos uma restrição.');
+                    }
+                }
+            }
         ];
     }
 }

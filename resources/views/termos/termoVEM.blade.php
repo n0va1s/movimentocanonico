@@ -58,7 +58,7 @@
 
         {{-- Cabeçalho e Ações --}}
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-            <h1 id="page-title" class="text-2xl font-bold text-gray-900 dark:text-gray-100">Documentos Legais - VEM</h1>
+            <flux:heading size="xl" id="page-title" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">Documentos Legais - VEM</flux:heading>
 
             <div class="flex items-center gap-3">
                 <a href="{{ url()->previous() }}"

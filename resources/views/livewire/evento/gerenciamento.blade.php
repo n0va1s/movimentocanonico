@@ -80,19 +80,13 @@ new class extends Component {
             </flux:button>
         </div>
 
-        <div class="flex items-center gap-3">
-            <flux:heading size="xl">{{ $evento->des_evento }}</flux:heading>
+        <div class="flex items-center gap-3 mb-2">
+            <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight">
+                {{ $evento->des_evento }}
+            </flux:heading>
             
             {{-- Badge de Movimento --}}
-            @php
-                $color = match(strtoupper($evento->movimento->des_sigla)) {
-                    'VEM'      => 'blue',
-                    'ECC'      => 'green',
-                    'SEGUE-ME' => 'orange',
-                    default    => 'zinc',
-                };
-            @endphp
-            <flux:badge :color="$color" inset="top bottom" size="sm" class="uppercase font-bold">
+            <flux:badge :color="$evento->movimento->cor_badge" inset="top bottom" size="sm" class="uppercase font-bold tracking-wider">
                 {{ $evento->movimento->des_sigla }}
             </flux:badge>
         </div>
@@ -126,12 +120,12 @@ new class extends Component {
                 $activeTabMeta = $tabs[$activeTab] ?? null;
             @endphp
             @if ($activeTabMeta)
-                <div class="flex gap-3">
-                    <flux:dropdown>
+                <div class="flex gap-3 w-full md:w-auto">
+                    <flux:dropdown class="w-full md:w-auto">
                         <flux:button 
                             icon="{{ $activeTabMeta['icon'] }}" 
                             icon-trailing="chevron-down" 
-                            class="min-w-64 justify-between"
+                            class="w-full md:min-w-64 justify-between"
                         >
                             {{ $activeTabMeta['label'] }}
                         </flux:button>
@@ -140,7 +134,8 @@ new class extends Component {
                                 <flux:menu.item 
                                     wire:click="setTab('{{ $tab }}')"
                                     icon="{{ $meta['icon'] }}"
-                                    class="cursor-pointer {{ $activeTab === $tab ? 'bg-zinc-100 dark:bg-zinc-700/50 font-semibold text-blue-600 dark:text-blue-400' : '' }}"
+                                    class="cursor-pointer transition-colors {{ $activeTab === $tab ? 'bg-indigo-50 dark:bg-indigo-900/30 font-semibold text-indigo-600 dark:text-indigo-400' : '' }}"
+                                    aria-label="Aba {{ $meta['label'] }}"
                                 >
                                     {{ $meta['label'] }}
                                 </flux:menu.item>
@@ -164,16 +159,16 @@ new class extends Component {
         {{-- Renderização Dinâmica Segura --}}
         @if(array_key_exists($activeTab, $this->tabs))
             @switch($activeTab)
-                @case('resumo') <livewire:evento.partials.resumo :evento="$evento" /> @break
-                @case('fichas') <livewire:evento.partials.fichas :evento="$evento" /> @break
-                @case('participantes') <livewire:evento.partials.participantes :evento="$evento" /> @break
-                @case('voluntarios') <livewire:evento.partials.voluntarios :evento="$evento" /> @break
-                @case('trabalhadores') <livewire:evento.partials.trabalhadores :evento="$evento" /> @break
-                @case('presenca') <livewire:evento.partials.presenca :evento="$evento" /> @break
-                @case('quadrante') <livewire:evento.partials.quadrante :evento="$evento" /> @break
-                @case('crachas') <livewire:evento.partials.crachas :evento="$evento" /> @break
-                @case('contas') <livewire:evento.partials.contas :evento="$evento" /> @break
-                @case('restricoes') <livewire:evento.partials.restricoes :evento="$evento" /> @break
+                @case('resumo') <livewire:evento.partials.resumo :evento="$evento" lazy /> @break
+                @case('fichas') <livewire:evento.partials.fichas :evento="$evento" lazy /> @break
+                @case('participantes') <livewire:evento.partials.participantes :evento="$evento" lazy /> @break
+                @case('voluntarios') <livewire:evento.partials.voluntarios :evento="$evento" lazy /> @break
+                @case('trabalhadores') <livewire:evento.partials.trabalhadores :evento="$evento" lazy /> @break
+                @case('presenca') <livewire:evento.partials.presenca :evento="$evento" lazy /> @break
+                @case('quadrante') <livewire:evento.partials.quadrante :evento="$evento" lazy /> @break
+                @case('crachas') <livewire:evento.partials.crachas :evento="$evento" lazy /> @break
+                @case('contas') <livewire:evento.partials.contas :evento="$evento" lazy /> @break
+                @case('restricoes') <livewire:evento.partials.restricoes :evento="$evento" lazy /> @break
             @endswitch
         @else
             <div class="p-4 text-zinc-500 italic">

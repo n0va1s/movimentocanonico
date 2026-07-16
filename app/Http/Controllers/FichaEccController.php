@@ -26,47 +26,7 @@ class FichaEccController extends Controller
     /**
      * Listagem das fichas.
      */
-    public function index(Request $request)
-    {
-        $start = microtime(true);
-        $context = $this->getLogContext($request);
 
-        $search = $request->get('search');
-        $eventoId = $request->get('evento');
-        $situacao = $request->get('situacao');
-        $evento = $eventoId ? Evento::find($eventoId) : null;
-
-        Log::info('Requisição de listagem de fichas ECC iniciada', array_merge($context, [
-            'search_term' => $search,
-            'evento_filtro' => $eventoId,
-            'situacao_filtro' => $situacao,
-        ]));
-
-        $hoje = now()->startOfDay();
-        $eventos = Evento::where('idt_movimento', TipoMovimento::ECC)
-            ->ativos()
-            ->orderBy('dat_inicio', 'asc')
-            ->get();
-
-        $fichas = Ficha::with(['fichaEcc', 'fichaSaude'])
-            ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
-                $q->where('nom_candidato', 'like', "%{$search}%")
-                    ->orWhere('nom_apelido', 'like', "%{$search}%");
-            }))
-            ->when($eventoId, fn ($q) => $q->where('idt_evento', $eventoId))
-            ->when($situacao, fn ($q) => $q->where('tip_situacao', $situacao))
-            ->whereHas('evento', fn ($q) => $q->where('idt_movimento', TipoMovimento::ECC))
-            ->orderBy('created_at', 'desc')
-            ->paginate(10)
-            ->withQueryString();
-
-        Log::notice('Listagem de fichas ECC concluída', array_merge($context, [
-            'total_fichas' => $fichas->total(),
-            'duration_ms' => round((microtime(true) - $start) * 1000, 2),
-        ]));
-
-        return view('ficha.listECC', compact('fichas', 'search', 'evento', 'eventos', 'situacao'));
-    }
 
     /**
      * Formulário de criação.
@@ -193,7 +153,7 @@ class FichaEccController extends Controller
 
         $previous = url()->previous();
         if (str_contains($previous, '/fichas/ecc') || (app()->runningUnitTests() && ! str_contains($previous, '/ecc'))) {
-            return redirect()->route('ecc.index')->with('success', 'Ficha cadastrada com sucesso!');
+            return back()->with('success', 'Ficha cadastrada com sucesso!');
         }
 
         return redirect()->route('home')->with('success', 'Ficha cadastrada com sucesso!');
@@ -217,9 +177,32 @@ class FichaEccController extends Controller
             ]);
         }
 
-        $visitadores = \App\Models\Pessoa::whereHas('usuario', function ($q) {
-            $q->where('role', \App\Models\User::ROLE_VISITACAO);
-        })->orderBy('nom_pessoa', 'asc')->get();
+        $eventoId = $ficha->idt_evento;
+        $visitadoresRaw = \App\Models\Pessoa::where(function ($query) use ($eventoId) {
+            $query->whereHas('trabalhadores', function ($q) use ($eventoId) {
+                $q->where('idt_evento', $eventoId)
+                  ->whereHas('equipe', function ($qe) {
+                      $qe->where('des_grupo', 'like', '%Visitação%');
+                  });
+            })
+            ->orWhereHas('parceiro.trabalhadores', function ($q) use ($eventoId) {
+                $q->where('idt_evento', $eventoId)
+                  ->whereHas('equipe', function ($qe) {
+                      $qe->where('des_grupo', 'like', '%Visitação%');
+                  });
+            });
+        })->with('parceiro')->orderBy('nom_pessoa', 'asc')->get();
+
+        $processed = [];
+        $visitadores = $visitadoresRaw->reject(function ($v) use (&$processed) {
+            if (in_array($v->idt_pessoa, $processed)) {
+                return true;
+            }
+            if ($v->idt_parceiro) {
+                $processed[] = $v->idt_parceiro;
+            }
+            return false;
+        });
 
         return view('ficha.formECC', array_merge(
             $this->fichaService::dadosFixosFicha($ficha),
@@ -241,9 +224,32 @@ class FichaEccController extends Controller
 
         $ficha = Ficha::with(['fichaEcc.filhos', 'fichaSaude', 'foto'])->findOrFail($id);
 
-        $visitadores = \App\Models\Pessoa::whereHas('usuario', function ($q) {
-            $q->where('role', \App\Models\User::ROLE_VISITACAO);
-        })->orderBy('nom_pessoa', 'asc')->get();
+        $eventoId = $ficha->idt_evento;
+        $visitadoresRaw = \App\Models\Pessoa::where(function ($query) use ($eventoId) {
+            $query->whereHas('trabalhadores', function ($q) use ($eventoId) {
+                $q->where('idt_evento', $eventoId)
+                  ->whereHas('equipe', function ($qe) {
+                      $qe->where('des_grupo', 'like', '%Visitação%');
+                  });
+            })
+            ->orWhereHas('parceiro.trabalhadores', function ($q) use ($eventoId) {
+                $q->where('idt_evento', $eventoId)
+                  ->whereHas('equipe', function ($qe) {
+                      $qe->where('des_grupo', 'like', '%Visitação%');
+                  });
+            });
+        })->with('parceiro')->orderBy('nom_pessoa', 'asc')->get();
+
+        $processed = [];
+        $visitadores = $visitadoresRaw->reject(function ($v) use (&$processed) {
+            if (in_array($v->idt_pessoa, $processed)) {
+                return true;
+            }
+            if ($v->idt_parceiro) {
+                $processed[] = $v->idt_parceiro;
+            }
+            return false;
+        });
 
         return view('ficha.formECC', array_merge(
             $this->fichaService::dadosFixosFicha($ficha),
@@ -369,8 +375,7 @@ class FichaEccController extends Controller
             'duration_ms' => round((microtime(true) - $start) * 1000, 2),
         ]));
 
-        $previous = url()->previous();
-        if (str_contains($previous, '/fichas/ecc') || (app()->runningUnitTests() && ! str_contains($previous, '/ecc'))) {
+        if (auth()->user()->role === 'admin') {
             return redirect()->route('ecc.index')->with('success', 'Ficha ECC atualizada com sucesso.');
         }
 
@@ -410,7 +415,7 @@ class FichaEccController extends Controller
                 ? 'Não é possível excluir esta ficha. É preciso apagar os dados associados.'
                 : 'Erro ao tentar excluir a ficha.';
 
-            return redirect()->route('ecc.index')->with('error', $msg);
+            return back()->with('error', $msg);
         }
     }
 
@@ -432,7 +437,7 @@ class FichaEccController extends Controller
         try {
             FichaService::atualizarSituacaoFicha($id, $novaSituacao);
 
-            return redirect()->back()->with('success', 'Situação da ficha atualizada com sucesso!');
+            return redirect()->route('ecc.index')->with('success', 'Situação da ficha atualizada com sucesso!');
         } catch (\RuntimeException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

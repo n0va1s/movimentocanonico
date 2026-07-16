@@ -1,22 +1,16 @@
 <x-layouts.app :title="'Perfil Usuario'">
     <section class="p-6 w-full max-w-[80vw] ml-auto">
+        <flux:breadcrumbs class="mb-4">
+            <flux:breadcrumbs.item icon="home" href="/" />
+            <flux:breadcrumbs.item href="{{ route('configuracoes.index') }}">Configurações</flux:breadcrumbs.item>
+            <flux:breadcrumbs.item>Perfil de Usuário</flux:breadcrumbs.item>
+        </flux:breadcrumbs>
         <div class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Perfil</h1>
+            <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">Perfil</flux:heading>
             <p class="text-gray-600 dark:text-gray-300 text-sm">
                 Defina as permissões de acesso do usuário selecionando o perfil desejado para cada pessoa na lista
                 abaixo.
             </p>
-        </div>
-        <div class="mb-6">
-            <div>
-                <x-session-alert />
-            </div>
-            <div>
-                <x-botao-navegar href="{{ route('configuracoes.index') }}" aria-label="Voltar para Configurações">
-                    <x-heroicon-o-arrow-left class="w-5 h-5 mr-2" />
-                    Voltar
-                </x-botao-navegar>
-            </div>
         </div>
 
         {{-- Filtros  --}}
@@ -31,9 +25,7 @@
                         <flux:select.option value="all" :selected="request('perfil') == 'all' || !request('perfil')">Todos os Perfis</flux:select.option>
                         <flux:select.option value="admin" :selected="request('perfil') == 'admin'">Admin</flux:select.option>
                         <flux:select.option value="coord" :selected="request('perfil') == 'coord'">Coordenador</flux:select.option>
-                        <flux:select.option value="espec" :selected="request('perfil') == 'espec'">Especialista</flux:select.option>
-                        <flux:select.option value="visit" :selected="request('perfil') == 'visit'">Visitação</flux:select.option>
-                        <flux:select.option value="sales" :selected="request('perfil') == 'sales'">Mercadinho</flux:select.option>
+                        <flux:select.option value="dirig" :selected="request('perfil') == 'dirig'">Dirigente</flux:select.option>
                         <flux:select.option value="user" :selected="request('perfil') == 'user'">Usuário</flux:select.option>
                     </flux:select>
                 </div>
@@ -51,7 +43,7 @@
                 </div>
 
                 <div class="md:col-span-2 flex gap-2">
-                    <flux:button type="submit" variant="filled" color="blue" class="flex-1">Filtrar</flux:button>
+                    <flux:button type="submit" variant="primary" class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md flex-1" icon="magnifying-glass">Filtrar</flux:button>
                     @if (request('nome') || (request('perfil') && request('perfil') !== 'all') || (request('movimento') && request('movimento') !== 'all'))
                         <flux:button href="{{ route('role.index') }}" icon="x-mark" variant="ghost" />
                     @endif
@@ -82,14 +74,12 @@
                                         'user' => 'Usuário',
                                         'admin' => 'Administrador',
                                         'coord' => 'Coordenador',
-                                        'espec' => 'Especialista',
-                                        'visit' => 'Visitação',
-                                        'sales' => 'Mercadinho'
+                                        'dirig' => 'Dirigente'
                                     ];
                                 @endphp
                                 <select name='role[{{ $pessoa->id ?? '' }}]'
                                     class="w-full px-2 py-1 rounded-md border border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 text-gray-900 dark:text-gray-100">
-                                    @foreach (['user', 'admin', 'coord', 'espec', 'visit', 'sales'] as $role)
+                                    @foreach (['user', 'admin', 'coord', 'dirig'] as $role)
                                         <option value="{{ $role }}" @selected(strtolower($pessoa->role ?? '') == $role)>
                                             {{ $roleLabels[$role] }}
                                         </option>
@@ -112,14 +102,9 @@
                 </tbody>
             </table>
             <div class="flex gap-3 justify-end mt-4">
-                <button type="submit" x-bind:disabled="bloqueado"
-                    class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                    </svg>
+                <flux:button type="submit" variant="primary" class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md" icon="check" x-bind:disabled="bloqueado">
                     Salvar
-                </button>
+                </flux:button>
             </div>
 
             <div class="mt-6">

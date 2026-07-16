@@ -28,12 +28,30 @@ return new class extends Migration
             $table->softDeletes();
         });
 
+        // Tabela Tipo_Paroquia — paróquia que organiza os movimentos
+        Schema::create('tipo_paroquia', function (Blueprint $table) {
+            $table->id('idt_paroquia');
+            $table->string('nom_paroquia', 255);
+            $table->string('nom_paroco', 255)->nullable();
+            $table->string('eml_paroquia', 255)->nullable();
+            $table->string('tel_paroquia', 20)->nullable();
+            $table->string('des_chave_pix', 100)->nullable();
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
         // Tabela Tipo_Movimento ex: ECC, Segue-Me, VEM
         Schema::create('tipo_movimento', function (Blueprint $table) {
             $table->id('idt_movimento');
+            $table->foreignId('idt_paroquia')
+                ->nullable()
+                ->constrained('tipo_paroquia', 'idt_paroquia')
+                ->nullOnDelete();
             $table->string('nom_movimento', 255);
             $table->string('des_sigla', 10);
-            $table->date('dat_inicio');
+            $table->date('dat_inicio')->nullable();
+            $table->boolean('ind_inscricao_aberta')->default(false); //disponivel para inscricao na tela inicial
+            $table->string('med_logo', 255)->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
@@ -44,6 +62,7 @@ return new class extends Migration
             $table->foreignId('idt_movimento')
                 ->constrained('tipo_movimento', 'idt_movimento');
             $table->string('des_grupo', 255);
+            $table->boolean('ind_disponivel_candidatura')->default(true); //disponível para voluntarios se candidatarem
             $table->text('txt_documento')->nullable();
             $table->timestamps();
             $table->softDeletes();
@@ -314,6 +333,7 @@ return new class extends Migration
         Schema::dropIfExists('evento');
         Schema::dropIfExists('tipo_equipe');
         Schema::dropIfExists('tipo_movimento');
+        Schema::dropIfExists('tipo_paroquia');
         Schema::dropIfExists('tipo_restricao');
         Schema::dropIfExists('tipo_responsavel');
     }

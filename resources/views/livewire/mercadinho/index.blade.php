@@ -43,6 +43,14 @@ new class extends Component {
     public ?int $vendaAvulsaProdutoId = null;
     public int $vendaAvulsaQuantidade = 1;
 
+    // Performance (FCP/LCP fix)
+    public bool $readyToLoad = false;
+
+    public function loadData(): void
+    {
+        $this->readyToLoad = true;
+    }
+
     public function mount(?Evento $evento = null): void
     {
         if ($evento && $evento->exists) {
@@ -266,7 +274,7 @@ new class extends Component {
         $qtdNoCarrinho = $this->cart[$idt_produto]['qtd'] ?? 0;
 
         if ($produto->qtd_produto < ($qtdNoCarrinho + 1)) {
-            session()->flash('cart_error', "Estoque insuficiente para {$produto->nom_produto} (Disponível: {$produto->qtd_produto}).");
+            \Flux::toast(__('messages.alerts.error.insufficient_stock', ['product' => $produto->nom_produto, 'available' => $produto->qtd_produto]), variant: 'danger');
             return;
         }
 
@@ -322,7 +330,7 @@ new class extends Component {
 
         $this->showCompraModal = false;
         $this->cart = [];
-        session()->flash('success', 'Compra registrada com sucesso!');
+        \Flux::toast(__('messages.alerts.success.purchase_registered'), variant: 'success');
     }
 
     public function openVendaAvulsa(): void
@@ -342,12 +350,12 @@ new class extends Component {
         $produto = Produto::lockForUpdate()->find($this->vendaAvulsaProdutoId);
         
         if (!$produto) {
-            session()->flash('venda_avulsa_error', "Produto não encontrado.");
+            \Flux::toast(__('messages.alerts.error.product_not_found'), variant: 'danger');
             return;
         }
 
         if ($produto->qtd_produto < $this->vendaAvulsaQuantidade) {
-            session()->flash('venda_avulsa_error', "Estoque insuficiente para {$produto->nom_produto} (Disponível: {$produto->qtd_produto}).");
+            \Flux::toast(__('messages.alerts.error.insufficient_stock', ['product' => $produto->nom_produto, 'available' => $produto->qtd_produto]), variant: 'danger');
             return;
         }
 
@@ -382,7 +390,7 @@ new class extends Component {
         });
 
         $this->showVendaAvulsaModal = false;
-        session()->flash('success', 'Venda avulsa registrada com sucesso!');
+        \Flux::toast(__('messages.alerts.success.avulsa_registered'), variant: 'success');
     }
 
     // Lançamento de Crédito/Aporte
@@ -413,7 +421,7 @@ new class extends Component {
         ]);
 
         $this->showCreditoModal = false;
-        session()->flash('success', 'Crédito/Pagamento registrado com sucesso!');
+        \Flux::toast(__('messages.alerts.success.credit_registered'), variant: 'success');
     }
 
     // Estorno de transação
@@ -422,7 +430,7 @@ new class extends Component {
         $transacao = Transacao::find($idt_transacao);
         if ($transacao) {
             $transacao->delete();
-            session()->flash('success', 'Transação estornada com sucesso!');
+            \Flux::toast(__('messages.alerts.success.transaction_reversed'), variant: 'success');
         }
     }
 }; ?>
@@ -431,8 +439,12 @@ new class extends Component {
     {{-- Cabeçalho --}}
     <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Mercadinho</h1>
-            <p class="text-gray-600 mt-1 dark:text-gray-400">Gerencie produtos, estoque e as contas dos participantes e trabalhadores do evento.</p>
+            <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1" aria-label="Mercadinho">
+                Mercadinho
+            </flux:heading>
+            <p class="text-indigo-900/70 dark:text-indigo-300/70 mt-1 font-medium">
+                Gerencie produtos, estoque e as contas dos participantes e trabalhadores do evento.
+            </p>
         </div>
     </header>
     <style>
@@ -447,14 +459,25 @@ new class extends Component {
         }
     </style>
 
+    <div wire:init="loadData">
+        @if(!$readyToLoad)
+            <div class="flex items-center justify-center min-h-[50vh]">
+                <div class="animate-pulse flex flex-col items-center">
+                    <div class="w-12 h-12 border-4 border-zinc-200 dark:border-zinc-700 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <p class="mt-4 text-indigo-600 dark:text-indigo-400 font-medium tracking-tight">Carregando dados do Mercadinho...</p>
+                </div>
+            </div>
+        @else
+
     @if($evento && $evento->exists)
         {{-- Cabeçalho do Evento Selecionado --}}
         <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-700">
             <div>
-                <flux:heading size="lg">{{ $evento->des_evento }}</flux:heading>
-                <flux:subheading class="uppercase font-bold text-xs text-blue-600 dark:text-blue-400">
-                    Mercadinho &bull; {{ $evento->movimento->des_sigla }}
-                </flux:subheading>
+                <flux:heading size="lg" class="mb-1.5">{{ $evento->des_evento }}</flux:heading>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Mercadinho</span>
+                    <x-badge-movimento :sigla="$evento->movimento->des_sigla" />
+                </div>
             </div>
             <flux:button variant="ghost" size="sm" icon="arrow-left" wire:click="alterarEvento">
                 Voltar
@@ -462,22 +485,28 @@ new class extends Component {
         </div>
 
         {{-- Menu Local de Abas --}}
-        <div class="flex overflow-x-auto no-scrollbar border-b border-zinc-200 dark:border-zinc-700 whitespace-nowrap">
+        <div class="flex overflow-x-auto no-scrollbar border-b border-zinc-200 dark:border-zinc-700 whitespace-nowrap" role="tablist">
             <button 
                 wire:click="$set('activeSubTab', 'operacao')" 
-                class="px-4 py-2 font-semibold text-sm border-b-2 {{ $activeSubTab === 'operacao' ? 'border-blue-600 text-blue-600' : 'border-transparent text-zinc-500 hover:text-zinc-700' }}"
+                role="tab"
+                aria-selected="{{ $activeSubTab === 'operacao' ? 'true' : 'false' }}"
+                class="px-4 py-2 font-semibold text-sm border-b-2 {{ $activeSubTab === 'operacao' ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300' }}"
             >
                 Operar Mercadinho
             </button>
             <button 
                 wire:click="$set('activeSubTab', 'catalogo')" 
-                class="px-4 py-2 font-semibold text-sm border-b-2 {{ $activeSubTab === 'catalogo' ? 'border-blue-600 text-blue-600' : 'border-transparent text-zinc-500 hover:text-zinc-700' }}"
+                role="tab"
+                aria-selected="{{ $activeSubTab === 'catalogo' ? 'true' : 'false' }}"
+                class="px-4 py-2 font-semibold text-sm border-b-2 {{ $activeSubTab === 'catalogo' ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300' }}"
             >
                 Produtos e Estoque
             </button>
             <button 
                 wire:click="$set('activeSubTab', 'relatorio')" 
-                class="px-4 py-2 font-semibold text-sm border-b-2 {{ $activeSubTab === 'relatorio' ? 'border-blue-600 text-blue-600' : 'border-transparent text-zinc-500 hover:text-zinc-700' }}"
+                role="tab"
+                aria-selected="{{ $activeSubTab === 'relatorio' ? 'true' : 'false' }}"
+                class="px-4 py-2 font-semibold text-sm border-b-2 {{ $activeSubTab === 'relatorio' ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300' }}"
             >
                 Relatório de Vendas
             </button>
@@ -595,11 +624,7 @@ new class extends Component {
                     </div>
                 </div>
 
-                @if (session()->has('success'))
-                    <div class="p-4 bg-green-50 border border-green-200 text-green-700 dark:bg-green-950/20 dark:border-green-900/50 dark:text-green-400 rounded-xl text-sm font-medium">
-                        {{ session('success') }}
-                    </div>
-                @endif
+
 
                 {{-- Filtros e Lista de Contas --}}
                 <div class="bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 p-4 sm:p-6 space-y-4">
@@ -859,11 +884,7 @@ new class extends Component {
                                 <div class="font-bold text-zinc-950 dark:text-white text-sm">Catálogo de Produtos</div>
                             </div>
                             <div class="overflow-y-auto flex-1 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 space-y-2 bg-zinc-50 dark:bg-zinc-900/50">
-                                @if(session()->has('cart_error'))
-                                    <div class="p-2.5 bg-red-50 text-red-700 text-xs rounded-lg font-bold border border-red-200">
-                                        {{ session('cart_error') }}
-                                    </div>
-                                @endif
+
 
                                 @forelse($this->produtosDisponiveis as $prod)
                                     <div class="flex items-center justify-between p-3 bg-white dark:bg-zinc-800 rounded-lg shadow-xs border border-zinc-150 dark:border-zinc-700">
@@ -1167,11 +1188,7 @@ new class extends Component {
                         <flux:subheading>Registre uma venda avulsa. O estoque é reduzido e o valor contabilizado no faturamento.</flux:subheading>
                     </div>
 
-                    @if(session()->has('venda_avulsa_error'))
-                        <div class="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-bold">
-                            {{ session('venda_avulsa_error') }}
-                        </div>
-                    @endif
+
 
                     <form wire:submit.prevent="registrarVendaAvulsa" class="space-y-4">
                         <flux:select wire:model="vendaAvulsaProdutoId" label="Produto" placeholder="Selecione um produto" required>
@@ -1232,7 +1249,7 @@ new class extends Component {
                             </div>
 
                             <footer class="p-4 bg-gray-50 dark:bg-zinc-800/50 border-t border-gray-100 dark:border-zinc-700 mt-auto">
-                                <flux:button variant="filled" color="blue" class="w-full pointer-events-none group-hover:bg-blue-700 dark:group-hover:bg-blue-600 transition-colors">
+                                <flux:button variant="primary" class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md">
                                     Selecionar Evento
                                 </flux:button>
                             </footer>
@@ -1242,4 +1259,6 @@ new class extends Component {
             @endif
         </div>
     @endif
+    @endif
+    </div>
 </div>

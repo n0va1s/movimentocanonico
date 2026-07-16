@@ -66,7 +66,7 @@ class TipoPerfilController extends Controller
 
         $request->validate([
             'role' => 'required|array',
-            'role.*' => 'in:admin,coord,user,espec,visit,sales',
+            'role.*' => 'in:admin,coord,user,dirig',
             'movimento' => 'nullable|array',
             'movimento.*' => 'nullable|exists:tipo_movimento,idt_movimento',
         ]);
@@ -85,6 +85,6 @@ class TipoPerfilController extends Controller
             'duration_ms' => $duration,
         ]));
 
-        return redirect()->route('eventos.index')->with('success', 'Perfis atualizados com sucesso!');
+        return back()->with('success', 'Perfis atualizados com sucesso!');
     }
 }

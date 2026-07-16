@@ -24,59 +24,117 @@ class User extends Authenticatable
 
     const ROLE_COORDENADOR = 'coord';
 
-    const ROLE_ESPEC = 'espec';
+    const ROLE_DIRIG = 'dirig';
 
-    const ROLE_VISITACAO = 'visit';
+    public function getRole(): string
+    {
+        $role = $this->role;
+        $roleValue = $role instanceof \BackedEnum ? $role->value : (string) $role;
 
-    const ROLE_SALES = 'sales';
+        return strtolower($roleValue);
+    }
 
     public function isAdmin(): bool
     {
-        $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
-
-        return strtolower($roleValue) === self::ROLE_ADMIN;
+        return $this->getRole() === self::ROLE_ADMIN;
     }
 
     public function isCoordenador(): bool
     {
-        $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
-
-        return strtolower($roleValue) === self::ROLE_COORDENADOR;
+        return $this->getRole() === self::ROLE_COORDENADOR;
     }
 
-    public function isEspec(): bool
+    public function isDirig(): bool
     {
-        $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
-
-        return strtolower($roleValue) === self::ROLE_ESPEC;
+        return $this->getRole() === self::ROLE_DIRIG;
     }
 
     public function isVisitacao(): bool
     {
-        $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
-
-        return strtolower($roleValue) === self::ROLE_VISITACAO;
+        return !$this->isAdmin() && $this->autorizaVisit();
     }
 
     public function isSales(): bool
     {
-        $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
-
-        return strtolower($roleValue) === self::ROLE_SALES;
+        return $this->autorizaSales();
     }
 
     public function hasRole(string ...$roles): bool
     {
-        $roleValue = $this->role instanceof \BackedEnum ? $this->role->value : (string) $this->role;
-        $has = in_array(strtolower($roleValue), array_map('strtolower', $roles));
-        \Illuminate\Support\Facades\Log::info("hasRole check: roleValue={$roleValue} against " . implode(',', $roles) . " => " . ($has ? 'true' : 'false'));
-        return $has;
+        $roleValue = $this->getRole();
+        $mappedRoles = array_map('strtolower', $roles);
+
+        if (in_array($roleValue, $mappedRoles)) {
+            return true;
+        }
+
+        if (in_array('visit', $mappedRoles) && $this->autorizaVisit()) {
+            return true;
+        }
+
+        if (in_array('sales', $mappedRoles) && $this->autorizaSales()) {
+            return true;
+        }
+
+        if (in_array('coord_equipe', $mappedRoles) && $this->autorizaCoord()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function autorizaCoord(): bool
+    {
+        $pessoa = $this->pessoa;
+        if (! $pessoa) {
+            return false;
+        }
+
+        return Trabalhador::where('idt_pessoa', $pessoa->idt_pessoa)
+            ->where('ind_coordenador', true)
+            ->whereHas('evento', function ($query) {
+                $query->whereNull('deleted_at');
+            })
+            ->exists();
+    }
+
+    public function ehCoordenadorDeEquipe(): bool
+    {
+        return $this->autorizaCoord();
+    }
+
+    public function autorizaVisit(): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return Trabalhador::where('idt_pessoa', $this->pessoa?->idt_pessoa)
+            ->whereHas('equipe', function ($q) {
+                $q->whereRaw('LOWER(des_grupo) LIKE ?', ['%visita%']);
+            })
+            ->exists();
+    }
+
+    public function autorizaSales(): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return Trabalhador::where('idt_pessoa', $this->pessoa?->idt_pessoa)
+            ->whereHas('equipe', function ($q) {
+                $q->where(function ($query) {
+                    $query->whereRaw('LOWER(des_grupo) LIKE ?', ['%vendinha%'])
+                        ->orWhereRaw('LOWER(des_grupo) LIKE ?', ['%mini-mercado%'])
+                        ->orWhereRaw('LOWER(des_grupo) LIKE ?', ['%minimercado%']);
+                });
+            })
+            ->exists();
     }
 
     /**
-     * Verifica se o usuário está trabalhando (como coord ou espec) em um evento específico.
-     * Coord: precisa ter ind_coordenador = true no evento.
-     * Espec: basta estar na tabela trabalhador do evento.
+     * Verifica se o usuário está trabalhando em um evento específico.
      */
     public function trabalhaNoEvento(int $idtEvento): bool
     {
@@ -84,7 +142,7 @@ class User extends Authenticatable
             return true;
         }
 
-        if ($this->isEspec()) {
+        if ($this->isDirig()) {
             $evento = \App\Models\Evento::find($idtEvento);
             if (! $evento || is_null($this->idt_movimento) || (int) $evento->idt_movimento !== (int) $this->idt_movimento) {
                 return false;
@@ -99,7 +157,6 @@ class User extends Authenticatable
 
         return Trabalhador::where('idt_evento', $idtEvento)
             ->where('idt_pessoa', $pessoa->idt_pessoa)
-            ->when($this->isCoordenador(), fn ($q) => $q->where('ind_coordenador', true))
             ->exists();
     }
 
@@ -112,28 +169,6 @@ class User extends Authenticatable
     {
         return $this->belongsTo(TipoMovimento::class, 'idt_movimento', 'idt_movimento');
     }
-
-    /*protected static function boot()
-    {
-        parent::boot();
-
-        static::created(function (User $user) {
-            $pessoaCadastrada = Pessoa::where('eml_pessoa', $user->email)->first();
-
-            if (! $pessoaCadastrada) {
-                $user->pessoa()->create([
-                    'nom_pessoa' => $user->name,
-                    'eml_pessoa' => $user->email,
-                    'tel_pessoa' => $user->phone,
-                    'dat_nascimento' => '1900-01-01',
-                ]);
-            } else {
-                $pessoaCadastrada->idt_usuario = $user->id;
-                // Para evitar loop infinito, salvar a pessoa sem disparar eventos
-                $pessoaCadastrada->saveQuietly();
-            }
-        });
-    }*/
 
     /**
      * The attributes that are mass assignable.

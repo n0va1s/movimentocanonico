@@ -47,15 +47,49 @@
                                 if (data.tam_camiseta) document.getElementById('tam_camiseta').value = data.tam_camiseta;
                                 if (data.tip_genero) document.getElementById('tip_genero').value = data.tip_genero;
                             })
-                            .catch(error => console.log('Candidato ainda não existe, preenchimento manual necessário.'));
+                            .catch(error => console.log('{{ __('messages.api.candidate_not_found') }}'));
                     }
                 }
             }">
 
+        {{-- ===== BREADCRUMBS ===== --}}
+        @php
+            $previousUrl = url()->previous();
+            $isMinhasFichas = str_contains($previousUrl, 'minhas-fichas');
+            $isGerenciamento = str_contains($previousUrl, 'gerenciamento');
+            
+            // Fallback baseado no perfil se a origem for desconhecida ou houver refresh (F5)
+            if (!$isMinhasFichas && !$isGerenciamento && Auth::user()) {
+                if (Auth::user()->hasRole('admin', 'espec', 'coord')) {
+                    $isGerenciamento = true;
+                } else {
+                    $isMinhasFichas = true;
+                }
+            }
+        @endphp
+
+        @if (Auth::user())
+            <flux:breadcrumbs class="mb-6">
+                <flux:breadcrumbs.item href="{{ route('home') }}">Início</flux:breadcrumbs.item>
+                
+                @if ($isGerenciamento)
+                    @if ($ficha->idt_evento)
+                        <flux:breadcrumbs.item href="{{ route('eventos.gerenciamento', $ficha->idt_evento) }}">Gerenciamento</flux:breadcrumbs.item>
+                    @else
+                        <flux:breadcrumbs.item href="{{ route('eventos.index') }}">Eventos</flux:breadcrumbs.item>
+                    @endif
+                @else
+                    <flux:breadcrumbs.item href="{{ route('minhas-fichas.index') }}">Minhas Fichas</flux:breadcrumbs.item>
+                @endif
+                
+                <flux:breadcrumbs.item>Ficha do VEM</flux:breadcrumbs.item>
+            </flux:breadcrumbs>
+        @endif
+
         {{-- ===== CABEÇALHO ===== --}}
         <div class="mb-6 space-y-4">
             <div>
-                <h1 id="page-title" class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Ficha do VEM</h1>
+                <flux:heading size="xl" id="page-title" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">Ficha do VEM</flux:heading>
                 <p class="text-gray-600 dark:text-gray-400 mt-1 text-sm sm:text-base">Paróquia Nossa Senhora do Lago</p>
             </div>
 
@@ -123,19 +157,9 @@
             </div>
         </div>
         
-        {{-- Botão voltar (admin) --}}
-        @if (Auth::user()?->isAdmin())
-            <div class="flex justify-end mb-4">
-                <a href="{{ route('vem.index') }}"
-                    class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-500 focus:ring-2 focus:ring-green-500 focus:outline-none focus-visible:ring-offset-2"
-                    aria-label="Voltar para a lista de fichas">
-                    <x-heroicon-o-arrow-left class="w-5 h-5 mr-2" aria-hidden="true" />
-                    Fichas
-                </a>
-            </div>
-        @endif
 
-        @if (Auth::user()?->hasRole('admin', 'espec', 'coord') && $ficha->exists)
+
+        @if (Auth::user()?->hasRole('admin', 'dirig', 'coord') && $ficha->exists)
             <div class="bg-white dark:bg-zinc-800 rounded-xl shadow border border-gray-200 dark:border-zinc-700 p-4 sm:p-6 mb-6">
                 <p class="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-3">Mudar Situação para:</p>
                 <div class="flex flex-wrap gap-2">
@@ -149,7 +173,7 @@
                         @endphp
                         
                         @if($isCurrent)
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold text-white {{ $style['bg'] }} shadow-sm">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold {{ $style['light'] }} shadow-sm">
                                 <x-heroicon-s-check class="w-4 h-4" />
                                 {{ $situacao->label() }}
                                 @if($situacao->mail()[0] === 'Sim')
@@ -192,7 +216,7 @@
                         @endif
                     @endforeach
                 </div>
-                @if(Auth::user()?->hasRole('admin', 'espec'))
+                @if(Auth::user()?->hasRole('admin', 'dirig'))
                     <div class="mt-4 border-t border-gray-100 dark:border-zinc-700 pt-4">
                         <form method="POST" action="{{ route('fichas.designar-visitador', $ficha->idt_ficha) }}">
                             @csrf
@@ -200,12 +224,21 @@
                                 <label for="idt_pessoa_visitacao" class="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Responsável pela Visitação:</label>
                                 <div class="flex items-center gap-2 w-full sm:w-auto">
                                     <select name="idt_pessoa_visitacao" id="idt_pessoa_visitacao" 
-                                        class="text-xs rounded-md border border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 text-gray-900 dark:text-gray-100 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        class="text-xs rounded-md border border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 text-gray-900 dark:text-gray-100 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:max-w-md">
                                         <option value="">Sem responsável designado</option>
                                         @if(isset($visitadores))
                                             @foreach($visitadores as $v)
-                                                <option value="{{ $v->idt_pessoa }}" @selected($ficha->idt_pessoa_visitacao === $v->idt_pessoa)>
-                                                    {{ $v->nom_pessoa }}
+                                                @php
+                                                    $nomeLabel = $v->nom_pessoa;
+                                                    if ($v->parceiro) {
+                                                        $nomeLabel .= ' & ' . $v->parceiro->nom_pessoa;
+                                                    }
+                                                    if ($v->des_endereco) {
+                                                        $nomeLabel .= ' — ' . $v->des_endereco;
+                                                    }
+                                                @endphp
+                                                <option value="{{ $v->idt_pessoa }}" @selected($ficha->idt_pessoa_visitacao == $v->idt_pessoa || ($v->idt_parceiro && $ficha->idt_pessoa_visitacao == $v->idt_parceiro))>
+                                                    {{ $nomeLabel }}
                                                 </option>
                                             @endforeach
                                         @endif
@@ -222,6 +255,7 @@
         @endif
 
         @if ($eventos->count() > 0)
+
             <form method="POST" 
                 enctype="multipart/form-data"
                 @submit="setTimeout(() => enviando = true, 50)"
@@ -334,7 +368,7 @@
                             <label for="tip_genero"
                                 class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
                                 Sexo <span class="text-red-600" aria-hidden="true">*</span><span
-                                    class="sr-only">(obrigatório)</span>
+                                    class="sr-only">{{ __('messages.hints.required') }}</span>
                             </label>
                             <select name="tip_genero" id="tip_genero" required x-bind:disabled="bloqueado"
                                 aria-required="true"
@@ -357,7 +391,7 @@
                             <label for="nom_candidato"
                                 class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
                                 Nome completo <span class="text-red-600" aria-hidden="true">*</span><span
-                                    class="sr-only">(obrigatório)</span>
+                                    class="sr-only">{{ __('messages.hints.required') }}</span>
                             </label>
                             <input type="text" name="nom_candidato" id="nom_candidato"
                                 x-bind:disabled="bloqueado" required maxlength="255" autocomplete="name"
@@ -389,7 +423,7 @@
                             <label for="dat_nascimento"
                                 class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
                                 Data de Nascimento <span class="text-red-600" aria-hidden="true">*</span><span
-                                    class="sr-only">(obrigatório)</span>
+                                    class="sr-only">{{ __('messages.hints.required') }}</span>
                             </label>
                             <input type="date" name="dat_nascimento" id="dat_nascimento"
                                 x-bind:disabled="bloqueado" required autocomplete="bday"
@@ -422,7 +456,7 @@
                             <label for="eml_candidato"
                                 class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
                                 Email <span class="text-red-600" aria-hidden="true">*</span><span
-                                    class="sr-only">(obrigatório)</span>
+                                    class="sr-only">{{ __('messages.hints.required') }}</span>
                             </label>
                             <input type="email" name="eml_candidato" id="eml_candidato"
                                 x-bind:disabled="bloqueado" required maxlength="255" autocomplete="email"
@@ -438,7 +472,7 @@
                         <div>
                             <label for="des_endereco"
                                 class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
-                                Endereço <span class="text-red-600" aria-hidden="true">*</span><span class="sr-only">(obrigatório)</span>
+                                Endereço <span class="text-red-600" aria-hidden="true">*</span><span class="sr-only">{{ __('messages.hints.required') }}</span>
                             </label>
                             <input type="text" name="des_endereco" id="des_endereco" x-bind:disabled="bloqueado"
                                 required maxlength="500" autocomplete="street-address" aria-required="true"
@@ -455,7 +489,7 @@
                             <label for="tam_camiseta"
                                 class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
                                 Tamanho da Camiseta <span class="text-red-600" aria-hidden="true">*</span><span
-                                    class="sr-only">(obrigatório)</span>
+                                    class="sr-only">{{ __('messages.hints.required') }}</span>
                             </label>
                             <select name="tam_camiseta" id="tam_camiseta" required x-bind:disabled="bloqueado"
                                 aria-required="true"
@@ -665,7 +699,7 @@
                                 <label for="idt_falar_com"
                                     class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
                                     Falar com <span class="text-red-600" aria-hidden="true">*</span><span
-                                        class="sr-only">(obrigatório)</span>
+                                        class="sr-only">{{ __('messages.hints.required') }}</span>
                                 </label>
                                 <select name="idt_falar_com" id="idt_falar_com" required x-bind:disabled="bloqueado"
                                     aria-required="true"
@@ -686,7 +720,7 @@
                                 <label for="des_onde_estuda"
                                     class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
                                     Onde estuda? <span class="text-red-600" aria-hidden="true">*</span><span
-                                        class="sr-only">(obrigatório)</span>
+                                        class="sr-only">{{ __('messages.hints.required') }}</span>
                                 </label>
                                 <input type="text" name="des_onde_estuda" id="des_onde_estuda"
                                     x-bind:disabled="bloqueado"
@@ -702,7 +736,7 @@
                                 <label for="des_mora_quem"
                                     class="block font-medium text-gray-700 dark:text-gray-300 mb-1 text-sm sm:text-base">
                                     Mora com quem? <span class="text-red-600" aria-hidden="true">*</span><span
-                                        class="sr-only">(obrigatório)</span>
+                                        class="sr-only">{{ __('messages.hints.required') }}</span>
                                 </label>
                                 <input type="text" name="des_mora_quem" id="des_mora_quem"
                                     x-bind:disabled="bloqueado"
@@ -737,33 +771,45 @@
                                     <input type="checkbox" name="ind_catolico" value="1"
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_catolico', $ficha->ind_catolico) ? 'checked' : '' }}
-                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_catolico') border-red-500 @enderror">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">É católico</span>
                                 </label>
+                                @error('ind_catolico')
+                                    <p class="text-sm text-red-600" role="alert">{{ $message }}</p>
+                                @enderror
                                 <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_batizado" value="0">
                                     <input type="checkbox" name="ind_batizado" value="1"
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_batizado', optional($ficha->fichaVem)->ind_batizado) ? 'checked' : '' }}
-                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_batizado') border-red-500 @enderror">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">Foi batizado</span>
                                 </label>
+                                @error('ind_batizado')
+                                    <p class="text-sm text-red-600" role="alert">{{ $message }}</p>
+                                @enderror
                                 <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_primeira_comunhao" value="0">
                                     <input type="checkbox" name="ind_primeira_comunhao" value="1"
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_primeira_comunhao', optional($ficha->fichaVem)->ind_primeira_comunhao) ? 'checked' : '' }}
-                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_primeira_comunhao') border-red-500 @enderror">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">Fez primeira comunhão</span>
                                 </label>
+                                @error('ind_primeira_comunhao')
+                                    <p class="text-sm text-red-600" role="alert">{{ $message }}</p>
+                                @enderror
                                 <label class="flex items-center gap-2.5 py-1.5 cursor-pointer">
                                     <input type="hidden" name="ind_crismado" value="0">
                                     <input type="checkbox" name="ind_crismado" value="1"
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_crismado', optional($ficha->fichaVem)->ind_crismado) ? 'checked' : '' }}
-                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_crismado') border-red-500 @enderror">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">Foi crismado</span>
                                 </label>
+                                @error('ind_crismado')
+                                    <p class="text-sm text-red-600" role="alert">{{ $message }}</p>
+                                @enderror
                             </div>
                         </div>
 
@@ -793,10 +839,13 @@
                                     <input type="checkbox" name="ind_toca_instrumento" value="1"
                                         x-bind:disabled="bloqueado"
                                         {{ old('ind_toca_instrumento', optional($ficha->fichaVem)->ind_toca_instrumento) ? 'checked' : '' }}
-                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 @error('ind_toca_instrumento') border-red-500 @enderror"
                                         aria-labelledby="instrumento-label">
                                     <span class="text-sm text-gray-800 dark:text-gray-100">Sim</span>
                                 </label>
+                                @error('ind_toca_instrumento')
+                                    <p class="text-sm text-red-600" role="alert">{{ $message }}</p>
+                                @enderror
                             </div>
                         </div>
 
@@ -804,7 +853,25 @@
                 </fieldset>
 
                 {{-- ===== SAÚDE E RESTRIÇÕES ===== --}}
-                <div x-data="{ mostrarRestricoes: {{ old('ind_restricao', $ficha->ind_restricao ?? false) ? 'true' : 'false' }} }">
+                <div x-data="{
+                        mostrarRestricoes: {{ old('ind_restricao', $ficha->ind_restricao ?? false) ? 'true' : 'false' }},
+                        temRestricaoSelecionada: true,
+                        verificarRestricoes() {
+                            if (!this.mostrarRestricoes) {
+                                this.temRestricaoSelecionada = true;
+                                return;
+                            }
+                            const container = this.$refs.restricoesContainer;
+                            if (!container) return;
+                            const checkboxes = container.querySelectorAll('input[type=\'checkbox\'][name^=\'restricoes\']:checked');
+                            const inputs = Array.from(container.querySelectorAll('input[type=\'text\'][name^=\'complementos\']')).filter(i => i.value.trim() !== '');
+                            this.temRestricaoSelecionada = checkboxes.length > 0 || inputs.length > 0;
+                        }
+                    }"
+                    @change="verificarRestricoes"
+                    @input="verificarRestricoes"
+                    x-init="setTimeout(() => verificarRestricoes(), 100)"
+                >
                     <label
                         class="flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-colors
                         border-amber-300 bg-amber-50 hover:bg-amber-100
@@ -829,13 +896,27 @@
                         <x-heroicon-o-heart class="w-6 h-6 text-amber-400 dark:text-amber-500 ml-auto shrink-0"
                             aria-hidden="true" />
                     </label>
+                    @error('ind_restricao')
+                        <p class="mt-1 text-sm text-red-600" role="alert">{{ $message }}</p>
+                    @enderror
 
                     <div x-show="mostrarRestricoes" x-transition
+                        x-ref="restricoesContainer"
                         class="mt-3 bg-gray-50 dark:bg-zinc-700 rounded-md p-4" role="region"
                         aria-label="Restrições e Alergias">
                         <h3 class="text-base sm:text-lg font-medium mb-3 text-gray-900 dark:text-gray-100">
                             Restrições e Alergias
                         </h3>
+
+                        <div x-show="mostrarRestricoes && !temRestricaoSelecionada" x-transition
+                            class="mb-4 flex items-center gap-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 px-4 py-3"
+                            role="alert">
+                            <x-heroicon-o-exclamation-circle class="w-5 h-5 text-red-500 shrink-0" aria-hidden="true" />
+                            <p class="text-sm text-red-700 dark:text-red-400">
+                                Nenhuma restrição ou alergia foi informada. Desmarque a opção Informações de Saúde por favor.
+                            </p>
+                        </div>
+
                         <div class="space-y-4">
                             @php
                                 $restricoesSelecionadas = $ficha->fichaSaude->pluck('idt_restricao')->toArray();
@@ -908,7 +989,7 @@
                                 Estou ciente de que <strong>NÃO É PERMITIDO</strong> sair durante o encontro nem levar o
                                 celular para o VEM.
                                 <span class="text-red-600" aria-hidden="true">*</span><span
-                                    class="sr-only">(obrigatório)</span>
+                                    class="sr-only">{{ __('messages.hints.required') }}</span>
                             </span>
                         </label>
                         @error('ind_consentimento')

@@ -23,8 +23,12 @@ class ImportController extends Controller
         $hoje = now()->startOfDay();
 
         // Encontra eventos ativos (em andamento ou futuros)
-        $eventosAtivos = Evento::ativos()
-            ->when(auth()->user()->isEspec(), function ($q) {
+        $eventosAtivos = Evento::where(function ($q) use ($hoje) {
+            $q->where('dat_inicio', '>=', $hoje)
+                ->orWhere('dat_termino', '>=', $hoje)
+                ->orWhereNull('dat_termino');
+        })
+            ->when(auth()->user()->isDirig(), function ($q) {
                 $q->where('idt_movimento', auth()->user()->idt_movimento);
             })
             ->with('movimento')
@@ -53,7 +57,7 @@ class ImportController extends Controller
             set_time_limit(180);
             $evento = Evento::findOrFail($request->evento_id);
 
-            if (auth()->user()->isEspec() && (is_null(auth()->user()->idt_movimento) || (int) $evento->idt_movimento !== (int) auth()->user()->idt_movimento)) {
+            if (auth()->user()->isDirig() && (is_null(auth()->user()->idt_movimento) || (int) $evento->idt_movimento !== (int) auth()->user()->idt_movimento)) {
                 abort(403, 'Acesso não autorizado para este movimento.');
             }
 
@@ -76,7 +80,7 @@ class ImportController extends Controller
                 "• Erros/Avisos: {$stats['errors']}\n".
                 'O relatório detalhado está disponível em: storage/logs/import_participantes.log';
 
-            return redirect()->route('eventos.importar')->with('success', $successMsg);
+            return  back()->with('success', $successMsg);
 
         } catch (\Throwable $e) {
             Log::error('Erro ao importar participantes no controller: '.$e->getMessage());
@@ -104,7 +108,7 @@ class ImportController extends Controller
             set_time_limit(180);
             $evento = Evento::findOrFail($request->evento_id);
 
-            if (auth()->user()->isEspec() && (is_null(auth()->user()->idt_movimento) || (int) $evento->idt_movimento !== (int) auth()->user()->idt_movimento)) {
+            if (auth()->user()->isDirig() && (is_null(auth()->user()->idt_movimento) || (int) $evento->idt_movimento !== (int) auth()->user()->idt_movimento)) {
                 abort(403, 'Acesso não autorizado para este movimento.');
             }
 
@@ -127,7 +131,7 @@ class ImportController extends Controller
                 "• Erros/Avisos: {$stats['errors']}\n".
                 'O relatório detalhado está disponível em: storage/logs/import_trabalhadores.log';
 
-            return redirect()->route('eventos.importar')->with('success', $successMsg);
+            return back()->with('success', $successMsg);
 
         } catch (\Throwable $e) {
             Log::error('Erro ao importar trabalhadores no controller: '.$e->getMessage());

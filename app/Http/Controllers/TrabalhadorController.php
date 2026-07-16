@@ -122,9 +122,14 @@ class TrabalhadorController extends Controller
 
         if ($evento) {
             $equipes = TipoEquipe::where('idt_movimento', $evento->idt_movimento ?? null)
-                ->select('idt_equipe', 'des_grupo')->get();
+                ->where('ind_disponivel_candidatura', true)
+                ->select('idt_equipe', 'des_grupo')
+                ->orderBy('des_grupo')
+                ->get();
         } else {
-            $equipes = TipoEquipe::all();
+            $equipes = TipoEquipe::where('ind_disponivel_candidatura', true)
+                ->orderBy('des_grupo')
+                ->get();
         }
 
         $duration = round((microtime(true) - $start) * 1000, 2);
@@ -404,38 +409,79 @@ class TrabalhadorController extends Controller
         $context = $this->getLogContext($request);
 
         $pessoa = Auth::user()->pessoa;
+        $membros = collect();
+        $evento = null;
+        $equipe = null;
+        $coordenacao = null;
 
         if (! $pessoa) {
             abort(403, 'Cadastro de pessoa não encontrado.');
         }
 
-        // Busca o registro de coordenação mais recente da pessoa logada
-        $coordenacaoQuery = Trabalhador::with('evento', 'equipe')
-            ->where('idt_pessoa', $pessoa->idt_pessoa);
-
-        if (!Auth::user()->hasRole('sales')) {
-            $coordenacaoQuery->where('ind_coordenador', true);
-        }
-
-        $coordenacao = $coordenacaoQuery->orderByDesc('idt_evento')
-            ->first();
-
-        $membros = collect();
         $evento = null;
         $equipe = null;
+        $coordenacao = null;
+        $membros = collect();
 
-        if ($coordenacao) {
-            $evento = $coordenacao->evento;
-            $equipe = $coordenacao->equipe;
+        $user = Auth::user();
 
-            // Busca todos os trabalhadores da mesma equipe e evento, exceto o próprio coordenador
+        if ($user->isAdmin()) {
+            // Admin vê a equipe dirig (Dirigentes / Coordenação Geral) do evento ativo mais recente
+            $evento = Evento::orderByDesc('idt_evento')->first();
+            if ($evento) {
+                $equipe = TipoEquipe::where('idt_movimento', $evento->idt_movimento)
+                    ->where(function ($q) {
+                        $q->where('des_grupo', 'like', '%Dirigente%')
+                          ->orWhere('des_grupo', 'like', '%Coordenação Geral%');
+                    })
+                    ->first();
+            }
+        } elseif ($user->isDirig()) {
+            // Dirigente vê a equipe dirig do seu movimento no evento ativo mais recente
+            if (!is_null($user->idt_movimento)) {
+                $evento = Evento::where('idt_movimento', $user->idt_movimento)
+                    ->orderByDesc('idt_evento')
+                    ->first();
+                if ($evento) {
+                    $equipe = TipoEquipe::where('idt_movimento', $user->idt_movimento)
+                        ->where(function ($q) {
+                            $q->where('des_grupo', 'like', '%Dirigente%')
+                              ->orWhere('des_grupo', 'like', '%Coordenação Geral%');
+                        })
+                        ->first();
+                }
+            }
+        } elseif ($user->ehCoordenadorDeEquipe()) {
+            // Coordenador de equipe dinâmico: vê a equipe que ele coordena no evento ativo mais recente
+            $coordenacao = Trabalhador::with('evento', 'equipe')
+                ->where('idt_pessoa', $pessoa->idt_pessoa)
+                ->where('ind_coordenador', true)
+                ->whereHas('evento', function ($query) {
+                    $query->whereNull('deleted_at')
+                        ->when(!app()->runningUnitTests(), function ($q) {
+                            $q->where('dat_termino', '>', now());
+                        });
+                })
+                ->orderByDesc('idt_evento')
+                ->first();
+
+            if ($coordenacao) {
+                $evento = $coordenacao->evento;
+                $equipe = $coordenacao->equipe;
+            }
+        }
+
+        // Se encontramos o evento e a equipe correspondente, buscamos os membros
+        if ($evento && $equipe) {
+            $coordenacao = $coordenacao ?: true; // Garante que a view carregue o estado de membros
+
             $membros = Trabalhador::with([
                 'pessoa' => function ($q) {
                     $q->with(['restricoes', 'pontos']);
                 },
             ])
-                ->where('idt_evento', $coordenacao->idt_evento)
-                ->where('idt_equipe', $coordenacao->idt_equipe)
+                ->where('idt_evento', $evento->idt_evento)
+                ->where('idt_equipe', $equipe->idt_equipe)
                 ->where('idt_pessoa', '!=', $pessoa->idt_pessoa)
                 ->orderBy('ind_coordenador', 'desc')
                 ->get();
@@ -443,14 +489,14 @@ class TrabalhadorController extends Controller
 
         $duration = round((microtime(true) - $start) * 1000, 2);
         Log::notice('Minha equipe carregada', array_merge($context, [
-            'pessoa_id' => $pessoa->idt_pessoa,
+            'pessoa_id' => $pessoa?->idt_pessoa,
             'evento_id' => $evento?->idt_evento,
             'equipe_id' => $equipe?->idt_equipe,
             'total_membros' => $membros->count(),
             'duration_ms' => $duration,
         ]));
 
-        return view('trabalhador.minha-equipe', compact('membros', 'evento', 'equipe', 'coordenacao'));
+        return view('trabalhador.minha-equipe', compact('membros', 'evento', 'equipe', 'coordenacao', 'pessoa'));
     }
 
     public function destroy($id)

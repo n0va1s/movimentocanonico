@@ -1,8 +1,8 @@
 <x-layouts.app :title="'Pessoa'">
     <section class="p-6 w-full max-w-[80vw] ml-auto">
         <div class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                {{ $pessoa->exists ? 'Atualizar Seus Dados' : 'Se Cadastrar' }}</h1>
+            <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">
+                {{ $pessoa->exists ? 'Atualizar Seus Dados' : 'Se Cadastrar' }}</flux:heading>
             <p class="text-gray-700 mt-1 dark:text-gray-400">
                 {{ $pessoa->exists ? 'Esses dados serão utilizados no próximo encontro' : 'Esses dados serão utilizados no próximo encontro' }}
             </p>
@@ -236,7 +236,25 @@
                     </div>
                 </div>
 
-                <div x-data="{ mostrarRestricoes: {{ old('ind_restricao', $pessoa->ind_restricao ?? false) ? 'true' : 'false' }} }">
+                <div x-data="{
+                        mostrarRestricoes: {{ old('ind_restricao', $pessoa->ind_restricao ?? false) ? 'true' : 'false' }},
+                        temRestricaoSelecionada: true,
+                        verificarRestricoes() {
+                            if (!this.mostrarRestricoes) {
+                                this.temRestricaoSelecionada = true;
+                                return;
+                            }
+                            const container = this.$refs.restricoesContainer;
+                            if (!container) return;
+                            const checkboxes = container.querySelectorAll('input[type=\'checkbox\'][name^=\'restricoes\']:checked');
+                            const inputs = Array.from(container.querySelectorAll('input[type=\'text\'][name^=\'complementos\']')).filter(i => i.value.trim() !== '');
+                            this.temRestricaoSelecionada = checkboxes.length > 0 || inputs.length > 0;
+                        }
+                    }"
+                    @change="verificarRestricoes"
+                    @input="verificarRestricoes"
+                    x-init="setTimeout(() => verificarRestricoes(), 100)"
+                >
                     <label
                         class="flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-colors
                         border-amber-300 bg-amber-50 hover:bg-amber-100
@@ -262,11 +280,22 @@
                     </label>
 
                     <div x-show="mostrarRestricoes" x-transition
+                        x-ref="restricoesContainer"
                         class="mt-3 bg-gray-50 dark:bg-zinc-700 rounded-md p-4" role="region"
                         aria-label="Restrições e Alergias">
                         <h3 class="text-base sm:text-lg font-medium mb-3 text-gray-900 dark:text-gray-100">
                             Restrições e Alergias
                         </h3>
+
+                        <div x-show="mostrarRestricoes && !temRestricaoSelecionada" x-transition
+                            class="mb-4 flex items-center gap-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 px-4 py-3"
+                            role="alert">
+                            <x-heroicon-o-exclamation-circle class="w-5 h-5 text-red-500 shrink-0" aria-hidden="true" />
+                            <p class="text-sm text-red-700 dark:text-red-400">
+                                Nenhuma restrição ou alergia foi informada. Desmarque a opção Informações de Saúde por favor.
+                            </p>
+                        </div>
+
                         <div class="space-y-4">
                             @php
                                 $relacaoSaude = $pessoa->restricoes ?? collect();
@@ -328,10 +357,9 @@
                 </div>
 
                 <div class="flex gap-3 justify-end">
-                    <button type="submit"
-                        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                        <x-heroicon-o-check class="w-5 h-5 mr-2" /> Salvar
-                    </button>
+                    <flux:button type="submit" variant="primary" class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md" icon="check">
+                        Salvar
+                    </flux:button>
                 </div>
             </form>
         </div>

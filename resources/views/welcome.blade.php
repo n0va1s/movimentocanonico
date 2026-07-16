@@ -1,6 +1,5 @@
 <x-layouts.public :title="'Movimento Canônico'">
     <div>
-        <x-session-alert />
     </div>
     <!-- Seção: Sistema de Gestão -->
     <section
@@ -18,34 +17,35 @@
             </p>
         </div>
         <div class="md:col-span-2">
-            <div class="relative w-full max-w-2xl mx-auto overflow-hidden rounded-2xl" id="carousel">
+            <div class="relative w-full max-w-2xl mx-auto overflow-hidden rounded-2xl" id="carousel" aria-label="Carrossel de imagens do Movimento Canônico">
                 <div id="carouselSlides" class="flex transition-transform duration-500">
                     <img src="https://i.imgur.com/yXiQHE9.jpeg"
-                        class="w-full h-64 md:h-100 object-cover flex-shrink-0 carousel-img " alt="Imagem 1">
+                        class="w-full h-64 md:h-100 object-cover flex-shrink-0 carousel-img" alt="Jovens reunidos em oração" loading="lazy">
                     <img src="https://i.imgur.com/FdbulA4.jpeg"
-                        class="w-full h-64 md:h-100 object-cover flex-shrink-0 carousel-img " alt="Imagem 2">
+                        class="w-full h-64 md:h-100 object-cover flex-shrink-0 carousel-img" alt="Grupo de jovens no retiro" loading="lazy">
                     <img src="https://i.imgur.com/piduEFx.jpeg"
-                        class="w-full h-64 md:h-100 object-cover flex-shrink-0 carousel-img " alt="Imagem 3">
+                        class="w-full h-64 md:h-100 object-cover flex-shrink-0 carousel-img" alt="Celebração paroquial com jovens" loading="lazy">
                 </div>
 
                 <!-- Dots navigation -->
-                <div class="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
+                <div class="absolute bottom-4 left-0 right-0 flex justify-center space-x-2" role="tablist">
                     <button onclick="showSlide(0)"
                         class="w-3 h-3 rounded-full transition-all duration-300 cursor-pointer hover:bg-blue-600"
-                        id="dot-0"></button>
+                        id="dot-0" role="tab" aria-label="Ir para a imagem 1"></button>
                     <button onclick="showSlide(1)"
                         class="w-3 h-3 rounded-full transition-all duration-300 cursor-pointer hover:bg-blue-600"
-                        id="dot-1"></button>
+                        id="dot-1" role="tab" aria-label="Ir para a imagem 2"></button>
                     <button onclick="showSlide(2)"
                         class="w-3 h-3 rounded-full transition-all duration-300 cursor-pointer hover:bg-blue-600"
-                        id="dot-2"></button>
+                        id="dot-2" role="tab" aria-label="Ir para a imagem 3"></button>
                 </div>
 
                 <button onclick="prevSlide()"
                     class="absolute top-1/2 left-0 transform -translate-y-1/2 bg-opacity-50 text-white p-3 text-2xl z-10 hover: transition cursor-pointer"
                     onmouseover="this.querySelector('svg').style.transform='scale(1.4)'"
-                    onmouseout="this.querySelector('svg').style.transform='scale(1)'">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    onmouseout="this.querySelector('svg').style.transform='scale(1)'"
+                    aria-label="Imagem anterior">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
                 </button>
@@ -53,8 +53,9 @@
                 <button onclick="nextSlide()"
                     class="absolute top-1/2 right-0 transform -translate-y-1/2 bg-opacity-50 text-white p-3 text-2xl z-10 hover:bg-opacity-70 transition cursor-pointer"
                     onmouseover="this.querySelector('svg').style.transform='scale(1.4)'"
-                    onmouseout="this.querySelector('svg').style.transform='scale(1)'">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    onmouseout="this.querySelector('svg').style.transform='scale(1)'"
+                    aria-label="Próxima imagem">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                     </svg>
                 </button>
@@ -104,71 +105,8 @@
 
     </section>
 
-    <!-- Seção: Movimentos -->
-    <section class="text-center space-y-8 mt-16">
-        <h2 class="text-3xl font-bold text-gray-800 dark:text-white mb-6">
-            Nossos Movimentos
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto my-16 px-4">
-
-            <!-- Card VEM -->
-            <div class="border border-gray-300 dark:border-gray-700 rounded-xl p-6 flex flex-col justify-between shadow-sm dark:bg-gray-800">
-                <div>
-                    <img src="https://i.imgur.com/JmjVysp.png"
-                        class="w-full h-64 md:h-30 object-cover flex-shrink-0 rounded-2xl" alt="Imagem 1">
-                    <h3 class="text-xl font-bold text-blue-600 dark:text-blue-400">VEM</h3>
-                    <p class="text-gray-600 dark:text-gray-300 mt-2">Encontro de Adolescentes com Cristo</p>
-                </div>
-            
-                <!-- NOVO Badge Premium de Esgotado -->
-                <div class="mt-4 relative">
-                    <div class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 text-white font-bold rounded-md shadow-lg border-2 border-red-500 dark:border-red-600 animate-pulse-subtle">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                        <div class="flex flex-col leading-tight">
-                            <span class="text-sm uppercase tracking-wider">✓ Esgotado</span>
-                            <span class="text-xs font-normal opacity-90">Vamos selecionar as fichas</span>
-                        </div>
-                    </div>
-                    <!-- Badge "Esgotado" flutuante opcional -->
-                    <span class="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-black px-2 py-1 rounded-full shadow-md rotate-12">
-                        Até o ano que vem!
-                    </span>
-                </div>
-            </div>
-
-            <!-- Card Segue-Me -->
-            <div
-                class="border border-gray-300 dark:border-gray-700 rounded-xl p-6 flex flex-col justify-between shadow-sm dark:bg-gray-800">
-                <div>
-                    <img src="https://i.imgur.com/U3FfnPu.png"
-                        class="w-full h-64 md:h-30 object-contain flex-shrink-0 rounded-2xl" alt="Imagem 1">
-                    <h3 class="text-xl font-bold text-orange-600 dark:text-orange-400">Segue-Me</h3>
-                    <p class="text-gray-600 dark:text-gray-300 mt-2">Encontro de Jovens com Cristo</p>
-                </div>
-                <a href="{{ route('home.ficha.sgm') }}"
-                    class="mt-4 inline-block bg-orange-600 hover:bg-orange-700 text-white font-semibold px-4 py-2 rounded-md transition">
-                    Pré-inscrição do Segue-Me
-                </a>
-            </div>
-
-            <!-- Card ECC -->
-            <div
-                class="border border-gray-300 dark:border-gray-700 rounded-xl p-6 flex flex-col justify-between shadow-sm dark:bg-gray-800">
-                <div>
-                    <img src="https://i.imgur.com/aaifcaH.png"
-                        class="w-full h-64 md:h-30 object-contain flex-shrink-0 rounded-2xl" alt="Imagem 1">
-                    <h3 class="text-xl font-bold text-green-600 dark:text-green-400">ECC</h3>
-                    <p class="text-gray-600 dark:text-gray-300 mt-2">Encontro de Casais com Cristo</p>
-                </div>
-                <a
-                    class="mt-4 inline-block bg-gray-600 hover:bg-gray-700 text-white font-semibold px-4 py-2 rounded-md transition">
-                    Ficha do ECC (Em breve)
-                </a>
-            </div>
-        </div>
-    </section>
+    <!-- Seção: Movimentos (Livewire) -->
+    <livewire:public.movimentos />
 
     <!-- FAQ -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto my-16 px-4">
@@ -621,7 +559,7 @@
                     <!-- Botão -->
                     <div>
                         <button type="submit"
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition">
+                            class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md text-white font-semibold py-2 px-4 rounded-md transition">
                             Enviar Mensagem
                         </button>
                     </div>

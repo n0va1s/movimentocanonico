@@ -85,23 +85,23 @@ new class extends Component {
     }
 }; ?>
 
-<div class="bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-gray-200 dark:border-zinc-700 overflow-hidden flex flex-col h-full">
-    <header class="px-6 py-4 border-b border-gray-100 dark:border-zinc-700 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-800/50">
-        <h2 class="font-bold text-gray-800 dark:text-white flex items-center gap-2">
-            <x-heroicon-s-magnifying-glass class="w-5 h-5 text-blue-600" />
-            Consulta de Saldo - Mercadinho
-        </h2>
+<div class="space-y-6">
+    <div class="px-6 py-4 flex justify-between items-center">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <x-heroicon-s-banknotes class="w-5 h-5 text-emerald-600" />
+            Consulta de Saldo
+        </h3>
         @if($resultado)
-            <button wire:click="limpar" class="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline">
+            <button wire:click="limpar" class="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 rounded">
                 Nova Consulta
             </button>
         @endif
-    </header>
+    </div>
 
-    <div class="p-6 flex-1 flex flex-col justify-between">
+    <div class="px-6 pb-6">
         @if(!$resultado)
             {{-- Formulário de Consulta --}}
-            <form wire:submit.prevent="consultar" class="space-y-4 my-auto">
+            <form wire:submit.prevent="consultar" class="space-y-4">
                 {{-- Dropdown de Eventos Ativos --}}
                 <flux:select wire:model="idt_evento" label="Evento" placeholder="Selecione o evento..." required>
                     @forelse($this->eventosAtivos as $ev)
@@ -117,13 +117,13 @@ new class extends Component {
                     </div>
                 @endif
 
-                <flux:button variant="primary" type="submit" class="w-full">
+                <flux:button variant="primary" type="submit" class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md" icon="magnifying-glass">
                     Consultar Consumo
                 </flux:button>
             </form>
         @else
             {{-- Resultado da Consulta --}}
-            <div class="space-y-5 flex-1 overflow-y-auto max-h-[400px] pr-1">
+            <div class="space-y-5 overflow-y-auto max-h-[400px] pr-1">
                 {{-- Resumo da Conta --}}
                 <div class="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-700 text-center space-y-2">
                     <div class="text-xs font-bold text-zinc-400 uppercase tracking-wider">
