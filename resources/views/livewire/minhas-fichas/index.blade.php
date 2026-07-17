@@ -9,6 +9,7 @@ use App\Enums\TipoSituacao;
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Computed;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 new class extends Component {
     use WithPagination;
@@ -322,6 +323,160 @@ new class extends Component {
             'visitadores' => $this->getVisitadores(),
         ];
     }
+
+    public function exportar(): StreamedResponse
+    {
+        return $this->gerarExportacao(false);
+    }
+
+    public function exportarAdmin(): StreamedResponse
+    {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Acesso não autorizado.');
+        }
+        return $this->gerarExportacao(true);
+    }
+
+    private function gerarExportacao(bool $isAdmin): StreamedResponse
+    {
+        $user = auth()->user();
+        $pessoa = $user->pessoa;
+        $pessoaId = $pessoa?->idt_pessoa;
+        $parceiroId = $pessoa?->idt_parceiro;
+
+        $fichasQuery = Ficha::with(['fichaVem', 'fichaEcc', 'fichaSGM', 'evento', 'visitador', 'visitador.parceiro']);
+
+        if (!$this->podeDesignar()) {
+            if (!$pessoaId) {
+                $fichasQuery->whereRaw('1 = 0');
+            } else {
+                if ($parceiroId) {
+                    $fichasQuery->whereIn('idt_pessoa_visitacao', [$pessoaId, $parceiroId]);
+                } else {
+                    $fichasQuery->where('idt_pessoa_visitacao', $pessoaId);
+                }
+            }
+        }
+
+        $fichas = $fichasQuery
+            ->when($this->search, function ($query) {
+                $query->where(function ($q) {
+                    $q->where('nom_candidato', 'like', '%' . $this->search . '%')
+                      ->orWhere('nom_apelido', 'like', '%' . $this->search . '%');
+                });
+            })
+            ->when($this->visitadorSearch, function ($query) {
+                $query->whereHas('visitador', function ($q) {
+                    $q->where(function ($inner) {
+                        $inner->where('nom_pessoa', 'like', '%' . $this->visitadorSearch . '%')
+                              ->orWhere('nom_apelido', 'like', '%' . $this->visitadorSearch . '%')
+                              ->orWhereHas('parceiro', function ($sp) {
+                                  $sp->where('nom_pessoa', 'like', '%' . $this->visitadorSearch . '%')
+                                    ->orWhere('nom_apelido', 'like', '%' . $this->visitadorSearch . '%');
+                              });
+                    });
+                });
+            })
+            ->when($this->eventoId, function ($query) {
+                $query->where('idt_evento', $this->eventoId);
+            }, function ($query) {
+                $query->whereRaw('1 = 0');
+            })
+            ->when($this->situacao, function ($query) {
+                $query->where('tip_situacao', $this->situacao);
+            }, function ($query) {
+                $query->whereIn('tip_situacao', [
+                    TipoSituacao::SELECIONADA,
+                    TipoSituacao::CONTATO,
+                    TipoSituacao::AGUARDANDO
+                ]);
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $cabecalho = [
+            'Nome',
+            'Sexo',
+            'Data de Nascimento',
+            'Endereço',
+            'Casal Visitação',
+            'Situação',
+            'Tamanho Camiseta',
+            'Restrição de Saúde',
+            'Paroquiano',
+            'Região',
+        ];
+
+        if ($isAdmin) {
+            $cabecalho = array_merge($cabecalho, [
+                'Telefone do Candidato',
+                'Nome do Pai',
+                'Telefone do Pai',
+                'Nome da Mãe',
+                'Telefone da Mãe',
+                'Falar com (Nome)',
+                'Falar com (Telefone)',
+            ]);
+        }
+
+        $nomeArquivo = 'fichas_' . ($isAdmin ? 'admin_' : '') . \Str::slug($this->evento->des_evento ?? 'evento') . '_' . now()->format('Y-m-d') . '.csv';
+
+        return new StreamedResponse(function () use ($fichas, $cabecalho, $isAdmin) {
+            $handle = fopen('php://output', 'w');
+            fprintf($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fputcsv($handle, $cabecalho, ';');
+
+            foreach ($fichas as $ficha) {
+                $movimentoId = (int) $ficha->evento->idt_movimento;
+                $nomParoquia = match ($movimentoId) {
+                    \App\Models\TipoMovimento::VEM => $ficha->fichaVem?->nom_paroquia,
+                    \App\Models\TipoMovimento::ECC => $ficha->fichaEcc?->nom_paroquia,
+                    \App\Models\TipoMovimento::SGM => $ficha->fichaSGM?->nom_paroquia,
+                    default => '',
+                } ?? '';
+
+                $isParoquiano = preg_match('/PNSL|Nossa Senhora do Lago/i', (string) $nomParoquia) ? 'Sim' : 'Não';
+                $isRegiao = preg_match('/Lago Norte|SHIN|Setor de Mans.es|Taquari|Varj.o/iu', (string) $ficha->des_endereco) ? 'Sim' : 'Não';
+
+                $row = [
+                    $ficha->nom_candidato,
+                    $ficha->tip_genero ? $ficha->tip_genero->value : '',
+                    $ficha->dat_nascimento ? $ficha->dat_nascimento->format('d/m/Y') : '',
+                    $ficha->des_endereco,
+                    $ficha->visitador ? $ficha->visitador->nom_pessoa : '',
+                    $ficha->tip_situacao ? $ficha->tip_situacao->label() : '',
+                    $ficha->tam_camiseta ? $ficha->tam_camiseta->value : '',
+                    $ficha->ind_restricao ? 'Sim' : 'Não',
+                    $isParoquiano,
+                    $isRegiao,
+                ];
+
+                if ($isAdmin) {
+                    $nomPai = $ficha->fichaVem?->nom_pai ?? $ficha->fichaSGM?->nom_pai ?? '';
+                    $telPai = $ficha->fichaVem?->tel_pai ?? $ficha->fichaSGM?->tel_pai ?? '';
+                    $nomMae = $ficha->fichaVem?->nom_mae ?? $ficha->fichaSGM?->nom_mae ?? '';
+                    $telMae = $ficha->fichaVem?->tel_mae ?? $ficha->fichaSGM?->tel_mae ?? '';
+                    
+                    $resp = $ficha->responsavel_info;
+                    $nomFalarCom = (isset($resp['nome']) && $resp['nome'] !== 'Não informado') ? $resp['nome'] : '';
+                    $telFalarCom = (isset($resp['telefone']) && $resp['telefone'] !== 'Não informado') ? $resp['telefone'] : '';
+
+                    $row = array_merge($row, [
+                        $ficha->tel_candidato,
+                        $nomPai,
+                        $telPai,
+                        $nomMae,
+                        $telMae,
+                        $nomFalarCom,
+                        $telFalarCom,
+                    ]);
+                }
+
+                fputcsv($handle, $row, ';');
+            }
+            fclose($handle);
+        });
+    }
 }; ?>
 
 <div class="space-y-6 w-full max-w-7xl mx-auto p-4 md:p-8">
@@ -351,7 +506,19 @@ new class extends Component {
         <div class="flex flex-row justify-between items-center gap-4 bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-700">
             <div class="text-left">
                 <flux:heading size="lg" class="mb-1.5">{{ $evento->des_evento }}</flux:heading>
-                <x-badge-movimento :sigla="$evento->movimento->des_sigla" />
+                <div class="flex flex-wrap gap-2 items-center">
+                    <x-badge-movimento :sigla="$evento->movimento->des_sigla" />
+                    
+                    {{-- Botões de Exportar na tela Minhas Fichas --}}
+                    <flux:button wire:click="exportar" icon="arrow-down-tray" variant="outline" size="xs" title="Exportar CSV">
+                        Exportar
+                    </flux:button>
+                    @if(auth()->user()->isAdmin())
+                        <flux:button wire:click="exportarAdmin" icon="arrow-down-tray" variant="outline" size="xs" title="Exportar CSV Admin">
+                            Exportar Admin
+                        </flux:button>
+                    @endif
+                </div>
             </div>
             <flux:button variant="ghost" size="sm" icon="arrow-left" wire:click="alterarEvento" class="h-11 shrink-0">
                 Alterar Evento

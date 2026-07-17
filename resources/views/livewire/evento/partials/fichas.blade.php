@@ -149,6 +149,19 @@ new class extends Component {
 
     public function exportar(): StreamedResponse
     {
+        return $this->gerarExportacao(false);
+    }
+
+    public function exportarAdmin(): StreamedResponse
+    {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Acesso não autorizado.');
+        }
+        return $this->gerarExportacao(true);
+    }
+
+    private function gerarExportacao(bool $isAdmin): StreamedResponse
+    {
         $fichas = \App\Models\Ficha::with(['visitador', 'fichaVem', 'fichaEcc', 'fichaSGM'])
             ->where('idt_evento', $this->evento->idt_evento)
             ->when($this->filtroSituacao, function ($query) {
@@ -208,9 +221,21 @@ new class extends Component {
             'Região',
         ];
 
-        $nomeArquivo = 'fichas_' . \Str::slug($this->evento->nom_evento ?? 'evento') . '_' . now()->format('Y-m-d') . '.csv';
+        if ($isAdmin) {
+            $cabecalho = array_merge($cabecalho, [
+                'Telefone do Candidato',
+                'Nome do Pai',
+                'Telefone do Pai',
+                'Nome da Mãe',
+                'Telefone da Mãe',
+                'Falar com (Nome)',
+                'Falar com (Telefone)',
+            ]);
+        }
 
-        $response = new StreamedResponse(function () use ($fichas, $cabecalho) {
+        $nomeArquivo = 'fichas_' . ($isAdmin ? 'admin_' : '') . \Str::slug($this->evento->des_evento ?? 'evento') . '_' . now()->format('Y-m-d') . '.csv';
+
+        $response = new StreamedResponse(function () use ($fichas, $cabecalho, $isAdmin) {
             $handle = fopen('php://output', 'w');
 
             // BOM para o Excel reconhecer UTF-8 corretamente
@@ -234,7 +259,7 @@ new class extends Component {
                 // Região: Lago Norte, SHIN, Setor de Mansões, Taquari, Varjão
                 $isRegiao = preg_match('/Lago Norte|SHIN|Setor de Mans.es|Taquari|Varj.o/iu', (string) $ficha->des_endereco) ? 'Sim' : 'Não';
 
-                fputcsv($handle, [
+                $row = [
                     $ficha->nom_candidato,
                     $ficha->tip_genero ? $ficha->tip_genero->value : '',
                     $ficha->dat_nascimento ? $ficha->dat_nascimento->format('d/m/Y') : '',
@@ -245,7 +270,30 @@ new class extends Component {
                     $ficha->ind_restricao ? 'Sim' : 'Não',
                     $isParoquiano,
                     $isRegiao,
-                ], ';');
+                ];
+
+                if ($isAdmin) {
+                    $nomPai = $ficha->fichaVem?->nom_pai ?? $ficha->fichaSGM?->nom_pai ?? '';
+                    $telPai = $ficha->fichaVem?->tel_pai ?? $ficha->fichaSGM?->tel_pai ?? '';
+                    $nomMae = $ficha->fichaVem?->nom_mae ?? $ficha->fichaSGM?->nom_mae ?? '';
+                    $telMae = $ficha->fichaVem?->tel_mae ?? $ficha->fichaSGM?->tel_mae ?? '';
+                    
+                    $resp = $ficha->responsavel_info;
+                    $nomFalarCom = (isset($resp['nome']) && $resp['nome'] !== 'Não informado') ? $resp['nome'] : '';
+                    $telFalarCom = (isset($resp['telefone']) && $resp['telefone'] !== 'Não informado') ? $resp['telefone'] : '';
+
+                    $row = array_merge($row, [
+                        $ficha->tel_candidato,
+                        $nomPai,
+                        $telPai,
+                        $nomMae,
+                        $telMae,
+                        $nomFalarCom,
+                        $telFalarCom,
+                    ]);
+                }
+
+                fputcsv($handle, $row, ';');
             }
 
             fclose($handle);
@@ -339,6 +387,11 @@ new class extends Component {
                 <flux:button wire:click="exportar" icon="arrow-down-tray" variant="outline" size="sm" title="Exportar CSV">
                     Exportar
                 </flux:button>
+                @if(auth()->user()->isAdmin())
+                    <flux:button wire:click="exportarAdmin" icon="arrow-down-tray" variant="outline" size="sm" title="Exportar CSV Completo para Admin">
+                        Exportar Admin
+                    </flux:button>
+                @endif
             </div>
             <flux:subheading class="mt-1">Analise e aprove os candidatos para este evento.</flux:subheading>
         </div>

@@ -347,3 +347,72 @@ describe('Minhas Fichas Visitor Designation', function () {
             ->assertForbidden();
     });
 });
+
+describe('Minhas Fichas Export', function () {
+    test('visitor can export standard CSV', function () {
+        $visitorUser = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
+        $this->actingAs($visitorUser);
+
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+            ->call('exportar')
+            ->assertOk();
+    });
+
+    test('admin can export admin CSV', function () {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin);
+
+        // Cria uma ficha vinculada ao evento
+        $ficha = Ficha::factory()->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'nom_candidato' => 'Candidato Teste Export',
+            'tel_candidato' => '61999999999',
+            'tip_situacao' => TipoSituacao::SELECIONADA,
+        ]);
+
+        // Cria a relação FichaVem com dados de pai, mãe e responsável
+        \App\Models\FichaVem::factory()->create([
+            'idt_ficha' => $ficha->idt_ficha,
+            'nom_pai' => 'Pai do Candidato',
+            'tel_pai' => '61988888888',
+            'nom_mae' => 'Mae do Candidato',
+            'tel_mae' => '61977777777',
+            'nom_responsavel' => 'Responsavel Falar Com',
+            'tel_responsavel' => '61966666666',
+        ]);
+
+        // Testa o método de exportação via Volt
+        $response = Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+            ->call('exportarAdmin')
+            ->assertOk();
+
+        // Recupera a StreamedResponse gerada do componente
+        $streamedResponse = $response->instance()->exportarAdmin();
+        
+        ob_start();
+        $streamedResponse->sendContent();
+        $content = ob_get_clean();
+
+        // Garante que o cabeçalho e os valores estejam presentes no CSV
+        expect($content)
+            ->toContain('Nome do Pai')
+            ->toContain('Telefone do Pai')
+            ->toContain('Nome da Mãe')
+            ->toContain('Telefone da Mãe')
+            ->toContain('Falar com (Nome)')
+            ->toContain('Falar com (Telefone)')
+            ->toContain('Candidato Teste Export')
+            ->toContain('Pai do Candidato')
+            ->toContain('Mae do Candidato');
+    });
+
+    test('visitor cannot export admin CSV', function () {
+        $visitorUser = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
+        $this->actingAs($visitorUser);
+
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+            ->call('exportarAdmin')
+            ->assertForbidden();
+    });
+});
+

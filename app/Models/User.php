@@ -104,7 +104,7 @@ class User extends Authenticatable
 
     public function autorizaVisit(): bool
     {
-        if ($this->isAdmin()) {
+        if ($this->isAdmin() || $this->isDirig()) {
             return true;
         }
 
