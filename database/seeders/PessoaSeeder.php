@@ -16,7 +16,12 @@ class PessoaSeeder extends Seeder
 
         // 1. Gerar Pessoas em Massa (Sem Parceiro)
         $this->command->info('Gerando 500 pessoas simples...');
-        $pessoasSimples = Pessoa::factory(500)->make(['idt_parceiro' => null])->toArray();
+        $pessoasSimples = Pessoa::factory(500)->make(['idt_parceiro' => null])
+            ->map(function ($p) {
+                $p->setAppends([]);
+                return $p->toArray();
+            })
+            ->toArray();
 
         foreach (array_chunk($pessoasSimples, 100) as $chunk) {
             Pessoa::insert($chunk);
@@ -24,7 +29,12 @@ class PessoaSeeder extends Seeder
 
         // 2. Gerar Pessoas para Pareamento (Usando insert em vez de create)
         $this->command->info('Gerando 150 pessoas para pareamento...');
-        $pessoasParaPar = Pessoa::factory(150)->make(['idt_parceiro' => null])->toArray();
+        $pessoasParaPar = Pessoa::factory(150)->make(['idt_parceiro' => null])
+            ->map(function ($p) {
+                $p->setAppends([]);
+                return $p->toArray();
+            })
+            ->toArray();
         foreach (array_chunk($pessoasParaPar, 100) as $chunk) {
             Pessoa::insert($chunk);
         }
