@@ -274,3 +274,30 @@ Route::middleware(['auth'])->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+// ROTA TEMPORÁRIA PARA GERAR O TOKEN EM PRODUÇÃO (REMOVA APÓS O USO)
+Route::get('/gerar-token-seguro-052', function (\Illuminate\Http\Request $request) {
+    $email = $request->query('email');
+    $chave = $request->query('chave');
+
+    // Mude a senha abaixo para uma chave de sua preferência para proteger o acesso
+    $chaveSeguranca = 'chave123052';
+
+    if ($chave !== $chaveSeguranca) {
+        abort(403, 'Acesso não autorizado.');
+    }
+
+    if (!$email) {
+        return 'Por favor, informe o parâmetro ?email= na URL.';
+    }
+
+    $user = App\Models\User::where('email', $email)->first();
+
+    if (!$user) {
+        return "Usuário {$email} não encontrado no banco de produção.";
+    }
+
+    $token = $user->createToken('Token Produção - ' . $user->name)->plainTextToken;
+
+    return "Token de Produção gerado com sucesso para <strong>{$user->email}</strong>:<br><strong>{$token}</strong>";
+});
