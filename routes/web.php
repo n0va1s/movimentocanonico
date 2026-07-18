@@ -296,7 +296,10 @@ Route::group([], function () {
         }
 
         try {
-            Artisan::call('migrate', ['--force' => true]);
+            Artisan::call('migrate', [
+                '--path' => 'database/migrations/2026_07_02_150000_create_personal_access_tokens_table.php',
+                '--force' => true
+            ]);
             return 'Migrations rodadas com sucesso! Output: <br><pre>' . Artisan::output() . '</pre>';
         } catch (\Exception $e) {
             return 'Erro ao rodar migrations: <br><pre>' . $e->getMessage() . '</pre>';
