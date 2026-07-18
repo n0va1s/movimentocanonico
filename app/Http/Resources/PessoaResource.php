@@ -24,7 +24,7 @@ class PessoaResource extends JsonResource
             'cpf' => $this->num_cpf_pessoa,
             'telefone' => $this->tel_pessoa,
             'email' => $this->eml_pessoa,
-            'ascimento' => $this->getDataNascimentoFormatada(),
+            'nascimento' => $this->getDataNascimentoFormatada(),
             'sexo' => $this->tip_genero?->value ?? $this->tip_genero,
             'endereco' => $this->des_endereco,
             'evento' => [
