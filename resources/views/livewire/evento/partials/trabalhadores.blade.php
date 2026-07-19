@@ -147,6 +147,12 @@ new class extends Component {
             <flux:subheading>Trabalhadores pendentes de avaliação. Os já avaliados aparecem no Quadrante.</flux:subheading>
         </div>
 
+        <div class="flex gap-2">
+            <flux:button href="{{ route('eventos.casais-visitacao', $evento) }}" icon="user-group" variant="filled" color="indigo" class="cursor-pointer">
+                Casais de Visitação
+            </flux:button>
+        </div>
+
         <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto sm:items-end">
             <flux:select label="Equipe" wire:model.live="equipeFiltroId" icon="users" placeholder="Todas as equipes" class="w-full sm:w-48">
                 <option value="">Todas as equipes</option>

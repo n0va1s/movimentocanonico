@@ -142,6 +142,10 @@ Route::middleware(['auth'])->group(function () {
         Volt::route('eventos/{evento}/gerenciamento', 'evento.gerenciamento')
             ->name('eventos.gerenciamento')
             ->withTrashed();
+
+        Volt::route('eventos/{evento}/casais-visitacao', 'evento.casais-visitacao')
+            ->name('eventos.casais-visitacao')
+            ->withTrashed();
     });
 
     Route::middleware(['role:admin,dirig'])->group(function () {
