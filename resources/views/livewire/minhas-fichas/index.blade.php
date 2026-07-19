@@ -125,7 +125,7 @@ new class extends Component {
 
             $partnerId = $v->idt_parceiro ?: \App\Models\Pessoa::where('idt_parceiro', $v->idt_pessoa)->value('idt_pessoa');
 
-            // Ocultar casal/pessoa caso já tenha 3 ou mais fichas atribuídas no evento selecionado
+            // Calcular quantidade de fichas atribuídas ao casal/pessoa no evento selecionado
             $fichaCount = \App\Models\Ficha::where('idt_evento', $this->eventoId)
                 ->where(function ($q) use ($v, $partnerId) {
                     $q->where('idt_pessoa_visitacao', $v->idt_pessoa)
@@ -135,9 +135,7 @@ new class extends Component {
                 })
                 ->count();
 
-            if ($fichaCount >= 3) {
-                return true;
-            }
+            $v->ficha_count = $fichaCount;
 
             if ($partnerId) {
                 $processed[] = $partnerId;
@@ -221,6 +219,20 @@ new class extends Component {
 
         session()->flash('success', 'Visitação designada com sucesso e fichas marcadas como Selecionada.');
     }
+
+    public function limparDesignacao(int $fichaId): void
+    {
+        abort_if(!$this->podeDesignar(), 403);
+
+        $ficha = \App\Models\Ficha::findOrFail($fichaId);
+        $ficha->update([
+            'idt_pessoa_visitacao' => null,
+        ]);
+
+        $this->dispatch('notify', message: 'Designação de visitador removida com sucesso.', type: 'sucesso');
+        \Flux::toast('Designação do visitador removida com sucesso.', variant: 'success');
+    }
+
 
     public function podeDesignar(): bool
     {
@@ -651,9 +663,20 @@ new class extends Component {
                                     $nomeLabel .= ' & ' . $v->parceiro->nom_pessoa;
                                 }
                             @endphp
-                            <div class="flex items-start gap-2 text-zinc-500 dark:text-zinc-400 text-xs mt-3 bg-zinc-50 dark:bg-zinc-900/30 p-2 rounded-lg border border-zinc-100 dark:border-zinc-800/40">
-                                <flux:icon.user-circle class="size-4 shrink-0 text-zinc-400 mt-0.5" />
-                                <span>Designado: <strong class="text-zinc-700 dark:text-zinc-300 font-semibold">{{ $nomeLabel }}</strong></span>
+                            <div class="flex items-center justify-between gap-2 text-zinc-500 dark:text-zinc-400 text-xs mt-3 bg-zinc-50 dark:bg-zinc-900/30 p-2 rounded-lg border border-zinc-100 dark:border-zinc-800/40">
+                                <div class="flex items-start gap-2 min-w-0">
+                                    <flux:icon.user-circle class="size-4 shrink-0 text-zinc-400 mt-0.5" />
+                                    <span class="truncate">Designado: <strong class="text-zinc-700 dark:text-zinc-300 font-semibold">{{ $nomeLabel }}</strong></span>
+                                </div>
+                                <button 
+                                    type="button"
+                                    wire:click="limparDesignacao({{ $ficha->idt_ficha }})"
+                                    wire:confirm="Tem certeza de que deseja remover a designação de visitador desta ficha?"
+                                    class="shrink-0 text-zinc-400 hover:text-red-500 hover:bg-zinc-200 dark:hover:bg-zinc-700 p-0.5 rounded transition-colors cursor-pointer"
+                                    title="Limpar Designação"
+                                >
+                                    <flux:icon.x-mark class="size-3.5" />
+                                </button>
                             </div>
                         @endif
 
@@ -840,16 +863,33 @@ new class extends Component {
                                 @php
                                     $label = $v->nom_pessoa . ($v->parceiro ? ' e ' . $v->parceiro->nom_pessoa : '');
                                     $address = $v->des_endereco ?: 'Endereço não cadastrado';
+                                    $isCompleto = ($v->ficha_count ?? 0) >= 3;
                                 @endphp
                                 <li>
                                     <button 
                                         type="button"
-                                        @click="selectedId = {{ $v->idt_pessoa }}; selectedLabel = '{{ addslashes($label) }}'; selectedAddress = '{{ addslashes($address) }}'; open = false;"
-                                        class="w-full text-left p-3 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition flex flex-col cursor-pointer"
-                                        :class="selectedId == {{ $v->idt_pessoa }} ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''"
+                                        @if ($isCompleto)
+                                            disabled
+                                            class="w-full text-left p-3 rounded-md bg-zinc-50/50 dark:bg-zinc-800/50 opacity-40 cursor-not-allowed flex flex-col"
+                                        @else
+                                            @click="selectedId = {{ $v->idt_pessoa }}; selectedLabel = '{{ addslashes($label) }}'; selectedAddress = '{{ addslashes($address) }}'; open = false;"
+                                            class="w-full text-left p-3 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition flex flex-col cursor-pointer"
+                                            :class="selectedId == {{ $v->idt_pessoa }} ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''"
+                                        @endif
                                     >
-                                        <span class="font-semibold text-sm text-zinc-900 dark:text-zinc-100">{{ $label }}</span>
-                                        <span class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{{ $address }}</span>
+                                        <div class="flex items-center justify-between w-full">
+                                            <span class="font-semibold text-sm text-zinc-900 dark:text-zinc-100 truncate pr-2">{{ $label }}</span>
+                                            @if ($isCompleto)
+                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300 shrink-0">
+                                                    Completo (3/3)
+                                                </span>
+                                            @else
+                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 shrink-0">
+                                                    {{ $v->ficha_count ?? 0 }}/3 fichas
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <span class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate w-full text-left">{{ $address }}</span>
                                     </button>
                                 </li>
                             @endforeach

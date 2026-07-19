@@ -416,3 +416,72 @@ describe('Minhas Fichas Export', function () {
     });
 });
 
+describe('Minhas Fichas Designator Removal and Dropdown Mod', function () {
+    test('dropdown returns all visitors including those with 3 or more fichas and has correct count', function () {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin);
+
+        $visitorUser = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
+        $visitorPessoa = $visitorUser->pessoa;
+
+        // Atribuir 3 fichas para o visitador
+        Ficha::factory()->count(3)->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'idt_pessoa_visitacao' => $visitorPessoa->idt_pessoa,
+            'tip_situacao' => TipoSituacao::SELECIONADA
+        ]);
+
+        $component = Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData');
+        
+        $visitadores = $component->get('visitadores');
+        
+        // O visitador com 3 fichas deve estar na coleção retornado pelo backend
+        $matched = $visitadores->firstWhere('idt_pessoa', $visitorPessoa->idt_pessoa);
+        expect($matched)->not->toBeNull();
+        expect($matched->ficha_count)->toBe(3);
+    });
+
+    test('coordinator or admin can clear designator of a single ficha', function () {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin);
+
+        $visitorUser = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
+        $visitorPessoa = $visitorUser->pessoa;
+
+        $ficha = Ficha::factory()->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'idt_pessoa_visitacao' => $visitorPessoa->idt_pessoa,
+            'tip_situacao' => TipoSituacao::SELECIONADA
+        ]);
+
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+            ->call('loadData')
+            ->call('limparDesignacao', $ficha->idt_ficha)
+            ->assertHasNoErrors();
+
+        expect($ficha->fresh()->idt_pessoa_visitacao)->toBeNull();
+    });
+
+
+    test('visitor without permissions cannot clear designator', function () {
+        $visitorUser = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
+        $visitorPessoa = $visitorUser->pessoa;
+
+        $ficha = Ficha::factory()->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'idt_pessoa_visitacao' => $visitorPessoa->idt_pessoa,
+            'tip_situacao' => TipoSituacao::SELECIONADA
+        ]);
+
+        // Visitador comum tenta limpar sua própria ficha
+        $this->actingAs($visitorUser);
+
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+            ->call('loadData')
+            ->call('limparDesignacao', $ficha->idt_ficha)
+            ->assertStatus(403);
+            
+        expect($ficha->fresh()->idt_pessoa_visitacao)->toBe($visitorPessoa->idt_pessoa);
+    });
+});
+
