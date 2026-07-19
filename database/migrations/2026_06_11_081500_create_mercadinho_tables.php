@@ -14,6 +14,9 @@ return new class extends Migration
         // Tabela de Produtos do Mercadinho
         Schema::create('produto', function (Blueprint $table) {
             $table->id('idt_produto');
+            $table->foreignId('idt_evento')
+                ->constrained('evento', 'idt_evento')
+                ->onDelete('cascade');
             $table->string('nom_produto', 100);
             $table->string('des_produto', 255)->nullable();
             $table->decimal('val_preco', 10, 2);

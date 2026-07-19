@@ -17,6 +17,7 @@ new class extends Component {
     public ?Evento $evento = null;
     public ?int $selectedEventoId = null;
     public string $activeSubTab = 'operacao'; // 'operacao', 'catalogo' ou 'relatorio'
+    public string $status = 'ativos';
     
     // Filtros e Buscas
     public string $search = '';
@@ -85,7 +86,14 @@ new class extends Component {
     public function eventosAtivos()
     {
         $user = Auth::user();
-        return Evento::query()
+        
+        $query = Evento::query();
+        
+        if ($this->status === 'encerrados') {
+            $query->onlyTrashed();
+        }
+        
+        return $query
             ->when($user->idt_movimento, function ($q) use ($user) {
                 return $q->where('idt_movimento', $user->idt_movimento);
             })
@@ -95,7 +103,7 @@ new class extends Component {
 
     public function selectEvento(int $eventoId): void
     {
-        $evento = Evento::find($eventoId);
+        $evento = Evento::withTrashed()->find($eventoId);
         if ($evento) {
             $this->evento = $evento;
             $this->selectedEventoId = $evento->idt_evento;
@@ -514,7 +522,7 @@ new class extends Component {
 
         @if($activeSubTab === 'catalogo')
             {{-- Tela do Catálogo --}}
-            <livewire:mercadinho.produtos />
+            <livewire:mercadinho.produtos :evento="$evento" />
         @elseif($activeSubTab === 'relatorio')
             {{-- Relatório de Vendas --}}
             <div class="space-y-6 px-4 sm:px-6 md:px-0">
@@ -1212,9 +1220,24 @@ new class extends Component {
     @else
         {{-- TELA DE SELEÇÃO DO EVENTO --}}
         <div class="max-w-7xl mx-auto space-y-6 py-6 px-4">
+            <div class="border-b border-gray-200 dark:border-zinc-700 mb-6">
+                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                    <button wire:click="$set('status', 'ativos')" 
+                       class="border-b-2 py-4 px-1 text-sm font-semibold transition-colors duration-200 flex items-center gap-2 {{ $status === 'ativos' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200' }}">
+                        <x-heroicon-o-calendar class="w-4 h-4" />
+                        <span>Eventos Ativos</span>
+                    </button>
+                    <button wire:click="$set('status', 'encerrados')" 
+                       class="border-b-2 py-4 px-1 text-sm font-semibold transition-colors duration-200 flex items-center gap-2 {{ $status === 'encerrados' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200' }}">
+                        <x-heroicon-o-archive-box class="w-4 h-4" />
+                        <span>Eventos Encerrados</span>
+                    </button>
+                </nav>
+            </div>
+
             @if($this->eventosAtivos->isEmpty())
                 <div class="p-8 text-center bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-sm italic text-zinc-500">
-                    Nenhum evento ativo cadastrado no momento.
+                    {{ $status === 'encerrados' ? 'Nenhum evento encerrado encontrado.' : 'Nenhum evento ativo cadastrado no momento.' }}
                 </div>
             @else
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

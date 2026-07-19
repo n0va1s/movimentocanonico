@@ -1,11 +1,16 @@
 <?php
 
 use App\Models\Produto;
+use App\Models\Evento;
+use App\Models\Transacao;
 use Livewire\Volt\Component;
 use Livewire\Attributes\Computed;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 new class extends Component {
+    public ?Evento $evento = null;
+
     public string $nom_produto = '';
     public string $des_produto = '';
     public string $val_preco = '';
@@ -14,6 +19,8 @@ new class extends Component {
     
     public ?Produto $editingProduct = null;
     public bool $showModal = false;
+    public bool $showImportModal = false;
+    public ?int $eventoOrigemId = null;
 
     public string $search = '';
 
@@ -28,7 +35,10 @@ new class extends Component {
     #[Computed]
     public function produtos()
     {
+        if (!$this->evento) return collect();
+
         return Produto::query()
+            ->where('idt_evento', $this->evento->idt_evento)
             ->when($this->search, function($query) {
                 $query->where(function($q) {
                     $q->where('nom_produto', 'like', '%' . $this->search . '%')
@@ -37,6 +47,17 @@ new class extends Component {
             })
             ->orderBy('ind_favorito', 'desc')
             ->orderBy('nom_produto', 'asc')
+            ->get();
+    }
+
+    #[Computed]
+    public function eventosAnteriores()
+    {
+        if (!$this->evento) return collect();
+
+        return Evento::where('idt_movimento', $this->evento->idt_movimento)
+            ->where('idt_evento', '!=', $this->evento->idt_evento)
+            ->orderBy('dat_inicio', 'desc')
             ->get();
     }
 
@@ -75,12 +96,62 @@ new class extends Component {
             \Flux::toast(__('messages.alerts.success.product_updated'), variant: 'success');
         } else {
             Produto::create(array_merge($validated, [
+                'idt_evento' => $this->evento->idt_evento,
                 'usu_inclusao' => Auth::id(),
             ]));
             \Flux::toast(__('messages.alerts.success.product_created'), variant: 'success');
         }
 
         $this->showModal = false;
+    }
+
+    public function importarMaisVendidos(): void
+    {
+        $this->validate([
+            'eventoOrigemId' => 'required|exists:evento,idt_evento'
+        ]);
+
+        $produtosMaisVendidos = Transacao::whereHas('conta', function($q) {
+                $q->where('idt_evento', $this->eventoOrigemId);
+            })
+            ->where('tip_transacao', 'C')
+            ->select('idt_produto', 'nom_item', DB::raw('SUM(qtd_item) as total_qtd'))
+            ->groupBy('idt_produto', 'nom_item')
+            ->orderBy('total_qtd', 'desc')
+            ->limit(15)
+            ->get();
+
+        if ($produtosMaisVendidos->isEmpty()) {
+            \Flux::toast('Nenhuma venda encontrada no evento selecionado.', variant: 'warning');
+            return;
+        }
+
+        DB::transaction(function() use ($produtosMaisVendidos) {
+            foreach ($produtosMaisVendidos as $venda) {
+                // Verificar se já existe um produto com o mesmo nome neste evento
+                $existe = Produto::where('idt_evento', $this->evento->idt_evento)
+                    ->where('nom_produto', $venda->nom_item)
+                    ->exists();
+
+                if (!$existe) {
+                    // Busca os detalhes do produto original se possível, para pegar o preço (ou pega da transacao? Melhor pegar o preço atual no banco do produto original)
+                    $produtoOrigem = $venda->idt_produto ? Produto::find($venda->idt_produto) : null;
+                    
+                    Produto::create([
+                        'idt_evento' => $this->evento->idt_evento,
+                        'nom_produto' => $venda->nom_item,
+                        'des_produto' => $produtoOrigem ? $produtoOrigem->des_produto : null,
+                        'val_preco' => $produtoOrigem ? $produtoOrigem->val_preco : 0,
+                        'qtd_produto' => 0, // Inicia com estoque zero
+                        'ind_favorito' => false,
+                        'usu_inclusao' => Auth::id(),
+                    ]);
+                }
+            }
+        });
+
+        $this->showImportModal = false;
+        \Flux::toast('Produtos importados com sucesso! Verifique e ajuste os estoques.', variant: 'success');
     }
 
     public function excluir(Produto $produto): void
@@ -111,9 +182,14 @@ new class extends Component {
             <flux:heading size="lg">Catálogo de Produtos</flux:heading>
             <flux:subheading>Gerencie os produtos disponíveis para venda e seus estoques.</flux:subheading>
         </div>
-        <flux:button variant="primary" icon="plus" class="w-full mt-4 md:w-auto md:mt-0" wire:click="openCreateModal">
-            Cadastrar Produto
-        </flux:button>
+        <div class="flex flex-col sm:flex-row gap-3 mt-4 md:mt-0 w-full md:w-auto">
+            <flux:button variant="ghost" icon="arrow-down-tray" class="w-full sm:w-auto" wire:click="$set('showImportModal', true)">
+                Importar Mais Vendidos
+            </flux:button>
+            <flux:button variant="primary" icon="plus" class="w-full sm:w-auto" wire:click="openCreateModal">
+                Cadastrar Produto
+            </flux:button>
+        </div>
     </div>
 
     @if (session()->has('success'))
@@ -242,6 +318,34 @@ new class extends Component {
                     <div class="flex justify-end gap-3">
                         <flux:button variant="ghost" wire:click="$set('showModal', false)">Cancelar</flux:button>
                         <flux:button variant="primary" type="submit">Salvar</flux:button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
+
+    {{-- Modal Importação --}}
+    @if($showImportModal)
+        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div class="w-full max-w-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-2xl rounded-2xl overflow-hidden p-6 space-y-6">
+                <div>
+                    <flux:heading size="lg">Importar Mais Vendidos</flux:heading>
+                    <flux:subheading>Copie os produtos mais vendidos de eventos anteriores para o catálogo deste evento. Os produtos entrarão com estoque zero.</flux:subheading>
+                </div>
+
+                <form wire:submit.prevent="importarMaisVendidos" class="space-y-4">
+                    <flux:select wire:model="eventoOrigemId" label="Selecionar Evento" required>
+                        <option value="">Escolha um evento...</option>
+                        @foreach($this->eventosAnteriores as $ev)
+                            <option value="{{ $ev->idt_evento }}">{{ $ev->des_evento }} ({{ $ev->getDataInicioFormatada() }})</option>
+                        @endforeach
+                    </flux:select>
+
+                    <flux:separator />
+
+                    <div class="flex justify-end gap-3">
+                        <flux:button variant="ghost" wire:click="$set('showImportModal', false)">Cancelar</flux:button>
+                        <flux:button variant="primary" type="submit">Importar</flux:button>
                     </div>
                 </form>
             </div>

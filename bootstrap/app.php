@@ -37,13 +37,21 @@ return Application::configure(basePath: dirname(__DIR__))
                 return;
             }
 
-            // Garante que o erro sempre vai para o log, independente do Telegram
-            Log::error($e->getMessage(), [
-                'exception' => get_class($e),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            // Tenta logar normalmente, mas se a Facade não estiver pronta, usa error_log
+            try {
+                if (class_exists(\Illuminate\Support\Facades\Log::class) && \Illuminate\Support\Facades\Log::getFacadeRoot()) {
+                    \Illuminate\Support\Facades\Log::error($e->getMessage(), [
+                        'exception' => get_class($e),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'trace' => $e->getTraceAsString(),
+                    ]);
+                } else {
+                    error_log('EARLY EXCEPTION: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+                }
+            } catch (\Throwable $loggingException) {
+                error_log('LOGGING EXCEPTION: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            }
 
             // Protege contra falha no cache (ex: banco indisponível) para não
             // silenciar o erro original nem impedir o log acima
@@ -62,9 +70,13 @@ return Application::configure(basePath: dirname(__DIR__))
                     Cache::put('error_notification_'.$errorHash, true, now()->addMinutes(5));
                 }
             } catch (Throwable $cacheException) {
-                Log::warning('Falha ao enviar notificação de erro (cache/telegram indisponível)', [
-                    'cache_error' => $cacheException->getMessage(),
-                ]);
+                if (class_exists(\Illuminate\Support\Facades\Log::class) && \Illuminate\Support\Facades\Log::getFacadeRoot()) {
+                    \Illuminate\Support\Facades\Log::warning('Falha ao enviar notificação de erro (cache/telegram indisponível)', [
+                        'cache_error' => $cacheException->getMessage(),
+                    ]);
+                } else {
+                    error_log('CACHE ERROR: ' . $cacheException->getMessage());
+                }
             }
         });
     })->create();

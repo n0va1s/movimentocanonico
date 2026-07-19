@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Produto;
 use App\Models\User;
+use App\Models\Evento;
 use Illuminate\Database\Seeder;
 
 class ProdutoSeeder extends Seeder
@@ -14,6 +15,11 @@ class ProdutoSeeder extends Seeder
     public function run(): void
     {
         $usuInclusao = User::first()?->id ?? 1;
+        $eventoId = Evento::first()?->idt_evento;
+
+        if (! $eventoId) {
+            throw new \Exception('É necessário ter ao menos um Evento criado no banco para rodar o ProdutoSeeder.');
+        }
 
         $produtos = [
             [
@@ -611,6 +617,7 @@ class ProdutoSeeder extends Seeder
         ];
 
         foreach ($produtos as $p) {
+            $p['idt_evento'] = $eventoId;
             Produto::updateOrCreate(
                 ['nom_produto' => $p['nom_produto']],
                 $p

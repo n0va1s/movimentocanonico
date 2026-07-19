@@ -16,6 +16,7 @@ class Produto extends Model
     protected $primaryKey = 'idt_produto';
 
     protected $fillable = [
+        'idt_evento',
         'nom_produto',
         'des_produto',
         'val_preco',
@@ -39,5 +40,10 @@ class Produto extends Model
     public function alterador(): BelongsTo
     {
         return $this->belongsTo(User::class, 'usu_alteracao', 'id');
+    }
+
+    public function evento(): BelongsTo
+    {
+        return $this->belongsTo(Evento::class, 'idt_evento', 'idt_evento');
     }
 }
