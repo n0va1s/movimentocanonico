@@ -19,6 +19,8 @@ new class extends Component {
     public string $situacao = '';
     public string $search = '';
     public string $visitadorSearch = '';
+    public string $modalSearch = '';
+    public bool $apenasSemDesignacao = false;
     public array $selectedFichas = [];
     public ?int $pessoaVisitacaoId = null;
     public bool $readyToLoad = false;
@@ -76,6 +78,11 @@ new class extends Component {
         $this->resetPage();
     }
 
+    public function updatedApenasSemDesignacao(): void
+    {
+        $this->resetPage();
+    }
+
     public function updatedSelectedFichas($value): void
     {
         if (count($this->selectedFichas) > 3) {
@@ -118,7 +125,7 @@ new class extends Component {
         })->with('parceiro')->orderBy('nom_pessoa', 'asc')->get();
 
         $processed = [];
-        return $visitadoresRaw->reject(function ($v) use (&$processed) {
+        $visitadores = $visitadoresRaw->reject(function ($v) use (&$processed) {
             if (in_array($v->idt_pessoa, $processed)) {
                 return true;
             }
@@ -142,6 +149,19 @@ new class extends Component {
             }
             return false;
         });
+
+        // Filtrar no backend conforme busca digitada no modal
+        $modalSearch = trim($this->modalSearch);
+        if ($modalSearch !== '') {
+            $visitadores = $visitadores->filter(function ($v) use ($modalSearch) {
+                $label = $v->nom_pessoa . ($v->parceiro ? ' e ' . $v->parceiro->nom_pessoa : '');
+                $address = $v->des_endereco ?: '';
+                return str_contains(Str::lower($label), Str::lower($modalSearch)) 
+                    || str_contains(Str::lower($address), Str::lower($modalSearch));
+            });
+        }
+
+        return $visitadores;
     }
 
     public function abrirModalVisitacao(): void
@@ -165,6 +185,7 @@ new class extends Component {
         }
 
         $this->pessoaVisitacaoId = null;
+        $this->modalSearch = '';
         $this->modal('modal-visitacao')->show();
     }
 
@@ -216,6 +237,7 @@ new class extends Component {
         $this->modal('modal-visitacao')->close();
         $this->selectedFichas = [];
         $this->pessoaVisitacaoId = null;
+        $this->modalSearch = '';
 
         session()->flash('success', 'Visitação designada com sucesso e fichas marcadas como Selecionada.');
     }
@@ -314,6 +336,9 @@ new class extends Component {
                     });
                 });
             })
+            ->when($this->apenasSemDesignacao, function ($query) {
+                $query->whereNull('idt_pessoa_visitacao');
+            })
             ->when($this->eventoId, function ($query) {
                 $query->where('idt_evento', $this->eventoId);
             }, function ($query) {
@@ -388,6 +413,9 @@ new class extends Component {
                               });
                     });
                 });
+            })
+            ->when($this->apenasSemDesignacao, function ($query) {
+                $query->whereNull('idt_pessoa_visitacao');
             })
             ->when($this->eventoId, function ($query) {
                 $query->where('idt_evento', $this->eventoId);
@@ -539,55 +567,69 @@ new class extends Component {
 
         {{-- Barra de Filtros e Busca --}}
         @if ($this->podeDesignar())
-            <div class="flex flex-col sm:flex-row items-end gap-5 w-full">
-                {{-- Busca --}}
-                <div class="w-full sm:flex-1">
-                    <flux:input 
-                        wire:model.live.debounce.300ms="search" 
-                        icon="magnifying-glass" 
-                        placeholder="Buscar candidatos..." 
-                        class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                </div>
-
-                {{-- Filtro de Casal Designado --}}
-                <div class="w-full sm:flex-1">
-                    <flux:input 
-                        wire:model.live.debounce.300ms="visitadorSearch" 
-                        icon="users" 
-                        placeholder="Buscar por casal designado..." 
-                        class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                </div>
-
-                {{-- Situação --}}
-                <div class="w-full sm:flex-1">
-                    <flux:select 
-                        wire:model.live="situacao" 
-                        placeholder="Todas as Situações"
-                        class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                        <flux:select.option value="">Todas as Situações</flux:select.option>
-                        @foreach ([
-                            App\Enums\TipoSituacao::SELECIONADA, 
-                            App\Enums\TipoSituacao::CONTATO, 
-                            App\Enums\TipoSituacao::AGUARDANDO,
-                            App\Enums\TipoSituacao::VISITADA,
-                            App\Enums\TipoSituacao::CANCELADA
-                        ] as $sit)
-                            <flux:select.option value="{{ $sit->value }}">{{ $sit->label() }}</flux:select.option>
-                        @endforeach
-                    </flux:select>
-                </div>
-
-                {{-- Botão de Designar Visitação --}}
-                @if (count($selectedFichas) > 0)
-                    <div class="w-full sm:w-auto shrink-0 transition-all duration-300">
-                        <flux:button wire:click="abrirModalVisitacao" icon="user-group" variant="primary" class="h-11 w-full justify-center">
-                            Designar Visitação ({{ count($selectedFichas) }})
-                        </flux:button>
+            <div class="flex flex-col gap-4 w-full bg-zinc-50 dark:bg-zinc-900/40 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-700/60 shadow-sm mb-6">
+                <div class="flex flex-col md:flex-row items-center gap-4 w-full">
+                    {{-- Busca --}}
+                    <div class="w-full md:flex-1">
+                        <flux:input 
+                            wire:model.live.debounce.300ms="search" 
+                            icon="magnifying-glass" 
+                            placeholder="Buscar candidatos..." 
+                            class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
                     </div>
-                @endif
+
+                    {{-- Filtro de Casal Designado --}}
+                    <div class="w-full md:flex-1">
+                        <flux:input 
+                            wire:model.live.debounce.300ms="visitadorSearch" 
+                            icon="users" 
+                            placeholder="Buscar por casal designado..." 
+                            class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            :disabled="$apenasSemDesignacao"
+                        />
+                    </div>
+
+                    {{-- Situação --}}
+                    <div class="w-full md:flex-1">
+                        <flux:select 
+                            wire:model.live="situacao" 
+                            placeholder="Todas as Situações"
+                            class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <flux:select.option value="">Todas as Situações</flux:select.option>
+                            @foreach ([
+                                App\Enums\TipoSituacao::SELECIONADA, 
+                                App\Enums\TipoSituacao::CONTATO, 
+                                App\Enums\TipoSituacao::AGUARDANDO,
+                                App\Enums\TipoSituacao::VISITADA,
+                                App\Enums\TipoSituacao::CANCELADA
+                            ] as $sit)
+                                <flux:select.option value="{{ $sit->value }}">{{ $sit->label() }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
+                    </div>
+                </div>
+
+                {{-- Linha inferior com opções de visualização / toggles --}}
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-3 border-t border-zinc-200/50 dark:border-zinc-700/50 w-full min-h-[44px]">
+                    <div class="flex items-center gap-6">
+                        <flux:switch 
+                            wire:model.live="apenasSemDesignacao" 
+                            label="Apenas fichas sem visitador designado" 
+                            class="text-zinc-600 dark:text-zinc-400 font-medium text-sm"
+                        />
+                    </div>
+                    
+                    {{-- Botão de Designar Visitação --}}
+                    @if (count($selectedFichas) > 0)
+                        <div class="w-full sm:w-auto shrink-0 transition-all duration-300">
+                            <flux:button wire:click="abrirModalVisitacao" icon="user-group" variant="primary" class="h-10 px-5 w-full justify-center">
+                                Designar Visitação ({{ count($selectedFichas) }})
+                            </flux:button>
+                        </div>
+                    @endif
+                </div>
             </div>
         @endif
 
@@ -819,6 +861,13 @@ new class extends Component {
                                 this.selectedAddress = '';
                             }
                         });
+                        this.$watch('open', (val) => {
+                            if (val) {
+                                this.$nextTick(() => {
+                                    this.$refs.searchInput?.focus();
+                                });
+                            }
+                        });
                     }
                 }"
                 class="space-y-6 transition-all duration-200"
@@ -858,6 +907,18 @@ new class extends Component {
                         class="absolute z-[110] mt-1 w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-xl max-h-60 overflow-y-auto"
                         style="display: none;"
                     >
+                        <!-- Campo de busca Livewire -->
+                        <div class="p-2 border-b border-zinc-100 dark:border-zinc-700/50 sticky top-0 bg-white dark:bg-zinc-800 z-[120]" @click.stop>
+                            <flux:input 
+                                wire:model.live.debounce.250ms="modalSearch"
+                                x-ref="searchInput"
+                                placeholder="Buscar visitador ou casal..."
+                                icon="magnifying-glass"
+                                size="sm"
+                                class="w-full focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+
                         <ul class="p-1 divide-y divide-zinc-100 dark:divide-zinc-700/50">
                             @foreach ($visitadores as $v)
                                 @php
@@ -895,7 +956,7 @@ new class extends Component {
                             @endforeach
                             @if ($visitadores->isEmpty())
                                 <li class="p-4 text-center text-sm text-zinc-500 italic">
-                                    Nenhum visitador disponível
+                                    Nenhum visitador encontrado para a busca
                                 </li>
                             @endif
                         </ul>

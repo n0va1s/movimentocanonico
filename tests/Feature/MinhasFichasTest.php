@@ -417,7 +417,7 @@ describe('Minhas Fichas Export', function () {
 });
 
 describe('Minhas Fichas Designator Removal and Dropdown Mod', function () {
-    test('dropdown returns all visitors including those with 3 or more fichas and has correct count', function () {
+    test('dropdown retorna todos os visitadores incluindo aqueles com 3 ou mais fichas e possui contagem correta', function () {
         $admin = User::factory()->create(['role' => 'admin']);
         $this->actingAs($admin);
 
@@ -441,7 +441,7 @@ describe('Minhas Fichas Designator Removal and Dropdown Mod', function () {
         expect($matched->ficha_count)->toBe(3);
     });
 
-    test('coordinator or admin can clear designator of a single ficha', function () {
+    test('coordenador ou administrador consegue limpar a designacao de uma unica ficha', function () {
         $admin = User::factory()->create(['role' => 'admin']);
         $this->actingAs($admin);
 
@@ -463,7 +463,7 @@ describe('Minhas Fichas Designator Removal and Dropdown Mod', function () {
     });
 
 
-    test('visitor without permissions cannot clear designator', function () {
+    test('visitador sem permissao nao consegue limpar a designacao', function () {
         $visitorUser = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
         $visitorPessoa = $visitorUser->pessoa;
 
@@ -482,6 +482,80 @@ describe('Minhas Fichas Designator Removal and Dropdown Mod', function () {
             ->assertStatus(403);
             
         expect($ficha->fresh()->idt_pessoa_visitacao)->toBe($visitorPessoa->idt_pessoa);
+    });
+
+    test('deve ser possivel buscar casal pelo nome do parceiro no model Pessoa', function () {
+        $partner1 = Pessoa::factory()->create([
+            'nom_pessoa' => 'Adriano Silva',
+            'nom_apelido' => 'Adri',
+            'idt_usuario' => null
+        ]);
+
+        $partner2 = Pessoa::factory()->create([
+            'nom_pessoa' => 'Beatriz Santos',
+            'nom_apelido' => 'Bia',
+            'idt_usuario' => null,
+            'idt_parceiro' => $partner1->idt_pessoa
+        ]);
+        
+        $partner1->update(['idt_parceiro' => $partner2->idt_pessoa]);
+
+        // Buscar parceiro 1 pelo nome do parceiro 2
+        $result = Pessoa::searchByName('Beatriz')->get();
+        
+        expect($result->contains('idt_pessoa', $partner1->idt_pessoa))->toBeTrue();
+        expect($result->contains('idt_pessoa', $partner2->idt_pessoa))->toBeTrue();
+    });
+
+    test('deve ser possivel filtrar fichas sem visitador designado', function () {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin);
+
+        $visitorUser = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
+        $visitorPessoa = $visitorUser->pessoa;
+
+        // Ficha com visitador
+        $fichaComVisitador = Ficha::factory()->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'idt_pessoa_visitacao' => $visitorPessoa->idt_pessoa,
+            'nom_candidato' => 'Candidato Com Visitador',
+            'tip_situacao' => TipoSituacao::SELECIONADA
+        ]);
+
+        // Ficha sem visitador
+        $fichaSemVisitador = Ficha::factory()->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'idt_pessoa_visitacao' => null,
+            'nom_candidato' => 'Candidato Sem Visitador',
+            'tip_situacao' => TipoSituacao::SELECIONADA
+        ]);
+
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+            ->call('loadData')
+            ->assertSee('Candidato Com Visitador')
+            ->assertSee('Candidato Sem Visitador')
+            ->set('apenasSemDesignacao', true)
+            ->assertSee('Candidato Sem Visitador')
+            ->assertDontSee('Candidato Com Visitador');
+    });
+
+    test('deve ser possivel filtrar visitadores no modal pelo termo de busca', function () {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin);
+
+        $visitorUserA = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
+        $visitorUserA->pessoa->update(['nom_pessoa' => 'Adriano Silva']);
+
+        $visitorUserB = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
+        $visitorUserB->pessoa->update(['nom_pessoa' => 'Beatriz Santos']);
+
+        $component = Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+            ->call('loadData')
+            ->set('modalSearch', 'Adriano');
+
+        $visitadores = $component->get('visitadores');
+        expect($visitadores->contains('idt_pessoa', $visitorUserA->pessoa->idt_pessoa))->toBeTrue();
+        expect($visitadores->contains('idt_pessoa', $visitorUserB->pessoa->idt_pessoa))->toBeFalse();
     });
 });
 

@@ -176,7 +176,11 @@ class Pessoa extends Model
     {
         return $query->where(function ($q) use ($search) {
             $q->where('nom_pessoa', 'like', "%{$search}%")
-                ->orWhere('nom_apelido', 'like', "%{$search}%");
+                ->orWhere('nom_apelido', 'like', "%{$search}%")
+                ->orWhereHas('parceiro', function ($q2) use ($search) {
+                    $q2->where('nom_pessoa', 'like', "%{$search}%")
+                        ->orWhere('nom_apelido', 'like', "%{$search}%");
+                });
         });
     }
 
