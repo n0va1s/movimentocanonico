@@ -24,10 +24,59 @@ new class extends Component {
     public array $selectedFichas = [];
     public ?int $pessoaVisitacaoId = null;
     public bool $readyToLoad = false;
+    public string $activeTab = 'gerenciar';
 
     public function loadData(): void
     {
         $this->readyToLoad = true;
+    }
+
+    public function updatedActiveTab(): void
+    {
+        if ($this->activeTab === 'consulta' && !$this->podeDesignar()) {
+            $this->activeTab = 'gerenciar';
+        }
+        $this->resetPage();
+    }
+
+    public function toggleSituacao(string $novaSituacao): void
+    {
+        if ($this->situacao === $novaSituacao) {
+            $this->situacao = '';
+        } else {
+            $this->situacao = $novaSituacao;
+        }
+        $this->resetPage();
+    }
+
+    #[Computed]
+    public function statusCounts(): array
+    {
+        if (!$this->eventoId || !$this->podeDesignar()) {
+            return [];
+        }
+
+        $query = Ficha::query()->where('idt_evento', $this->eventoId);
+
+        $counts = $query->select('tip_situacao', \DB::raw('count(*) as total'))
+            ->whereIn('tip_situacao', [
+                TipoSituacao::SELECIONADA->value,
+                TipoSituacao::CONTATO->value,
+                TipoSituacao::AGUARDANDO->value,
+                TipoSituacao::VISITADA->value,
+                TipoSituacao::CANCELADA->value
+            ])
+            ->groupBy('tip_situacao')
+            ->pluck('total', 'tip_situacao')
+            ->toArray();
+
+        return [
+            TipoSituacao::SELECIONADA->value => $counts[TipoSituacao::SELECIONADA->value] ?? 0,
+            TipoSituacao::CONTATO->value => $counts[TipoSituacao::CONTATO->value] ?? 0,
+            TipoSituacao::AGUARDANDO->value => $counts[TipoSituacao::AGUARDANDO->value] ?? 0,
+            TipoSituacao::VISITADA->value => $counts[TipoSituacao::VISITADA->value] ?? 0,
+            TipoSituacao::CANCELADA->value => $counts[TipoSituacao::CANCELADA->value] ?? 0,
+        ];
     }
 
     public function mount(?Evento $evento = null): void
@@ -347,12 +396,27 @@ new class extends Component {
             ->when($this->situacao, function ($query) {
                 $query->where('tip_situacao', $this->situacao);
             }, function ($query) {
-                $query->whereIn('tip_situacao', [
-                    TipoSituacao::SELECIONADA,
-                    TipoSituacao::CONTATO,
-                    TipoSituacao::AGUARDANDO
-                ]);
+                if ($this->activeTab === 'consulta') {
+                    $query->whereIn('tip_situacao', [
+                        TipoSituacao::SELECIONADA,
+                        TipoSituacao::CONTATO,
+                        TipoSituacao::AGUARDANDO,
+                        TipoSituacao::VISITADA,
+                        TipoSituacao::CANCELADA
+                    ]);
+                } else {
+                    $query->whereIn('tip_situacao', [
+                        TipoSituacao::SELECIONADA,
+                        TipoSituacao::CONTATO,
+                        TipoSituacao::AGUARDANDO
+                    ]);
+                }
             });
+
+        // Garantia de segurança backend
+        if ($this->activeTab === 'consulta' && !$this->podeDesignar()) {
+            $this->activeTab = 'gerenciar';
+        }
 
         return [
             'fichas' => $fichasQuery->orderBy('created_at', 'desc')->paginate(12),
@@ -558,291 +622,519 @@ new class extends Component {
                             Exportar Admin
                         </flux:button>
                     @endif
-                </div>
-            </div>
-            <flux:button variant="ghost" size="sm" icon="arrow-left" wire:click="alterarEvento" class="h-11 shrink-0">
+                    <flux:button variant="ghost" size="sm" icon="arrow-left" wire:click="alterarEvento" class="h-11 shrink-0">
                 Alterar Evento
             </flux:button>
         </div>
 
-        {{-- Barra de Filtros e Busca --}}
         @if ($this->podeDesignar())
-            <div class="flex flex-col gap-4 w-full bg-zinc-50 dark:bg-zinc-900/40 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-700/60 shadow-sm mb-6">
-                <div class="flex flex-col md:flex-row items-center gap-4 w-full">
-                    {{-- Busca --}}
-                    <div class="w-full md:flex-1">
-                        <flux:input 
-                            wire:model.live.debounce.300ms="search" 
-                            icon="magnifying-glass" 
-                            placeholder="Buscar candidatos..." 
-                            class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                    </div>
-
-                    {{-- Filtro de Casal Designado --}}
-                    <div class="w-full md:flex-1">
-                        <flux:input 
-                            wire:model.live.debounce.300ms="visitadorSearch" 
-                            icon="users" 
-                            placeholder="Buscar por casal designado..." 
-                            class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            :disabled="$apenasSemDesignacao"
-                        />
-                    </div>
-
-                    {{-- Situação --}}
-                    <div class="w-full md:flex-1">
-                        <flux:select 
-                            wire:model.live="situacao" 
-                            placeholder="Todas as Situações"
-                            class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
-                            <flux:select.option value="">Todas as Situações</flux:select.option>
-                            @foreach ([
-                                App\Enums\TipoSituacao::SELECIONADA, 
-                                App\Enums\TipoSituacao::CONTATO, 
-                                App\Enums\TipoSituacao::AGUARDANDO,
-                                App\Enums\TipoSituacao::VISITADA,
-                                App\Enums\TipoSituacao::CANCELADA
-                            ] as $sit)
-                                <flux:select.option value="{{ $sit->value }}">{{ $sit->label() }}</flux:select.option>
-                            @endforeach
-                        </flux:select>
-                    </div>
-                </div>
-
-                {{-- Linha inferior com opções de visualização / toggles --}}
-                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-3 border-t border-zinc-200/50 dark:border-zinc-700/50 w-full min-h-[44px]">
-                    <div class="flex items-center gap-6">
-                        <flux:switch 
-                            wire:model.live="apenasSemDesignacao" 
-                            label="Apenas fichas sem visitador designado" 
-                            class="text-zinc-600 dark:text-zinc-400 font-medium text-sm"
-                        />
-                    </div>
-                    
-                    {{-- Botão de Designar Visitação --}}
-                    @if (count($selectedFichas) > 0)
-                        <div class="w-full sm:w-auto shrink-0 transition-all duration-300">
-                            <flux:button wire:click="abrirModalVisitacao" icon="user-group" variant="primary" class="h-10 px-5 w-full justify-center">
-                                Designar Visitação ({{ count($selectedFichas) }})
-                            </flux:button>
-                        </div>
-                    @endif
-                </div>
+            {{-- Menu Local de Abas --}}
+            <div class="flex overflow-x-auto no-scrollbar border-b border-zinc-200 dark:border-zinc-700 whitespace-nowrap mb-6" role="tablist">
+                <button 
+                    wire:click="$set('activeTab', 'gerenciar')" 
+                    role="tab"
+                    aria-selected="{{ $activeTab === 'gerenciar' ? 'true' : 'false' }}"
+                    class="px-4 py-2 font-semibold text-sm border-b-2 {{ $activeTab === 'gerenciar' ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300' }} transition-colors cursor-pointer"
+                >
+                    Minhas Visitas
+                </button>
+                <button 
+                    wire:click="$set('activeTab', 'consulta')" 
+                    role="tab"
+                    aria-selected="{{ $activeTab === 'consulta' ? 'true' : 'false' }}"
+                    class="px-4 py-2 font-semibold text-sm border-b-2 {{ $activeTab === 'consulta' ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300' }} transition-colors cursor-pointer"
+                >
+                    Consulta Geral
+                </button>
             </div>
         @endif
 
-    {{-- Grid de Fichas --}}
-    @if ($fichas->isNotEmpty())
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            @foreach ($fichas as $ficha)
-                @php
-                    $siglaMovimento = $ficha->evento?->movimento?->des_sigla ?? 'N/A';
-                    
-                    // Configuração de Badge e Estilos baseada no status atual
-                    $badgeConfig = $ficha->tip_situacao->cardConfig();
-                @endphp
-                <div wire:key="ficha-card-{{ $ficha->idt_ficha }}" class="relative bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 p-5 shadow-sm hover:shadow-md transition duration-200 flex flex-col h-full justify-between">
-                    @if ($this->podeDesignar())
-                        <div class="absolute top-4 left-4 z-10" wire:click.stop>
-                            <input 
-                                type="checkbox" 
-                                wire:model.live="selectedFichas" 
-                                value="{{ $ficha->idt_ficha }}" 
-                                wire:key="'checkbox-minhas-fichas-'.$ficha->idt_ficha"
-                                class="w-5 h-5 rounded border-zinc-300 text-blue-600 shadow-sm focus:ring-blue-500 cursor-pointer"
+        @if ($activeTab === 'gerenciar' || !$this->podeDesignar())
+            {{-- Barra de Filtros e Busca --}}
+            @if ($this->podeDesignar())
+                <div class="flex flex-col gap-4 w-full bg-zinc-50 dark:bg-zinc-900/40 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-700/60 shadow-sm mb-6">
+                    <div class="flex flex-col md:flex-row items-center gap-4 w-full">
+                        {{-- Busca --}}
+                        <div class="w-full md:flex-1">
+                            <flux:input 
+                                wire:model.live.debounce.300ms="search" 
+                                icon="magnifying-glass" 
+                                placeholder="Buscar candidatos..." 
+                                class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
-                    @endif
-                    <div class="flex flex-col flex-1">
-                        {{-- Top row: Badges --}}
-                        <div class="flex justify-end items-center gap-1.5 mb-4">
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold {{ $badgeConfig['bg'] }}">
-                                <flux:icon :icon="$badgeConfig['icon']" class="size-3" />
-                                {{ $badgeConfig['label'] }}
-                            </span>
+
+                        {{-- Filtro de Casal Designado --}}
+                        <div class="w-full md:flex-1">
+                            <flux:input 
+                                wire:model.live.debounce.300ms="visitadorSearch" 
+                                icon="users" 
+                                placeholder="Buscar por casal designado..." 
+                                class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                :disabled="$apenasSemDesignacao"
+                            />
                         </div>
 
-                        {{-- Nome --}}
-                        <div class="mt-2">
-                            <h3 class="text-xl font-bold text-zinc-900 dark:text-zinc-100 leading-snug">
-                                <a href="{{ $ficha->getShowRoute() }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                    {{ $ficha->nom_candidato }}
-                                </a>
-                            </h3>
-                            @if ($ficha->nom_apelido)
-                                <p class="text-sm text-zinc-500 dark:text-zinc-400 font-medium">({{ $ficha->nom_apelido }})</p>
-                            @endif
+                        {{-- Situação --}}
+                        <div class="w-full md:flex-1">
+                            <flux:select 
+                                wire:model.live="situacao" 
+                                placeholder="Todas as Situações"
+                                class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                                <flux:select.option value="">Todas as Situações</flux:select.option>
+                                @foreach ([
+                                    App\Enums\TipoSituacao::SELECIONADA, 
+                                    App\Enums\TipoSituacao::CONTATO, 
+                                    App\Enums\TipoSituacao::AGUARDANDO,
+                                    App\Enums\TipoSituacao::VISITADA,
+                                    App\Enums\TipoSituacao::CANCELADA
+                                ] as $sit)
+                                    <flux:select.option value="{{ $sit->value }}">{{ $sit->label() }}</flux:select.option>
+                                @endforeach
+                            </flux:select>
                         </div>
-
-                        @php
-                            $isDeMaior = $ficha->dat_nascimento && \Carbon\Carbon::parse($ficha->dat_nascimento)->age >= 18;
-                        @endphp
-
-                        {{-- Telefone do Jovem (se de maior) --}}
-                        @if ($isDeMaior && $ficha->tel_candidato)
-                            <div class="flex items-start gap-2 text-zinc-500 dark:text-zinc-400 text-sm mt-4">
-                                <flux:icon.phone class="size-4 shrink-0 text-zinc-400 dark:text-zinc-500 mt-0.5" />
-                                <a href="https://wa.me/55{{ \App\Services\PhoneService::clean($ficha->tel_candidato) }}" target="_blank" class="hover:underline hover:text-blue-600 dark:hover:text-blue-400 leading-relaxed font-medium">
-                                    {{ $ficha->tel_candidato }}
-                                </a>
-                            </div>
-                        @endif
-
-                        {{-- Endereço --}}
-                        <div class="flex items-start gap-2 text-zinc-500 dark:text-zinc-400 text-sm {{ $isDeMaior && $ficha->tel_candidato ? 'mt-2' : 'mt-4' }}">
-                            <flux:icon.map-pin class="size-4 shrink-0 text-zinc-400 dark:text-zinc-500 mt-0.5" />
-                            <span class="leading-relaxed">{{ $ficha->des_endereco ?? 'Endereço não informado' }}</span>
-                        </div>
-
-                        {{-- Informações extras para admin --}}
-                        @if ($this->podeDesignar() && $ficha->visitador)
-                            @php
-                                $v = $ficha->visitador;
-                                $nomeLabel = $v->nom_pessoa;
-                                if ($v->parceiro) {
-                                    $nomeLabel .= ' & ' . $v->parceiro->nom_pessoa;
-                                }
-                            @endphp
-                            <div class="flex items-center justify-between gap-2 text-zinc-500 dark:text-zinc-400 text-xs mt-3 bg-zinc-50 dark:bg-zinc-900/30 p-2 rounded-lg border border-zinc-100 dark:border-zinc-800/40">
-                                <div class="flex items-start gap-2 min-w-0">
-                                    <flux:icon.user-circle class="size-4 shrink-0 text-zinc-400 mt-0.5" />
-                                    <span class="truncate">Designado: <strong class="text-zinc-700 dark:text-zinc-300 font-semibold">{{ $nomeLabel }}</strong></span>
-                                </div>
-                                <button 
-                                    type="button"
-                                    wire:click="limparDesignacao({{ $ficha->idt_ficha }})"
-                                    wire:confirm="Tem certeza de que deseja remover a designação de visitador desta ficha?"
-                                    class="shrink-0 text-zinc-400 hover:text-red-500 hover:bg-zinc-200 dark:hover:bg-zinc-700 p-0.5 rounded transition-colors cursor-pointer"
-                                    title="Limpar Designação"
-                                >
-                                    <flux:icon.x-mark class="size-3.5" />
-                                </button>
-                            </div>
-                        @endif
-
-                        {{-- Contacts Box --}}
-                        @php
-                            $resp = $ficha->responsavel_info;
-                        @endphp
-                        <div class="bg-zinc-50 dark:bg-zinc-900/40 rounded-xl p-4 mt-5 border border-zinc-100 dark:border-zinc-800/60">
-                            <div class="text-[10px] font-extrabold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                                {{ strtoupper($resp['tipo']) }}
-                            </div>
-                            <div class="text-base font-semibold text-zinc-800 dark:text-zinc-200 mt-1">
-                                {{ $resp['nome'] }}
-                            </div>
-                            <div class="text-sm text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 mt-2.5">
-                                <flux:icon.phone class="size-4 text-zinc-400 dark:text-zinc-500" />
-                                @if ($resp['telefone'] && $resp['telefone'] !== 'Não informado')
-                                    <a href="https://wa.me/55{{ \App\Services\PhoneService::clean($resp['telefone']) }}" target="_blank" class="hover:underline hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-                                        {{ $resp['telefone'] }}
-                                    </a>
-                                @else
-                                    <span class="font-medium">{{ $resp['telefone'] }}</span>
-                                @endif
-                            </div>
                     </div>
 
-                    {{-- CTA: Visualizar Ficha Completa --}}
-                    <div class="mt-5">
-                        <a 
-                            href="{{ $ficha->getShowRoute() }}" 
-                            wire:navigate
-                            class="flex items-center justify-center w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-500 font-semibold rounded-xl text-sm transition duration-150 shadow-sm shadow-blue-100 dark:shadow-none hover:shadow-md cursor-pointer"
-                        >
-                            <flux:icon.eye class="size-4 mr-2" />
-                            <span>Visualizar Ficha Completa</span>
-                        </a>
-                    </div>
-                    </div>
-
-                    {{-- Actions Footer --}}
-                    <div class="mt-6 pt-4 border-t border-zinc-100 dark:border-zinc-700">
-                        <div class="text-[10px] text-zinc-400 dark:text-zinc-500 font-semibold tracking-wider text-center uppercase mb-3">
-                            ATUALIZAR STATUS
+                    {{-- Linha inferior com opções de visualização / toggles --}}
+                    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-3 border-t border-zinc-200/50 dark:border-zinc-700/50 w-full min-h-[44px]">
+                        <div class="flex items-center gap-6">
+                            <flux:switch 
+                                wire:model.live="apenasSemDesignacao" 
+                                label="Apenas fichas sem visitador designado" 
+                                class="text-zinc-600 dark:text-zinc-400 font-medium text-sm"
+                            />
                         </div>
                         
-                        <div class="flex flex-row gap-2 w-full">
-                            {{-- Contato Feito --}}
-                            @php $isActive = $ficha->tip_situacao->value === 'F'; @endphp
-                            <button 
-                                wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'F')" 
-                                @disabled($isActive)
-                                class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-xl transition duration-150 cursor-pointer text-center text-[10px] font-medium leading-tight tracking-tight border w-full
-                                {{ $isActive 
-                                    ? 'bg-cyan-50/70 border-cyan-100 text-cyan-600 dark:bg-cyan-950/20 dark:border-cyan-900/60 dark:text-cyan-400 opacity-60 cursor-not-allowed' 
-                                    : 'bg-white border-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:bg-cyan-50 hover:text-cyan-700 hover:border-cyan-300 dark:hover:bg-cyan-950/20 dark:hover:text-cyan-400 dark:hover:border-cyan-800' }}"
-                            >
-                                <flux:icon.phone class="size-4 mb-1" />
-                                <span>Contato Feito</span>
-                            </button>
-
-                            {{-- Aguardando --}}
-                            @php $isActive = $ficha->tip_situacao->value === 'W'; @endphp
-                            <button 
-                                wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'W')" 
-                                @disabled($isActive)
-                                class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-xl transition duration-150 cursor-pointer text-center text-[10px] font-medium leading-tight tracking-tight border w-full
-                                {{ $isActive 
-                                    ? 'bg-amber-50/70 border-amber-100 text-amber-600 dark:bg-amber-950/20 dark:border-amber-900/60 dark:text-amber-400 opacity-60 cursor-not-allowed' 
-                                    : 'bg-white border-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300 dark:hover:bg-amber-950/20 dark:hover:text-amber-400 dark:hover:border-amber-800' }}"
-                            >
-                                <flux:icon.clock class="size-4 mb-1" />
-                                <span>Aguardando</span>
-                            </button>
-
-                            {{-- Visitado --}}
-                            @php $isActive = $ficha->tip_situacao->value === 'V'; @endphp
-                            <button 
-                                wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'V')" 
-                                @disabled($isActive)
-                                class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-xl transition duration-150 cursor-pointer text-center text-[10px] font-medium leading-tight tracking-tight border w-full
-                                {{ $isActive 
-                                    ? 'bg-emerald-50/70 border-emerald-100 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900/60 dark:text-emerald-400 opacity-60 cursor-not-allowed' 
-                                    : 'bg-white border-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 dark:hover:bg-emerald-950/20 dark:hover:text-emerald-400 dark:hover:border-emerald-800' }}"
-                            >
-                                <flux:icon.book-open class="size-4 mb-1" />
-                                <span>Visitado</span>
-                            </button>
-
-                            {{-- Desistência --}}
-                            @php $isActive = $ficha->tip_situacao->value === 'C'; @endphp
-                            <button 
-                                wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'C')" 
-                                @disabled($isActive)
-                                wire:confirm="Tem certeza de que deseja marcar esta ficha como desistência/cancelada?"
-                                class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-xl transition duration-150 cursor-pointer text-center text-[10px] font-medium leading-tight tracking-tight border w-full
-                                {{ $isActive 
-                                    ? 'bg-rose-50/70 border-rose-100 text-rose-600 dark:bg-rose-950/20 dark:border-rose-900/60 dark:text-rose-400 opacity-60 cursor-not-allowed' 
-                                    : 'bg-white border-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 dark:hover:bg-rose-950/20 dark:hover:text-rose-400 dark:hover:border-rose-800' }}"
-                            >
-                                <flux:icon.x-circle class="size-4 mb-1" />
-                                <span>Desistência</span>
-                            </button>
-                        </div>
+                        {{-- Botão de Designar Visitação --}}
+                        @if (count($selectedFichas) > 0)
+                            <div class="w-full sm:w-auto shrink-0 transition-all duration-300">
+                                <flux:button wire:click="abrirModalVisitacao" icon="user-group" variant="primary" class="h-10 px-5 w-full justify-center">
+                                    Designar Visitação ({{ count($selectedFichas) }})
+                                </flux:button>
+                            </div>
+                        @endif
                     </div>
                 </div>
-            @endforeach
-        </div>
+            @endif
 
-        <div class="mt-6">
-            {{ $fichas->links(data: ['scrollTo' => false]) }}
-        </div>
-    @else
-        <div class="flex flex-col items-center justify-center text-center p-12 bg-white dark:bg-zinc-800 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-600 shadow-sm">
-            <flux:icon.document-text class="w-12 h-12 text-zinc-400 dark:text-zinc-500 mb-4" />
-            <flux:heading size="lg" class="text-zinc-700 dark:text-zinc-300">
-                Nenhuma ficha encontrada
-                Nenhuma ficha encontrada
-            </flux:heading>
-            <flux:subheading class="mt-1">
-                Não existem fichas designadas para a sua conta ou compatíveis com os filtros selecionados.
-                Não existem fichas designadas para a sua conta ou compatíveis com os filtros selecionados.
-            </flux:subheading>
-        </div>
-    @endif
+            {{-- Grid de Fichas --}}
+            @if ($fichas->isNotEmpty())
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    @foreach ($fichas as $ficha)
+                        @php
+                            $siglaMovimento = $ficha->evento?->movimento?->des_sigla ?? 'N/A';
+                            
+                            // Configuração de Badge e Estilos baseada no status atual
+                            $badgeConfig = $ficha->tip_situacao->cardConfig();
+                        @endphp
+                        <div wire:key="ficha-card-{{ $ficha->idt_ficha }}" class="relative bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 p-5 shadow-sm hover:shadow-md transition duration-200 flex flex-col h-full justify-between">
+                            @if ($this->podeDesignar())
+                                <div class="absolute top-4 left-4 z-10" wire:click.stop>
+                                    <input 
+                                        type="checkbox" 
+                                        wire:model.live="selectedFichas" 
+                                        value="{{ $ficha->idt_ficha }}" 
+                                        wire:key="'checkbox-minhas-fichas-'.$ficha->idt_ficha"
+                                        class="w-5 h-5 rounded border-zinc-300 text-blue-600 shadow-sm focus:ring-blue-500 cursor-pointer"
+                                    />
+                                </div>
+                            @endif
+                            <div class="flex flex-col flex-1">
+                                {{-- Top row: Badges --}}
+                                <div class="flex justify-end items-center gap-1.5 mb-4">
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold {{ $badgeConfig['bg'] }}">
+                                        <flux:icon :icon="$badgeConfig['icon']" class="size-3" />
+                                        {{ $badgeConfig['label'] }}
+                                    </span>
+                                </div>
+
+                                {{-- Nome --}}
+                                <div class="mt-2">
+                                    <h3 class="text-xl font-bold text-zinc-900 dark:text-zinc-100 leading-snug">
+                                        <a href="{{ $ficha->getShowRoute() }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                            {{ $ficha->nom_candidato }}
+                                        </a>
+                                    </h3>
+                                    @if ($ficha->nom_apelido)
+                                        <p class="text-sm text-zinc-500 dark:text-zinc-400 font-medium">({{ $ficha->nom_apelido }})</p>
+                                    @endif
+                                </div>
+
+                                @php
+                                    $isDeMaior = $ficha->dat_nascimento && \Carbon\Carbon::parse($ficha->dat_nascimento)->age >= 18;
+                                @endphp
+
+                                {{-- Telefone do Jovem (se de maior) --}}
+                                @if ($isDeMaior && $ficha->tel_candidato)
+                                    <div class="flex items-start gap-2 text-zinc-500 dark:text-zinc-400 text-sm mt-4">
+                                        <flux:icon.phone class="size-4 shrink-0 text-zinc-400 dark:text-zinc-500 mt-0.5" />
+                                        <a href="https://wa.me/55{{ \App\Services\PhoneService::clean($ficha->tel_candidato) }}" target="_blank" class="hover:underline hover:text-blue-600 dark:hover:text-blue-400 leading-relaxed font-medium">
+                                            {{ $ficha->tel_candidato }}
+                                        </a>
+                                    </div>
+                                @endif
+
+                                {{-- Endereço --}}
+                                <div class="flex items-start gap-2 text-zinc-500 dark:text-zinc-400 text-sm {{ $isDeMaior && $ficha->tel_candidato ? 'mt-2' : 'mt-4' }}">
+                                    <flux:icon.map-pin class="size-4 shrink-0 text-zinc-400 dark:text-zinc-500 mt-0.5" />
+                                    <span class="leading-relaxed">{{ $ficha->des_endereco ?? 'Endereço não informado' }}</span>
+                                </div>
+
+                                {{-- Informações extras para admin --}}
+                                @if ($this->podeDesignar() && $ficha->visitador)
+                                    @php
+                                        $v = $ficha->visitador;
+                                        $nomeLabel = $v->nom_pessoa;
+                                        if ($v->parceiro) {
+                                            $nomeLabel .= ' & ' . $v->parceiro->nom_pessoa;
+                                        }
+                                    @endphp
+                                    <div class="flex items-center justify-between gap-2 text-zinc-500 dark:text-zinc-400 text-xs mt-3 bg-zinc-50 dark:bg-zinc-900/30 p-2 rounded-lg border border-zinc-100 dark:border-zinc-800/40">
+                                        <div class="flex items-start gap-2 min-w-0">
+                                            <flux:icon.user-circle class="size-4 shrink-0 text-zinc-400 mt-0.5" />
+                                            <span class="truncate">Designado: <strong class="text-zinc-700 dark:text-zinc-300 font-semibold">{{ $nomeLabel }}</strong></span>
+                                        </div>
+                                        <button 
+                                            type="button"
+                                            wire:click="limparDesignacao({{ $ficha->idt_ficha }})"
+                                            wire:confirm="Tem certeza de que deseja remover a designação de visitador desta ficha?"
+                                            class="shrink-0 text-zinc-400 hover:text-red-500 hover:bg-zinc-200 dark:hover:bg-zinc-700 p-0.5 rounded transition-colors cursor-pointer"
+                                            title="Limpar Designação"
+                                        >
+                                            <flux:icon.x-mark class="size-3.5" />
+                                        </button>
+                                    </div>
+                                @endif
+
+                                {{-- Contacts Box --}}
+                                @php
+                                    $resp = $ficha->responsavel_info;
+                                @endphp
+                                <div class="bg-zinc-50 dark:bg-zinc-900/40 rounded-xl p-4 mt-5 border border-zinc-100 dark:border-zinc-800/60">
+                                    <div class="text-[10px] font-extrabold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                                        {{ strtoupper($resp['tipo']) }}
+                                    </div>
+                                    <div class="text-base font-semibold text-zinc-800 dark:text-zinc-200 mt-1">
+                                        {{ $resp['nome'] }}
+                                    </div>
+                                    <div class="text-sm text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 mt-2.5">
+                                        <flux:icon.phone class="size-4 text-zinc-400 dark:text-zinc-500" />
+                                        @if ($resp['telefone'] && $resp['telefone'] !== 'Não informado')
+                                            <a href="https://wa.me/55{{ \App\Services\PhoneService::clean($resp['telefone']) }}" target="_blank" class="hover:underline hover:text-blue-600 dark:hover:text-blue-400 font-medium">
+                                                {{ $resp['telefone'] }}
+                                            </a>
+                                        @else
+                                            <span class="font-medium">{{ $resp['telefone'] }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                {{-- CTA: Visualizar Ficha Completa --}}
+                                <div class="mt-5">
+                                    <a 
+                                        href="{{ $ficha->getShowRoute() }}" 
+                                        wire:navigate
+                                        class="flex items-center justify-center w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-500 font-semibold rounded-xl text-sm transition duration-150 shadow-sm shadow-blue-100 dark:shadow-none hover:shadow-md cursor-pointer"
+                                    >
+                                        <flux:icon.eye class="size-4 mr-2" />
+                                        <span>Visualizar Ficha Completa</span>
+                                    </a>
+                                </div>
+                            </div>
+
+                            {{-- Actions Footer --}}
+                            <div class="mt-6 pt-4 border-t border-zinc-100 dark:border-zinc-700">
+                                <div class="text-[10px] text-zinc-400 dark:text-zinc-500 font-semibold tracking-wider text-center uppercase mb-3">
+                                    ATUALIZAR STATUS
+                                </div>
+                                
+                                <div class="flex flex-row gap-2 w-full">
+                                    {{-- Contato Feito --}}
+                                    @php $isActive = $ficha->tip_situacao->value === 'F'; @endphp
+                                    <button 
+                                        wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'F')" 
+                                        @disabled($isActive)
+                                        class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-xl transition duration-150 cursor-pointer text-center text-[10px] font-medium leading-tight tracking-tight border w-full
+                                        {{ $isActive 
+                                            ? 'bg-cyan-50/70 border-cyan-100 text-cyan-600 dark:bg-cyan-950/20 dark:border-cyan-900/60 dark:text-cyan-400 opacity-60 cursor-not-allowed' 
+                                            : 'bg-white border-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:bg-cyan-50 hover:text-cyan-700 hover:border-cyan-300 dark:hover:bg-cyan-950/20 dark:hover:text-cyan-400 dark:hover:border-cyan-800' }}"
+                                    >
+                                        <flux:icon.phone class="size-4 mb-1" />
+                                        <span>Contato Feito</span>
+                                    </button>
+
+                                    {{-- Aguardando --}}
+                                    @php $isActive = $ficha->tip_situacao->value === 'W'; @endphp
+                                    <button 
+                                        wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'W')" 
+                                        @disabled($isActive)
+                                        class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-xl transition duration-150 cursor-pointer text-center text-[10px] font-medium leading-tight tracking-tight border w-full
+                                        {{ $isActive 
+                                            ? 'bg-amber-50/70 border-amber-100 text-amber-600 dark:bg-amber-950/20 dark:border-amber-900/60 dark:text-amber-400 opacity-60 cursor-not-allowed' 
+                                            : 'bg-white border-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300 dark:hover:bg-amber-950/20 dark:hover:text-amber-400 dark:hover:border-amber-800' }}"
+                                    >
+                                        <flux:icon.clock class="size-4 mb-1" />
+                                        <span>Aguardando</span>
+                                    </button>
+
+                                    {{-- Visitado --}}
+                                    @php $isActive = $ficha->tip_situacao->value === 'V'; @endphp
+                                    <button 
+                                        wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'V')" 
+                                        @disabled($isActive)
+                                        class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-xl transition duration-150 cursor-pointer text-center text-[10px] font-medium leading-tight tracking-tight border w-full
+                                        {{ $isActive 
+                                            ? 'bg-emerald-50/70 border-emerald-100 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900/60 dark:text-emerald-400 opacity-60 cursor-not-allowed' 
+                                            : 'bg-white border-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 dark:hover:bg-emerald-950/20 dark:hover:text-emerald-400 dark:hover:border-emerald-800' }}"
+                                    >
+                                        <flux:icon.book-open class="size-4 mb-1" />
+                                        <span>Visitado</span>
+                                    </button>
+
+                                    {{-- Desistência --}}
+                                    @php $isActive = $ficha->tip_situacao->value === 'C'; @endphp
+                                    <button 
+                                        wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'C')" 
+                                        @disabled($isActive)
+                                        wire:confirm="Tem certeza de que deseja marcar esta ficha como desistência/cancelada?"
+                                        class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-xl transition duration-150 cursor-pointer text-center text-[10px] font-medium leading-tight tracking-tight border w-full
+                                        {{ $isActive 
+                                            ? 'bg-rose-50/70 border-rose-100 text-rose-600 dark:bg-rose-950/20 dark:border-rose-900/60 dark:text-rose-400 opacity-60 cursor-not-allowed' 
+                                            : 'bg-white border-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 dark:hover:bg-rose-950/20 dark:hover:text-rose-400 dark:hover:border-rose-800' }}"
+                                    >
+                                        <flux:icon.x-circle class="size-4 mb-1" />
+                                        <span>Desistência</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                <div class="mt-6">
+                    {{ $fichas->links(data: ['scrollTo' => false]) }}
+                </div>
+            @else
+                <div class="flex flex-col items-center justify-center text-center p-12 bg-white dark:bg-zinc-800 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-600 shadow-sm">
+                    <flux:icon.document-text class="w-12 h-12 text-zinc-400 dark:text-zinc-500 mb-4" />
+                    <flux:heading size="lg" class="text-zinc-700 dark:text-zinc-300">
+                        Nenhuma ficha encontrada
+                        Nenhuma ficha encontrada
+                    </flux:heading>
+                    <flux:subheading class="mt-1">
+                        Não existem fichas designadas para a sua conta ou compatíveis com os filtros selecionados.
+                        Não existem fichas designadas para a sua conta ou compatíveis com os filtros selecionados.
+                    </flux:subheading>
+                </div>
+            @endif
+        @else
+            {{-- Dashboard de Status --}}
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
+                @foreach ([
+                    ['status' => App\Enums\TipoSituacao::SELECIONADA, 'bg' => 'bg-blue-500/10 text-blue-500 border-blue-500/20', 'icon' => 'check-circle'],
+                    ['status' => App\Enums\TipoSituacao::CONTATO, 'bg' => 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20', 'icon' => 'phone'],
+                    ['status' => App\Enums\TipoSituacao::AGUARDANDO, 'bg' => 'bg-amber-500/10 text-amber-500 border-amber-500/20', 'icon' => 'clock'],
+                    ['status' => App\Enums\TipoSituacao::VISITADA, 'bg' => 'bg-green-500/10 text-green-500 border-green-500/20', 'icon' => 'book-open'],
+                    ['status' => App\Enums\TipoSituacao::CANCELADA, 'bg' => 'bg-rose-500/10 text-rose-500 border-rose-500/20', 'icon' => 'x-circle'],
+                ] as $item)
+                    @php
+                        $sitEnum = $item['status'];
+                        $val = $sitEnum->value;
+                        $count = $this->statusCounts[$val] ?? 0;
+                        $isActive = $situacao === $val;
+                    @endphp
+                    <button 
+                        type="button"
+                        wire:click="toggleSituacao('{{ $val }}')"
+                        class="flex items-center gap-3 p-4 rounded-xl border text-left transition duration-200 hover:shadow-md cursor-pointer w-full group
+                        {{ $isActive 
+                            ? 'bg-indigo-50 border-indigo-500 text-indigo-700 dark:bg-indigo-950/20 dark:border-indigo-800 dark:text-indigo-400 ring-2 ring-indigo-500/30' 
+                            : 'bg-white border-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-600' }}"
+                    >
+                        <div class="p-2 rounded-lg {{ $item['bg'] }} transition group-hover:scale-110">
+                            <flux:icon :icon="$item['icon']" class="size-5" />
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-zinc-900 dark:text-zinc-100 leading-none">{{ $count }}</div>
+                            <div class="text-xs text-zinc-500 dark:text-zinc-400 font-semibold mt-1">{{ $sitEnum->label() }}</div>
+                        </div>
+                    </button>
+                @endforeach
+            </div>
+
+            {{-- Barra de Filtros e Busca --}}
+            <div class="flex flex-col md:flex-row items-center gap-4 w-full bg-zinc-50 dark:bg-zinc-900/40 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-700/60 shadow-sm mb-6">
+                {{-- Busca Jovem --}}
+                <div class="w-full md:flex-1">
+                    <flux:input 
+                        wire:model.live.debounce.300ms="search" 
+                        icon="magnifying-glass" 
+                        placeholder="Buscar candidatos..." 
+                        class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                </div>
+
+                {{-- Busca Casal Designado --}}
+                <div class="w-full md:flex-1">
+                    <flux:input 
+                        wire:model.live.debounce.300ms="visitadorSearch" 
+                        icon="users" 
+                        placeholder="Buscar por casal designado..." 
+                        class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                </div>
+
+                {{-- Situação --}}
+                <div class="w-full md:flex-1">
+                    <flux:select 
+                        wire:model.live="situacao" 
+                        placeholder="Todas as Situações"
+                        class="bg-white dark:bg-zinc-800 h-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                        <flux:select.option value="">Todas as Situações</flux:select.option>
+                        @foreach ([
+                            App\Enums\TipoSituacao::SELECIONADA, 
+                            App\Enums\TipoSituacao::CONTATO, 
+                            App\Enums\TipoSituacao::AGUARDANDO,
+                            App\Enums\TipoSituacao::VISITADA,
+                            App\Enums\TipoSituacao::CANCELADA
+                        ] as $sit)
+                            <flux:select.option value="{{ $sit->value }}">{{ $sit->label() }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                </div>
+            </div>
+
+            {{-- Tabela de Fichas --}}
+            @if ($fichas->isNotEmpty())
+                {{-- Tabela para Desktop --}}
+                <div class="hidden md:block w-full border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden bg-white dark:bg-zinc-800">
+                    <style>
+                        /* Estilo para descolar tabelas das paredes do container no desktop */
+                        .fichas-table [data-flux-column]:first-child,
+                        .fichas-table [data-flux-cell]:first-child {
+                            padding-left: 1.5rem !important;
+                        }
+                        .fichas-table [data-flux-column]:last-child,
+                        .fichas-table [data-flux-cell]:last-child {
+                            padding-right: 1.5rem !important;
+                        }
+                    </style>
+                    <flux:table class="w-full fichas-table">
+                        <flux:table.columns>
+                            <flux:table.column class="pl-6 pr-4">Candidato</flux:table.column>
+                            <flux:table.column class="px-4">Casal Designado</flux:table.column>
+                            <flux:table.column class="px-4">Status</flux:table.column>
+                            <flux:table.column class="pl-4 pr-6" align="end">Ações</flux:table.column>
+                        </flux:table.columns>
+                        <flux:table.rows>
+                            @foreach ($fichas as $ficha)
+                                @php
+                                    $badgeConfig = $ficha->tip_situacao->cardConfig();
+                                    $nomeLabel = $ficha->visitador 
+                                        ? $ficha->visitador->nom_pessoa . ($ficha->visitador->parceiro ? ' & ' . $ficha->visitador->parceiro->nom_pessoa : '')
+                                        : 'Sem designação';
+                                @endphp
+                                <flux:table.row :key="'row-'.$ficha->idt_ficha">
+                                    <flux:table.cell class="pl-6 pr-4 font-semibold text-zinc-900 dark:text-white">
+                                        <div class="flex flex-col font-sans">
+                                            <a href="{{ $ficha->getShowRoute() }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                                {{ $ficha->nom_candidato }}
+                                            </a>
+                                            @if ($ficha->nom_apelido)
+                                                <span class="text-xs text-zinc-400 font-normal">({{ $ficha->nom_apelido }})</span>
+                                            @endif
+                                        </div>
+                                    </flux:table.cell>
+                                    <flux:table.cell class="px-4 text-zinc-700 dark:text-zinc-300 font-medium">
+                                        {{ $nomeLabel }}
+                                    </flux:table.cell>
+                                    <flux:table.cell class="px-4">
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold {{ $badgeConfig['bg'] }}">
+                                            <flux:icon :icon="$badgeConfig['icon']" class="size-3.5" />
+                                            {{ $badgeConfig['label'] }}
+                                        </span>
+                                    </flux:table.cell>
+                                    <flux:table.cell class="pl-4 pr-6" align="end">
+                                        <flux:button 
+                                            size="sm" 
+                                            icon="eye" 
+                                            variant="ghost" 
+                                            href="{{ $ficha->getShowRoute() }}" 
+                                            wire:navigate
+                                        >
+                                            Visualizar
+                                        </flux:button>
+                                    </flux:table.cell>
+                                </flux:table.row>
+                            @endforeach
+                        </flux:table.rows>
+                    </flux:table>
+                </div>
+
+                {{-- Cards para Mobile --}}
+                <div class="md:hidden space-y-4">
+                    @foreach ($fichas as $ficha)
+                        @php
+                            $badgeConfig = $ficha->tip_situacao->cardConfig();
+                            $nomeLabel = $ficha->visitador 
+                                ? $ficha->visitador->nom_pessoa . ($ficha->visitador->parceiro ? ' & ' . $ficha->visitador->parceiro->nom_pessoa : '')
+                                : 'Sem designação';
+                        @endphp
+                        <div class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 shadow-sm flex flex-col space-y-3">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h4 class="font-bold text-zinc-900 dark:text-zinc-100">
+                                        <a href="{{ $ficha->getShowRoute() }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                            {{ $ficha->nom_candidato }}
+                                        </a>
+                                    </h4>
+                                    @if ($ficha->nom_apelido)
+                                        <p class="text-xs text-zinc-500">({{ $ficha->nom_apelido }})</p>
+                                    @endif
+                                </div>
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold {{ $badgeConfig['bg'] }}">
+                                    <flux:icon :icon="$badgeConfig['icon']" class="size-3" />
+                                    {{ $badgeConfig['label'] }}
+                                </span>
+                            </div>
+                            
+                            <div class="text-sm text-zinc-600 dark:text-zinc-400">
+                                <span class="font-semibold text-zinc-700 dark:text-zinc-300">Casal Designado:</span> {{ $nomeLabel }}
+                            </div>
+                            
+                            <div class="pt-2 border-t border-zinc-100 dark:border-zinc-700/50">
+                                <flux:button 
+                                    size="sm" 
+                                    icon="eye" 
+                                    variant="primary" 
+                                    class="w-full justify-center"
+                                    href="{{ $ficha->getShowRoute() }}" 
+                                    wire:navigate
+                                >
+                                    Visualizar Ficha Completa
+                                </flux:button>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                <div class="mt-6">
+                    {{ $fichas->links(data: ['scrollTo' => false]) }}
+                </div>
+            @else
+                <div class="flex flex-col items-center justify-center text-center p-12 bg-white dark:bg-zinc-800 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-600 shadow-sm">
+                    <flux:icon.document-text class="w-12 h-12 text-zinc-400 dark:text-zinc-500 mb-4" />
+                    <flux:heading size="lg" class="text-zinc-700 dark:text-zinc-300">
+                        Nenhuma ficha encontrada
+                    </flux:heading>
+                    <flux:subheading class="mt-1">
+                        Não existem fichas compatíveis com os filtros selecionados.
+                    </flux:subheading>
+                </div>
+            @endif
+        @endif
 
     {{-- Modal de Designação de Visitação --}}
     @if ($this->podeDesignar() && count($selectedFichas) > 0)

@@ -559,3 +559,101 @@ describe('Minhas Fichas Designator Removal and Dropdown Mod', function () {
     });
 });
 
+describe('Minhas Fichas Consultation Tab', function () {
+    test('visitador comum nao consegue ver nem acessar a aba de consulta', function () {
+        $visitorUser = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
+        $this->actingAs($visitorUser);
+
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+            ->call('loadData')
+            ->assertDontSee('Consulta Geral')
+            ->set('activeTab', 'consulta')
+            ->assertSet('activeTab', 'gerenciar');
+    });
+
+    test('coordenador ou administrador consegue ver e acessar a aba de consulta', function () {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin);
+
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+            ->call('loadData')
+            ->assertSee('Consulta Geral')
+            ->set('activeTab', 'consulta')
+            ->assertSet('activeTab', 'consulta');
+    });
+
+    test('dashboard de status e cliques funcionam na aba de consulta', function () {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin);
+
+        // Fichas
+        Ficha::factory()->count(2)->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'tip_situacao' => TipoSituacao::SELECIONADA
+        ]);
+        Ficha::factory()->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'tip_situacao' => TipoSituacao::CONTATO
+        ]);
+        Ficha::factory()->count(3)->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'tip_situacao' => TipoSituacao::VISITADA
+        ]);
+
+        $component = Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+            ->call('loadData')
+            ->set('activeTab', 'consulta');
+
+        $counts = $component->get('statusCounts');
+        expect($counts[TipoSituacao::SELECIONADA->value])->toBe(2);
+        expect($counts[TipoSituacao::CONTATO->value])->toBe(1);
+        expect($counts[TipoSituacao::VISITADA->value])->toBe(3);
+
+        $component->call('toggleSituacao', TipoSituacao::VISITADA->value)
+            ->assertSet('situacao', TipoSituacao::VISITADA->value);
+
+        $component->call('toggleSituacao', TipoSituacao::VISITADA->value)
+            ->assertSet('situacao', '');
+    });
+
+    test('filtros e buscas funcionam na aba de consulta', function () {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin);
+
+        $visitadorA = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
+        $visitadorB = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
+
+        $ficha1 = Ficha::factory()->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'nom_candidato' => 'Candidato Alfa',
+            'tip_situacao' => TipoSituacao::SELECIONADA,
+            'idt_pessoa_visitacao' => $visitadorA->pessoa->idt_pessoa
+        ]);
+
+        $ficha2 = Ficha::factory()->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'nom_candidato' => 'Candidato Beta',
+            'tip_situacao' => TipoSituacao::CONTATO,
+            'idt_pessoa_visitacao' => $visitadorB->pessoa->idt_pessoa
+        ]);
+
+        // Busca candidato
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+            ->call('loadData')
+            ->set('activeTab', 'consulta')
+            ->assertSee('Candidato Alfa')
+            ->assertSee('Candidato Beta')
+            ->set('search', 'Alfa')
+            ->assertSee('Candidato Alfa')
+            ->assertDontSee('Candidato Beta');
+
+        // Busca visitador
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
+            ->call('loadData')
+            ->set('activeTab', 'consulta')
+            ->set('visitadorSearch', $visitadorB->pessoa->nom_pessoa)
+            ->assertSee('Candidato Beta')
+            ->assertDontSee('Candidato Alfa');
+    });
+});
+
