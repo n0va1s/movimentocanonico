@@ -1023,16 +1023,14 @@ new class extends Component {
                         <flux:table.columns>
                             <flux:table.column class="pl-6 pr-4">Candidato</flux:table.column>
                             <flux:table.column class="px-4">Casal Designado</flux:table.column>
-                            <flux:table.column class="px-4">Status</flux:table.column>
-                            <flux:table.column class="pl-4 pr-6" align="end">Ações</flux:table.column>
+                            <flux:table.column class="w-36 px-4" align="center">Status</flux:table.column>
+                            <flux:table.column class="w-20 pl-4 pr-6" align="end">Ações</flux:table.column>
                         </flux:table.columns>
                         <flux:table.rows>
                             @foreach ($fichas as $ficha)
                                 @php
                                     $badgeConfig = $ficha->tip_situacao->cardConfig();
-                                    $nomeLabel = $ficha->visitador 
-                                        ? $ficha->visitador->nom_pessoa . ($ficha->visitador->parceiro ? ' & ' . $ficha->visitador->parceiro->nom_pessoa : '')
-                                        : 'Sem designação';
+                                    $v = $ficha->visitador;
                                 @endphp
                                 <flux:table.row :key="'row-'.$ficha->idt_ficha">
                                     <flux:table.cell class="pl-6 pr-4 font-semibold text-zinc-900 dark:text-white">
@@ -1045,16 +1043,31 @@ new class extends Component {
                                             @endif
                                         </div>
                                     </flux:table.cell>
-                                    <flux:table.cell class="px-4 text-zinc-700 dark:text-zinc-300 font-medium whitespace-normal">
-                                        {{ $nomeLabel }}
+                                    <flux:table.cell class="px-4 text-zinc-700 dark:text-zinc-300 font-medium">
+                                        @if ($v)
+                                            <div class="flex flex-col max-w-[200px] md:max-w-[240px]">
+                                                <span class="truncate font-medium text-zinc-700 dark:text-zinc-300" title="{{ $v->nom_pessoa }}">
+                                                    {{ $v->nom_pessoa }}
+                                                </span>
+                                                @if ($v->parceiro)
+                                                    <span class="truncate font-medium text-zinc-700 dark:text-zinc-300 mt-0.5" title="& {{ $v->parceiro->nom_pessoa }}">
+                                                        & {{ $v->parceiro->nom_pessoa }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        @else
+                                            <span class="text-zinc-400 italic">Sem designação</span>
+                                        @endif
                                     </flux:table.cell>
-                                    <flux:table.cell class="px-4">
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold {{ $badgeConfig['bg'] }}">
-                                            <flux:icon :icon="$badgeConfig['icon']" class="size-3.5" />
-                                            {{ $badgeConfig['label'] }}
-                                        </span>
+                                    <flux:table.cell class="w-36 px-4" align="center">
+                                        <div class="flex justify-center w-full">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold {{ $badgeConfig['bg'] }} shrink-0">
+                                                <flux:icon :icon="$badgeConfig['icon']" class="size-3.5" />
+                                                {{ $badgeConfig['label'] }}
+                                            </span>
+                                        </div>
                                     </flux:table.cell>
-                                    <flux:table.cell class="pl-4 pr-6" align="end">
+                                    <flux:table.cell class="w-20 pl-4 pr-6" align="end">
                                         <flux:button 
                                             size="sm" 
                                             icon="eye" 
