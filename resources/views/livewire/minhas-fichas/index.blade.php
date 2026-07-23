@@ -63,8 +63,7 @@ new class extends Component {
                 TipoSituacao::SELECIONADA->value,
                 TipoSituacao::CONTATO->value,
                 TipoSituacao::AGUARDANDO->value,
-                TipoSituacao::VISITADA->value,
-                TipoSituacao::CANCELADA->value
+                TipoSituacao::VISITADA->value
             ])
             ->groupBy('tip_situacao')
             ->pluck('total', 'tip_situacao')
@@ -75,7 +74,6 @@ new class extends Component {
             TipoSituacao::CONTATO->value => $counts[TipoSituacao::CONTATO->value] ?? 0,
             TipoSituacao::AGUARDANDO->value => $counts[TipoSituacao::AGUARDANDO->value] ?? 0,
             TipoSituacao::VISITADA->value => $counts[TipoSituacao::VISITADA->value] ?? 0,
-            TipoSituacao::CANCELADA->value => $counts[TipoSituacao::CANCELADA->value] ?? 0,
         ];
     }
 
@@ -401,8 +399,7 @@ new class extends Component {
                         TipoSituacao::SELECIONADA,
                         TipoSituacao::CONTATO,
                         TipoSituacao::AGUARDANDO,
-                        TipoSituacao::VISITADA,
-                        TipoSituacao::CANCELADA
+                        TipoSituacao::VISITADA
                     ]);
                 } else {
                     $query->whereIn('tip_situacao', [
@@ -607,7 +604,7 @@ new class extends Component {
     @if($evento && $evento->exists)
         <div class="space-y-6">
             {{-- Cabeçalho do Evento Selecionado --}}
-        <div class="flex flex-row justify-between items-center gap-4 bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-700">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-700">
             <div class="text-left">
                 <flux:heading size="lg" class="mb-1.5">{{ $evento->des_evento }}</flux:heading>
                 <div class="flex flex-wrap gap-2 items-center">
@@ -622,7 +619,9 @@ new class extends Component {
                             Exportar Admin
                         </flux:button>
                     @endif
-                    <flux:button variant="ghost" size="sm" icon="arrow-left" wire:click="alterarEvento" class="h-11 shrink-0">
+                </div>
+            </div>
+            <flux:button variant="ghost" size="sm" icon="arrow-left" wire:click="alterarEvento" class="h-11 shrink-0">
                 Alterar Evento
             </flux:button>
         </div>
@@ -930,13 +929,12 @@ new class extends Component {
             @endif
         @else
             {{-- Dashboard de Status --}}
-            <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                 @foreach ([
                     ['status' => App\Enums\TipoSituacao::SELECIONADA, 'bg' => 'bg-blue-500/10 text-blue-500 border-blue-500/20', 'icon' => 'check-circle'],
                     ['status' => App\Enums\TipoSituacao::CONTATO, 'bg' => 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20', 'icon' => 'phone'],
                     ['status' => App\Enums\TipoSituacao::AGUARDANDO, 'bg' => 'bg-amber-500/10 text-amber-500 border-amber-500/20', 'icon' => 'clock'],
                     ['status' => App\Enums\TipoSituacao::VISITADA, 'bg' => 'bg-green-500/10 text-green-500 border-green-500/20', 'icon' => 'book-open'],
-                    ['status' => App\Enums\TipoSituacao::CANCELADA, 'bg' => 'bg-rose-500/10 text-rose-500 border-rose-500/20', 'icon' => 'x-circle'],
                 ] as $item)
                     @php
                         $sitEnum = $item['status'];
@@ -947,17 +945,17 @@ new class extends Component {
                     <button 
                         type="button"
                         wire:click="toggleSituacao('{{ $val }}')"
-                        class="flex items-center gap-3 p-4 rounded-xl border text-left transition duration-200 hover:shadow-md cursor-pointer w-full group
+                        class="flex items-center gap-2.5 p-3 rounded-xl border text-left transition duration-200 hover:shadow-md cursor-pointer w-full group
                         {{ $isActive 
                             ? 'bg-indigo-50 border-indigo-500 text-indigo-700 dark:bg-indigo-950/20 dark:border-indigo-800 dark:text-indigo-400 ring-2 ring-indigo-500/30' 
                             : 'bg-white border-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-600' }}"
                     >
-                        <div class="p-2 rounded-lg {{ $item['bg'] }} transition group-hover:scale-110">
-                            <flux:icon :icon="$item['icon']" class="size-5" />
+                        <div class="p-1.5 rounded-lg {{ $item['bg'] }} transition group-hover:scale-110 shrink-0">
+                            <flux:icon :icon="$item['icon']" class="size-4" />
                         </div>
-                        <div>
-                            <div class="text-2xl font-bold text-zinc-900 dark:text-zinc-100 leading-none">{{ $count }}</div>
-                            <div class="text-xs text-zinc-500 dark:text-zinc-400 font-semibold mt-1">{{ $sitEnum->label() }}</div>
+                        <div class="min-w-0">
+                            <div class="text-xl font-bold text-zinc-900 dark:text-zinc-100 leading-none">{{ $count }}</div>
+                            <div class="text-[11px] text-zinc-500 dark:text-zinc-400 font-semibold truncate mt-0.5">{{ $sitEnum->label() }}</div>
                         </div>
                     </button>
                 @endforeach
@@ -1047,7 +1045,7 @@ new class extends Component {
                                             @endif
                                         </div>
                                     </flux:table.cell>
-                                    <flux:table.cell class="px-4 text-zinc-700 dark:text-zinc-300 font-medium">
+                                    <flux:table.cell class="px-4 text-zinc-700 dark:text-zinc-300 font-medium whitespace-normal">
                                         {{ $nomeLabel }}
                                     </flux:table.cell>
                                     <flux:table.cell class="px-4">
@@ -1063,9 +1061,9 @@ new class extends Component {
                                             variant="ghost" 
                                             href="{{ $ficha->getShowRoute() }}" 
                                             wire:navigate
-                                        >
-                                            Visualizar
-                                        </flux:button>
+                                            title="Visualizar"
+                                            aria-label="Visualizar"
+                                        />
                                     </flux:table.cell>
                                 </flux:table.row>
                             @endforeach
