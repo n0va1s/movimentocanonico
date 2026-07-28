@@ -30,6 +30,9 @@ class Trabalhador extends Model
         'ind_camiseta_pagou',
         'ind_taxa_pagou',
         'ind_presente',
+        'ind_termo_lgpd_aceito',
+        'dat_termo_lgpd_aceito',
+        'des_ip_termo_lgpd',
     ];
 
     protected $casts = [
@@ -43,7 +46,18 @@ class Trabalhador extends Model
         'ind_camiseta_pagou' => 'boolean',
         'ind_taxa_pagou' => 'boolean',
         'ind_presente' => 'boolean',
+        'ind_termo_lgpd_aceito' => 'boolean',
+        'dat_termo_lgpd_aceito' => 'datetime',
     ];
+
+    public function aceitarTermoLgpd(?string $ip = null): void
+    {
+        $this->update([
+            'ind_termo_lgpd_aceito' => true,
+            'dat_termo_lgpd_aceito' => now(),
+            'des_ip_termo_lgpd' => $ip,
+        ]);
+    }
 
     protected static function booted()
     {

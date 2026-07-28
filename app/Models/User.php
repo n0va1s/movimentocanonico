@@ -235,4 +235,45 @@ class User extends Authenticatable
             set: fn (?string $value) => PhoneService::clean($value),
         );
     }
+
+    public function getTrabalhadorVisitacao(?int $idtEvento = null): ?Trabalhador
+    {
+        $pessoaId = $this->pessoa?->idt_pessoa;
+        if (!$pessoaId) {
+            return null;
+        }
+
+        $query = Trabalhador::where('idt_pessoa', $pessoaId)
+            ->whereHas('equipe', function ($q) {
+                $q->whereRaw('LOWER(des_grupo) LIKE ?', ['%visita%']);
+            });
+
+        if ($idtEvento) {
+            $query->where('idt_evento', $idtEvento);
+        }
+
+        return $query->latest('idt_trabalhador')->first();
+    }
+
+    public function hasAceitouTermoVisitacao(?int $idtEvento = null): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        $trabalhador = $this->getTrabalhadorVisitacao($idtEvento);
+        if (!$trabalhador) {
+            return false;
+        }
+
+        return (bool) $trabalhador->ind_termo_lgpd_aceito;
+    }
+
+    public function registrarAceiteTermoVisitacao(?int $idtEvento = null, ?string $ip = null): void
+    {
+        $trabalhador = $this->getTrabalhadorVisitacao($idtEvento);
+        if ($trabalhador) {
+            $trabalhador->aceitarTermoLgpd($ip);
+        }
+    }
 }

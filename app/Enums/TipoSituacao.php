@@ -15,6 +15,7 @@ enum TipoSituacao: string
     case PAGA = 'P'; // confirmada com pagamento
     case CANCELADA = 'C'; // nao podera participar
     case APROVADA = 'A'; // enviar email com a confirmação do candidato e o resumo de informações do evento
+    case DESISTENCIA = 'D'; // Desistência
 
     public function label(): string
     {
@@ -23,13 +24,14 @@ enum TipoSituacao: string
             self::RESERVA => 'Reserva',
             self::SELECIONADA => 'Selecionada',
             self::CONTATO => 'Contato',
-            self::AGUARDANDO => 'Aguardando',
+            self::AGUARDANDO => 'Agendado',
             self::VISITADA => 'Visitada',
             self::ENVIADA => 'Enviada',
             self::RECEBIDA => 'Recebida',
             self::PAGA => 'Paga',
             self::CANCELADA => 'Cancelada',
             self::APROVADA => 'Aprovada',
+            self::DESISTENCIA => 'Desistência',
         };
     }
 
@@ -124,6 +126,14 @@ enum TipoSituacao: string
                 'light' => 'bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800',
                 'border-l' => 'border-l-teal-500 dark:border-l-teal-400'
             ],
+            self::DESISTENCIA => [
+                'bg' => 'bg-red-100 dark:bg-red-900/40',
+                'text' => 'text-red-800 dark:text-red-300',
+                'hover' => 'hover:bg-red-200 hover:border-red-300',
+                'border' => 'border-red-200',
+                'light' => 'bg-red-100 text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800',
+                'border-l' => 'border-l-red-500 dark:border-l-red-400'
+            ],
         };
     }
 
@@ -164,6 +174,11 @@ enum TipoSituacao: string
                 'bg' => 'bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400',
                 'icon' => 'x-circle',
                 'label' => 'Cancelada'
+            ],
+            self::DESISTENCIA => [
+                'bg' => 'bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-400',
+                'icon' => 'x-circle',
+                'label' => 'Desistência'
             ],
             default => [
                 'bg' => 'bg-zinc-50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-900 text-zinc-700 dark:text-zinc-400',

@@ -863,7 +863,7 @@ new class extends Component {
                                         <span>Contato Feito</span>
                                     </button>
 
-                                    {{-- Aguardando --}}
+                                    {{-- Agendado --}}
                                     @php $isActive = $ficha->tip_situacao->value === 'W'; @endphp
                                     <button 
                                         wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'W')" 
@@ -874,7 +874,7 @@ new class extends Component {
                                             : 'bg-white border-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300 dark:hover:bg-amber-950/20 dark:hover:text-amber-400 dark:hover:border-amber-800' }}"
                                     >
                                         <flux:icon.clock class="size-4 mb-1" />
-                                        <span>Aguardando</span>
+                                        <span>Agendado</span>
                                     </button>
 
                                     {{-- Visitado --}}

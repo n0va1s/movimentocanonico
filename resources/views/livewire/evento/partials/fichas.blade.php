@@ -456,7 +456,7 @@ new class extends Component {
             ],
             [
                 'status' => \App\Enums\TipoSituacao::AGUARDANDO->value,
-                'label' => 'Aguardando',
+                'label' => 'Agendado',
                 'color' => 'amber',
                 'icon' => 'clock',
                 'textClass' => 'text-amber-500 dark:text-amber-400',

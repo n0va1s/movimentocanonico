@@ -60,7 +60,6 @@ $rotasAdmin = [
     '/configuracoes/role',
     '/configuracoes/organizacao',
     '/eventos/create',
-    '/pessoas',
     '/aniversario',
 ];
 
@@ -87,11 +86,8 @@ foreach ($rotasAdmin as $rota) {
 $rotasAdminEspec = [
     '/configuracoes',
     '/eventos/importar',
-    '/fichas/vem',
     '/fichas/vem/create',
-    '/fichas/ecc',
     '/fichas/ecc/create',
-    '/fichas/sgm',
     '/fichas/sgm/create',
 ];
 
