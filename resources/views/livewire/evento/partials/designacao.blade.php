@@ -112,6 +112,7 @@ new class extends Component {
                 \App\Enums\TipoSituacao::AGUARDANDO,
                 \App\Enums\TipoSituacao::VISITADA,
                 \App\Enums\TipoSituacao::CANCELADA,
+                \App\Enums\TipoSituacao::DESISTENCIA,
             ])
             ->with(['evento'])
             ->when($this->visitadorFiltro, function ($query) {

@@ -63,7 +63,8 @@ new class extends Component {
                 TipoSituacao::SELECIONADA->value,
                 TipoSituacao::CONTATO->value,
                 TipoSituacao::AGUARDANDO->value,
-                TipoSituacao::VISITADA->value
+                TipoSituacao::VISITADA->value,
+                TipoSituacao::DESISTENCIA->value
             ])
             ->groupBy('tip_situacao')
             ->pluck('total', 'tip_situacao')
@@ -74,6 +75,7 @@ new class extends Component {
             TipoSituacao::CONTATO->value => $counts[TipoSituacao::CONTATO->value] ?? 0,
             TipoSituacao::AGUARDANDO->value => $counts[TipoSituacao::AGUARDANDO->value] ?? 0,
             TipoSituacao::VISITADA->value => $counts[TipoSituacao::VISITADA->value] ?? 0,
+            TipoSituacao::DESISTENCIA->value => $counts[TipoSituacao::DESISTENCIA->value] ?? 0,
         ];
     }
 
@@ -399,7 +401,8 @@ new class extends Component {
                         TipoSituacao::SELECIONADA,
                         TipoSituacao::CONTATO,
                         TipoSituacao::AGUARDANDO,
-                        TipoSituacao::VISITADA
+                        TipoSituacao::VISITADA,
+                        TipoSituacao::DESISTENCIA
                     ]);
                 } else {
                     $query->whereIn('tip_situacao', [
@@ -687,9 +690,10 @@ new class extends Component {
                                     App\Enums\TipoSituacao::CONTATO, 
                                     App\Enums\TipoSituacao::AGUARDANDO,
                                     App\Enums\TipoSituacao::VISITADA,
+                                    App\Enums\TipoSituacao::DESISTENCIA,
                                     App\Enums\TipoSituacao::CANCELADA
                                 ] as $sit)
-                                    <flux:select.option value="{{ $sit->value }}">{{ $sit->label() }}</flux:select.option>
+                                    <flux:select.option value="{{ $sit->value }}">{{ $sit === App\Enums\TipoSituacao::SELECIONADA ? 'Aguardando' : $sit->label() }}</flux:select.option>
                                 @endforeach
                             </flux:select>
                         </div>
@@ -726,6 +730,7 @@ new class extends Component {
                             
                             // Configuração de Badge e Estilos baseada no status atual
                             $badgeConfig = $ficha->tip_situacao->cardConfig();
+                            $statusLabel = $ficha->tip_situacao === App\Enums\TipoSituacao::SELECIONADA ? 'Aguardando' : $badgeConfig['label'];
                         @endphp
                         <div wire:key="ficha-card-{{ $ficha->idt_ficha }}" class="relative bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 p-5 shadow-sm hover:shadow-md transition duration-200 flex flex-col h-full justify-between">
                             @if ($this->podeDesignar())
@@ -744,7 +749,7 @@ new class extends Component {
                                 <div class="flex justify-end items-center gap-1.5 mb-4">
                                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold {{ $badgeConfig['bg'] }}">
                                         <flux:icon :icon="$badgeConfig['icon']" class="size-3" />
-                                        {{ $badgeConfig['label'] }}
+                                        {{ $statusLabel }}
                                     </span>
                                 </div>
 
@@ -863,7 +868,7 @@ new class extends Component {
                                         <span>Contato Feito</span>
                                     </button>
 
-                                    {{-- Aguardando --}}
+                                    {{-- Agendado --}}
                                     @php $isActive = $ficha->tip_situacao->value === 'W'; @endphp
                                     <button 
                                         wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'W')" 
@@ -874,7 +879,7 @@ new class extends Component {
                                             : 'bg-white border-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300 dark:hover:bg-amber-950/20 dark:hover:text-amber-400 dark:hover:border-amber-800' }}"
                                     >
                                         <flux:icon.clock class="size-4 mb-1" />
-                                        <span>Aguardando</span>
+                                        <span>Agendado</span>
                                     </button>
 
                                     {{-- Visitado --}}
@@ -892,11 +897,11 @@ new class extends Component {
                                     </button>
 
                                     {{-- Desistência --}}
-                                    @php $isActive = $ficha->tip_situacao->value === 'C'; @endphp
+                                    @php $isActive = $ficha->tip_situacao->value === 'D'; @endphp
                                     <button 
-                                        wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'C')" 
+                                        wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'D')" 
                                         @disabled($isActive)
-                                        wire:confirm="Tem certeza de que deseja marcar esta ficha como desistência/cancelada?"
+                                        wire:confirm="Tem certeza de que deseja marcar esta ficha como desistência?"
                                         class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-xl transition duration-150 cursor-pointer text-center text-[10px] font-medium leading-tight tracking-tight border w-full
                                         {{ $isActive 
                                             ? 'bg-rose-50/70 border-rose-100 text-rose-600 dark:bg-rose-950/20 dark:border-rose-900/60 dark:text-rose-400 opacity-60 cursor-not-allowed' 
@@ -919,22 +924,21 @@ new class extends Component {
                     <flux:icon.document-text class="w-12 h-12 text-zinc-400 dark:text-zinc-500 mb-4" />
                     <flux:heading size="lg" class="text-zinc-700 dark:text-zinc-300">
                         Nenhuma ficha encontrada
-                        Nenhuma ficha encontrada
                     </flux:heading>
                     <flux:subheading class="mt-1">
-                        Não existem fichas designadas para a sua conta ou compatíveis com os filtros selecionados.
                         Não existem fichas designadas para a sua conta ou compatíveis com os filtros selecionados.
                     </flux:subheading>
                 </div>
             @endif
         @else
             {{-- Dashboard de Status --}}
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
                 @foreach ([
-                    ['status' => App\Enums\TipoSituacao::SELECIONADA, 'bg' => 'bg-blue-500/10 text-blue-500 border-blue-500/20', 'icon' => 'check-circle'],
-                    ['status' => App\Enums\TipoSituacao::CONTATO, 'bg' => 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20', 'icon' => 'phone'],
-                    ['status' => App\Enums\TipoSituacao::AGUARDANDO, 'bg' => 'bg-amber-500/10 text-amber-500 border-amber-500/20', 'icon' => 'clock'],
-                    ['status' => App\Enums\TipoSituacao::VISITADA, 'bg' => 'bg-green-500/10 text-green-500 border-green-500/20', 'icon' => 'book-open'],
+                    ['status' => App\Enums\TipoSituacao::SELECIONADA, 'bg' => 'bg-blue-500/10 text-blue-500 border-blue-500/20', 'icon' => 'check-circle', 'label' => 'Aguardando'],
+                    ['status' => App\Enums\TipoSituacao::CONTATO, 'bg' => 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20', 'icon' => 'phone', 'label' => 'Contato Feito'],
+                    ['status' => App\Enums\TipoSituacao::AGUARDANDO, 'bg' => 'bg-amber-500/10 text-amber-500 border-amber-500/20', 'icon' => 'clock', 'label' => 'Agendado'],
+                    ['status' => App\Enums\TipoSituacao::VISITADA, 'bg' => 'bg-green-500/10 text-green-500 border-green-500/20', 'icon' => 'book-open', 'label' => 'Visitado'],
+                    ['status' => App\Enums\TipoSituacao::DESISTENCIA, 'bg' => 'bg-rose-500/10 text-rose-500 border-rose-500/20', 'icon' => 'x-circle', 'label' => 'Desistência'],
                 ] as $item)
                     @php
                         $sitEnum = $item['status'];
@@ -955,7 +959,7 @@ new class extends Component {
                         </div>
                         <div class="min-w-0">
                             <div class="text-xl font-bold text-zinc-900 dark:text-zinc-100 leading-none">{{ $count }}</div>
-                            <div class="text-[11px] text-zinc-500 dark:text-zinc-400 font-semibold truncate mt-0.5">{{ $sitEnum->label() }}</div>
+                            <div class="text-[11px] text-zinc-500 dark:text-zinc-400 font-semibold truncate mt-0.5">{{ $item['label'] }}</div>
                         </div>
                     </button>
                 @endforeach
@@ -996,9 +1000,10 @@ new class extends Component {
                             App\Enums\TipoSituacao::CONTATO, 
                             App\Enums\TipoSituacao::AGUARDANDO,
                             App\Enums\TipoSituacao::VISITADA,
+                            App\Enums\TipoSituacao::DESISTENCIA,
                             App\Enums\TipoSituacao::CANCELADA
                         ] as $sit)
-                            <flux:select.option value="{{ $sit->value }}">{{ $sit->label() }}</flux:select.option>
+                            <flux:select.option value="{{ $sit->value }}">{{ $sit === App\Enums\TipoSituacao::SELECIONADA ? 'Aguardando' : $sit->label() }}</flux:select.option>
                         @endforeach
                     </flux:select>
                 </div>
@@ -1030,6 +1035,7 @@ new class extends Component {
                             @foreach ($fichas as $ficha)
                                 @php
                                     $badgeConfig = $ficha->tip_situacao->cardConfig();
+                                    $statusLabel = $ficha->tip_situacao === App\Enums\TipoSituacao::SELECIONADA ? 'Aguardando' : $badgeConfig['label'];
                                     $v = $ficha->visitador;
                                 @endphp
                                 <flux:table.row :key="'row-'.$ficha->idt_ficha">
@@ -1063,7 +1069,7 @@ new class extends Component {
                                         <div class="flex justify-center w-full">
                                             <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold {{ $badgeConfig['bg'] }} shrink-0">
                                                 <flux:icon :icon="$badgeConfig['icon']" class="size-3.5" />
-                                                {{ $badgeConfig['label'] }}
+                                                {{ $statusLabel }}
                                             </span>
                                         </div>
                                     </flux:table.cell>
@@ -1089,6 +1095,7 @@ new class extends Component {
                     @foreach ($fichas as $ficha)
                         @php
                             $badgeConfig = $ficha->tip_situacao->cardConfig();
+                            $statusLabel = $ficha->tip_situacao === App\Enums\TipoSituacao::SELECIONADA ? 'Aguardando' : $badgeConfig['label'];
                             $nomeLabel = $ficha->visitador 
                                 ? $ficha->visitador->nom_pessoa . ($ficha->visitador->parceiro ? ' & ' . $ficha->visitador->parceiro->nom_pessoa : '')
                                 : 'Sem designação';
@@ -1107,7 +1114,7 @@ new class extends Component {
                                 </div>
                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold {{ $badgeConfig['bg'] }}">
                                     <flux:icon :icon="$badgeConfig['icon']" class="size-3" />
-                                    {{ $badgeConfig['label'] }}
+                                    {{ $statusLabel }}
                                 </span>
                             </div>
                             

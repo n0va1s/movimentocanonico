@@ -280,7 +280,7 @@ describe('Minhas Fichas Actions', function () {
         expect($this->ficha->fresh()->tip_situacao)->toBe(TipoSituacao::CONTATO);
     });
  
-    test('can change status to Aguardando Resposta (W)', function () {
+    test('can change status to Agendado (W)', function () {
         Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
             ->call('alterarSituacao', $this->ficha->idt_ficha, 'W')
             ->assertHasNoErrors();
@@ -288,12 +288,12 @@ describe('Minhas Fichas Actions', function () {
         expect($this->ficha->fresh()->tip_situacao)->toBe(TipoSituacao::AGUARDANDO);
     });
  
-    test('can change status to Cancelada (C)', function () {
+    test('can change status to Desistência (D)', function () {
         Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
-            ->call('alterarSituacao', $this->ficha->idt_ficha, 'C')
+            ->call('alterarSituacao', $this->ficha->idt_ficha, 'D')
             ->assertHasNoErrors();
  
-        expect($this->ficha->fresh()->tip_situacao)->toBe(TipoSituacao::CANCELADA);
+        expect($this->ficha->fresh()->tip_situacao)->toBe(TipoSituacao::DESISTENCIA);
     });
 });
 

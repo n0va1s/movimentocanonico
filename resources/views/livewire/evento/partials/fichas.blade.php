@@ -317,12 +317,12 @@ new class extends Component {
         return [
             \App\Enums\TipoSituacao::NOVA->value => $counts[\App\Enums\TipoSituacao::NOVA->value] ?? 0,
             \App\Enums\TipoSituacao::RESERVA->value => $counts[\App\Enums\TipoSituacao::RESERVA->value] ?? 0,
-            \App\Enums\TipoSituacao::RESERVA->value => $counts[\App\Enums\TipoSituacao::RESERVA->value] ?? 0,
             \App\Enums\TipoSituacao::AGUARDANDO->value => $counts[\App\Enums\TipoSituacao::AGUARDANDO->value] ?? 0,
             \App\Enums\TipoSituacao::VISITADA->value => $counts[\App\Enums\TipoSituacao::VISITADA->value] ?? 0,
             \App\Enums\TipoSituacao::SELECIONADA->value => $counts[\App\Enums\TipoSituacao::SELECIONADA->value] ?? 0,
             \App\Enums\TipoSituacao::APROVADA->value => $counts[\App\Enums\TipoSituacao::APROVADA->value] ?? 0,
             \App\Enums\TipoSituacao::CANCELADA->value => $counts[\App\Enums\TipoSituacao::CANCELADA->value] ?? 0,
+            \App\Enums\TipoSituacao::DESISTENCIA->value => $counts[\App\Enums\TipoSituacao::DESISTENCIA->value] ?? 0,
         ];
     }
 
@@ -456,7 +456,7 @@ new class extends Component {
             ],
             [
                 'status' => \App\Enums\TipoSituacao::AGUARDANDO->value,
-                'label' => 'Aguardando',
+                'label' => 'Agendados',
                 'color' => 'amber',
                 'icon' => 'clock',
                 'textClass' => 'text-amber-500 dark:text-amber-400',
@@ -494,10 +494,18 @@ new class extends Component {
                 'textClass' => 'text-rose-600 dark:text-rose-400',
                 'activeClass' => 'ring-2 ring-rose-500 bg-rose-50 dark:bg-rose-950/20 border-rose-500',
             ],
+            [
+                'status' => \App\Enums\TipoSituacao::DESISTENCIA->value,
+                'label' => 'Desistências',
+                'color' => 'rose',
+                'icon' => 'x-circle',
+                'textClass' => 'text-rose-600 dark:text-rose-400',
+                'activeClass' => 'ring-2 ring-rose-500 bg-rose-50 dark:bg-rose-950/20 border-rose-500',
+            ],
         ];
     @endphp
 
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
         @foreach ($statusCards as $card)
             @php
                 $isActive = $filtroSituacao === $card['status'];
@@ -505,7 +513,7 @@ new class extends Component {
             @endphp
             <div 
                 wire:click="toggleFiltroSituacao('{{ $card['status'] }}')"
-                class="flex-1 min-w-[130px] sm:min-w-[150px] max-w-[220px] cursor-pointer transition-all duration-200 rounded-xl p-3 flex flex-col border shadow-sm hover:shadow-md hover:-translate-y-0.5 {{ $isActive ? $card['activeClass'] : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700' }}"
+                class="w-full cursor-pointer transition-all duration-200 rounded-xl p-3 flex flex-col border shadow-sm hover:shadow-md hover:-translate-y-0.5 {{ $isActive ? $card['activeClass'] : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700' }}"
             >
                 <div class="flex items-center gap-2">
                     <flux:icon name="{{ $card['icon'] }}" variant="outline" class="size-5 {{ $card['textClass'] }} shrink-0" />

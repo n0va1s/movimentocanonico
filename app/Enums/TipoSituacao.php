@@ -15,6 +15,7 @@ enum TipoSituacao: string
     case PAGA = 'P'; // confirmada com pagamento
     case CANCELADA = 'C'; // nao podera participar
     case APROVADA = 'A'; // enviar email com a confirmação do candidato e o resumo de informações do evento
+    case DESISTENCIA = 'D'; // desistiu apos contato
 
     public function label(): string
     {
@@ -23,13 +24,14 @@ enum TipoSituacao: string
             self::RESERVA => 'Reserva',
             self::SELECIONADA => 'Selecionada',
             self::CONTATO => 'Contato',
-            self::AGUARDANDO => 'Aguardando',
+            self::AGUARDANDO => 'Agendado',
             self::VISITADA => 'Visitada',
             self::ENVIADA => 'Enviada',
             self::RECEBIDA => 'Recebida',
             self::PAGA => 'Paga',
             self::CANCELADA => 'Cancelada',
             self::APROVADA => 'Aprovada',
+            self::DESISTENCIA => 'Desistência',
         };
     }
 
@@ -124,6 +126,14 @@ enum TipoSituacao: string
                 'light' => 'bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800',
                 'border-l' => 'border-l-teal-500 dark:border-l-teal-400'
             ],
+            self::DESISTENCIA => [
+                'bg' => 'bg-rose-100 dark:bg-rose-900/40',
+                'text' => 'text-rose-800 dark:text-rose-300',
+                'hover' => 'hover:bg-rose-200 hover:border-rose-300',
+                'border' => 'border-rose-200',
+                'light' => 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800',
+                'border-l' => 'border-l-rose-500 dark:border-l-rose-400'
+            ],
         };
     }
 
@@ -143,7 +153,7 @@ enum TipoSituacao: string
             self::AGUARDANDO => [
                 'bg' => 'bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-400',
                 'icon' => 'clock',
-                'label' => 'Aguardando'
+                'label' => 'Agendado'
             ],
             self::SELECIONADA => [
                 'bg' => 'bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-400',
@@ -164,6 +174,11 @@ enum TipoSituacao: string
                 'bg' => 'bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400',
                 'icon' => 'x-circle',
                 'label' => 'Cancelada'
+            ],
+            self::DESISTENCIA => [
+                'bg' => 'bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400',
+                'icon' => 'x-circle',
+                'label' => 'Desistência'
             ],
             default => [
                 'bg' => 'bg-zinc-50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-900 text-zinc-700 dark:text-zinc-400',
