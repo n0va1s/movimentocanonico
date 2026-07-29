@@ -17,7 +17,7 @@ class RestrictDirigMovement
     {
         $user = auth()->user();
 
-        if ($user && ($user->isDirig() || $user->isVisitacao())) {
+        if ($user && $user->isDirig()) {
             if (is_null($user->idt_movimento) || (int) $user->idt_movimento !== $movimento) {
                 abort(403, 'Acesso não autorizado para este movimento.');
             }

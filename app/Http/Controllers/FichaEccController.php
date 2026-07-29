@@ -164,9 +164,34 @@ class FichaEccController extends Controller
      */
     public function show($id)
     {
+        $user = auth()->user();
+        if (!$user) {
+            abort(403);
+        }
+
         Log::info('Visualização de ficha ECC', array_merge($this->getLogContext(request()), ['ficha_id' => $id]));
 
         $ficha = Ficha::with(['fichaEcc.filhos', 'fichaSaude.restricao', 'foto', 'evento'])->findOrFail($id);
+
+        if (!$user->isAdmin() && !$user->isDirig()) {
+            if ($user->autorizaVisit()) {
+                $pessoaId = $user->pessoa?->idt_pessoa;
+                $parceiroId = $user->pessoa?->idt_parceiro;
+                $isDesignated = $ficha->idt_pessoa_visitacao && in_array($ficha->idt_pessoa_visitacao, array_filter([$pessoaId, $parceiroId]));
+                $isCoord = \App\Models\Trabalhador::where('idt_evento', $ficha->idt_evento)
+                    ->where('idt_pessoa', $pessoaId)
+                    ->where('ind_coordenador', true)
+                    ->whereHas('equipe', function ($q) {
+                        $q->where('des_grupo', 'like', '%Visitação%');
+                    })->exists();
+
+                if (!$isDesignated && !$isCoord) {
+                    abort(403, 'Você não tem permissão para visualizar os detalhes desta ficha.');
+                }
+            } else {
+                abort(403, 'Acesso não autorizado.');
+            }
+        }
 
         // Modo impressão: view dedicada sem formulário de edição
         if (request()->boolean('print') || request()->has('print')) {
@@ -429,15 +454,22 @@ class FichaEccController extends Controller
     public function updateSituacao(Request $request, $id)
     {
         $request->validate([
-            'tip_situacao' => 'required|string|in:N,S,E,R,P,C,A,F,W,V',
+            'tip_situacao' => 'required|string|in:N,S,E,R,P,C,A,F,W,V,D',
         ]);
+
+        $user = auth()->user();
+        if ($user && $user->isVisitacao() && !$user->isAdmin() && !$user->isDirig()) {
+            if (!in_array($request->input('tip_situacao'), ['F', 'W', 'D', 'V'])) {
+                return redirect()->back()->with('error', 'Membros da visitação só podem alterar a situação para Contato, Agendado, Desistência ou Visitado.');
+            }
+        }
 
         $novaSituacao = TipoSituacao::from($request->input('tip_situacao'));
 
         try {
             FichaService::atualizarSituacaoFicha($id, $novaSituacao);
 
-            return redirect()->route('ecc.index')->with('success', 'Situação da ficha atualizada com sucesso!');
+            return redirect()->back()->with('success', 'Situação da ficha atualizada com sucesso!');
         } catch (\RuntimeException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

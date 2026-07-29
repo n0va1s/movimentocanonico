@@ -1,4 +1,7 @@
 <x-layouts.public :title="'Ficha do VEM'">
+    @auth
+        <livewire:termo-visitacao-modal :idt-evento="$ficha->idt_evento" />
+    @endauth
     <section class="px-4 py-6 w-full max-w-3xl mx-auto" aria-labelledby="page-title">
         @php
             $eventosJson = json_encode((object) $eventos->mapWithKeys(fn($e) => [
@@ -52,7 +55,7 @@
                 }
             }">
 
-        {{-- ===== BREADCRUMBS ===== --}}
+        {{-- ===== BREADCRUMBS & BOTÃO VOLTAR ===== --}}
         @php
             $previousUrl = url()->previous();
             $isMinhasFichas = str_contains($previousUrl, 'minhas-fichas');
@@ -66,25 +69,38 @@
                     $isMinhasFichas = true;
                 }
             }
+
+            $backUrl = route('minhas-fichas.index');
+            if ($isGerenciamento) {
+                $backUrl = $ficha->idt_evento ? route('eventos.gerenciamento', $ficha->idt_evento) : route('eventos.index');
+            }
         @endphp
 
-        @if (Auth::user())
-            <flux:breadcrumbs class="mb-6">
-                <flux:breadcrumbs.item href="{{ route('home') }}">Início</flux:breadcrumbs.item>
-                
-                @if ($isGerenciamento)
-                    @if ($ficha->idt_evento)
-                        <flux:breadcrumbs.item href="{{ route('eventos.gerenciamento', $ficha->idt_evento) }}">Gerenciamento</flux:breadcrumbs.item>
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+            @if (Auth::user())
+                <flux:breadcrumbs class="mb-0">
+                    <flux:breadcrumbs.item href="{{ route('home') }}">Início</flux:breadcrumbs.item>
+                    
+                    @if ($isGerenciamento)
+                        @if ($ficha->idt_evento)
+                            <flux:breadcrumbs.item href="{{ route('eventos.gerenciamento', $ficha->idt_evento) }}">Gerenciamento</flux:breadcrumbs.item>
+                        @else
+                            <flux:breadcrumbs.item href="{{ route('eventos.index') }}">Eventos</flux:breadcrumbs.item>
+                        @endif
                     @else
-                        <flux:breadcrumbs.item href="{{ route('eventos.index') }}">Eventos</flux:breadcrumbs.item>
+                        <flux:breadcrumbs.item href="{{ route('minhas-fichas.index') }}">Minhas Fichas</flux:breadcrumbs.item>
                     @endif
-                @else
-                    <flux:breadcrumbs.item href="{{ route('minhas-fichas.index') }}">Minhas Fichas</flux:breadcrumbs.item>
-                @endif
-                
-                <flux:breadcrumbs.item>Ficha do VEM</flux:breadcrumbs.item>
-            </flux:breadcrumbs>
-        @endif
+                    
+                    <flux:breadcrumbs.item>Ficha do VEM</flux:breadcrumbs.item>
+                </flux:breadcrumbs>
+            @else
+                <div></div>
+            @endif
+
+            <flux:button href="{{ $backUrl }}" icon="arrow-left" variant="subtle" size="sm" class="shrink-0 font-medium">
+                Voltar
+            </flux:button>
+        </div>
 
         {{-- ===== CABEÇALHO ===== --}}
         <div class="mb-6 space-y-4">
@@ -159,12 +175,43 @@
         
 
 
-        @if (Auth::user()?->hasRole('admin', 'dirig', 'coord') && $ficha->exists)
+        @php
+            $currentUser = Auth::user();
+            $isVisitadorOnly = $currentUser && $currentUser->isVisitacao() && !$currentUser->isAdmin() && !$currentUser->isDirig();
+            $pessoaId = $currentUser?->pessoa?->idt_pessoa;
+            
+            $isCoordVisitacao = false;
+            if ($currentUser) {
+                if ($currentUser->isAdmin() || $currentUser->isDirig()) {
+                    $isCoordVisitacao = true;
+                } elseif ($pessoaId && $ficha->idt_evento) {
+                    $isCoordVisitacao = \App\Models\Trabalhador::where('idt_evento', $ficha->idt_evento)
+                        ->where('idt_pessoa', $pessoaId)
+                        ->where('ind_coordenador', true)
+                        ->whereHas('equipe', function ($q) {
+                            $q->whereRaw('LOWER(des_grupo) LIKE ?', ['%visita%']);
+                        })->exists();
+                }
+            }
+
+            $canChangeStatus = $currentUser && ($currentUser->hasRole('admin', 'dirig', 'coord') || $currentUser->autorizaVisit());
+        @endphp
+
+        @if ($canChangeStatus && $ficha->exists)
             <div class="bg-white dark:bg-zinc-800 rounded-xl shadow border border-gray-200 dark:border-zinc-700 p-4 sm:p-6 mb-6">
                 <p class="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-3">Mudar Situação para:</p>
                 <div class="flex flex-wrap gap-2">
                     @php
                         $situacoes = \App\Enums\TipoSituacao::cases();
+                        if ($isVisitadorOnly) {
+                            $allowedEnums = [
+                                \App\Enums\TipoSituacao::CONTATO,
+                                \App\Enums\TipoSituacao::AGUARDANDO,
+                                \App\Enums\TipoSituacao::DESISTENCIA,
+                                \App\Enums\TipoSituacao::VISITADA,
+                            ];
+                            $situacoes = array_filter($situacoes, fn($s) => in_array($s, $allowedEnums));
+                        }
                     @endphp
                     @foreach($situacoes as $situacao)
                         @php
@@ -206,6 +253,8 @@
                                         <x-heroicon-o-clock class="w-4 h-4" />
                                     @elseif($situacao->value === 'V')
                                         <x-heroicon-o-check-circle class="w-4 h-4" />
+                                    @elseif($situacao->value === 'D')
+                                        <x-heroicon-o-x-circle class="w-4 h-4" />
                                     @endif
                                     {{ $situacao->label() }}
                                     @if($situacao->mail()[0] === 'Sim')
@@ -216,7 +265,7 @@
                         @endif
                     @endforeach
                 </div>
-                @if(Auth::user()?->hasRole('admin', 'dirig'))
+                @if($isCoordVisitacao)
                     <div class="mt-4 border-t border-gray-100 dark:border-zinc-700 pt-4">
                         <form method="POST" action="{{ route('fichas.designar-visitador', $ficha->idt_ficha) }}">
                             @csrf

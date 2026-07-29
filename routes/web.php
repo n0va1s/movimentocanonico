@@ -243,20 +243,41 @@ Route::middleware(['auth'])->group(function () {
         });
     });
 
-    Route::middleware(['role:admin,dirig'])->group(function () {
-        Route::post('/fichas/{id}/designar-visitador', function (\Illuminate\Http\Request $request, $id) {
-            $request->validate([
-                'idt_pessoa_visitacao' => 'nullable|exists:pessoa,idt_pessoa',
-            ]);
+    Route::post('/fichas/{id}/designar-visitador', function (\Illuminate\Http\Request $request, $id) {
+        $user = auth()->user();
+        $ficha = \App\Models\Ficha::findOrFail($id);
 
-            $ficha = \App\Models\Ficha::findOrFail($id);
-            $ficha->update([
-                'idt_pessoa_visitacao' => $request->input('idt_pessoa_visitacao') ?: null,
-            ]);
+        $isCoordVisitacao = false;
+        if ($user) {
+            if ($user->isAdmin() || $user->isDirig()) {
+                $isCoordVisitacao = true;
+            } else {
+                $pessoaId = $user->pessoa?->idt_pessoa;
+                if ($pessoaId && $ficha->idt_evento) {
+                    $isCoordVisitacao = \App\Models\Trabalhador::where('idt_evento', $ficha->idt_evento)
+                        ->where('idt_pessoa', $pessoaId)
+                        ->where('ind_coordenador', true)
+                        ->whereHas('equipe', function ($q) {
+                            $q->whereRaw('LOWER(des_grupo) LIKE ?', ['%visita%']);
+                        })->exists();
+                }
+            }
+        }
 
-            return redirect()->back()->with('success', 'Responsável pela visitação designado com sucesso!');
-        })->name('fichas.designar-visitador');
-    });
+        if (!$isCoordVisitacao) {
+            abort(403, 'Apenas o coordenador da visitação, dirigentes ou administradores podem designar visitadores.');
+        }
+
+        $request->validate([
+            'idt_pessoa_visitacao' => 'nullable|exists:pessoa,idt_pessoa',
+        ]);
+
+        $ficha->update([
+            'idt_pessoa_visitacao' => $request->input('idt_pessoa_visitacao') ?: null,
+        ]);
+
+        return redirect()->back()->with('success', 'Responsável pela visitação designado com sucesso!');
+    })->name('fichas.designar-visitador');
 
     Route::middleware(['role:admin,visit,dirig'])->group(function () {
         Volt::route('/minhas-fichas/{evento?}', 'minhas-fichas.index')->name('minhas-fichas.index');
