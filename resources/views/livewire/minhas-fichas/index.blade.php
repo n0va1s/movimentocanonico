@@ -691,7 +691,6 @@ new class extends Component {
                                     App\Enums\TipoSituacao::AGUARDANDO,
                                     App\Enums\TipoSituacao::VISITADA,
                                     App\Enums\TipoSituacao::DESISTENCIA,
-                                    App\Enums\TipoSituacao::CANCELADA
                                 ] as $sit)
                                     <flux:select.option value="{{ $sit->value }}">{{ $sit === App\Enums\TipoSituacao::SELECIONADA ? 'Aguardando' : $sit->label() }}</flux:select.option>
                                 @endforeach
