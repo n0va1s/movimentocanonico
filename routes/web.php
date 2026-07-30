@@ -32,6 +32,16 @@ Route::get('/limpar-tudo', function () {
     return 'Clear realizado! Tente acessar a home agora.';
 });
 
+Route::get('/rodar-migrations', function () {
+    try {
+        Artisan::call('migrate', ['--force' => true]);
+
+        return 'Migrations executadas com sucesso!<br><pre>' . Artisan::output() . '</pre>';
+    } catch (\Exception $e) {
+        return 'Erro ao rodar migrations: ' . $e->getMessage();
+    }
+});
+
 Route::get('/otimizar-tudo', function () {
     Artisan::call('optimize');
 
