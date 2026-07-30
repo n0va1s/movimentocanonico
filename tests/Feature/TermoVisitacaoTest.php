@@ -44,3 +44,11 @@ test('trabalhador consegue registrar aceite do termo de visitacao especifico na 
     expect($user->hasAceitouTermoVisitacao($evento1->idt_evento))->toBeTrue();
     expect($user->hasAceitouTermoVisitacao($evento2->idt_evento))->toBeFalse();
 });
+
+test('admin e dirigente sao isentos da verificacao do termo de visitacao', function () {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $dirig = User::factory()->create(['role' => User::ROLE_DIRIG]);
+
+    expect($admin->hasAceitouTermoVisitacao(1))->toBeTrue();
+    expect($dirig->hasAceitouTermoVisitacao(1))->toBeTrue();
+});

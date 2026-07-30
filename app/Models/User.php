@@ -257,7 +257,7 @@ class User extends Authenticatable
 
     public function hasAceitouTermoVisitacao(?int $idtEvento = null): bool
     {
-        if ($this->isAdmin()) {
+        if ($this->isAdmin() || $this->isDirig()) {
             return true;
         }
 

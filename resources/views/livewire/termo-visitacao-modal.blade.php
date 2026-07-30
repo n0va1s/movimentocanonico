@@ -13,7 +13,7 @@ new class extends Component {
         }
 
         $user = auth()->user();
-        if ($user && $user->autorizaVisit() && !$user->isAdmin()) {
+        if ($user && $user->autorizaVisit() && !$user->isAdmin() && !$user->isDirig()) {
             if (!$this->idtEvento) {
                 $route = request()->route();
                 $fichaId = $route?->parameter('vem') ?? $route?->parameter('ecc') ?? $route?->parameter('sgm') ?? $route?->parameter('ficha');
@@ -27,7 +27,7 @@ new class extends Component {
                 } else {
                     $this->idtEvento = \App\Models\Trabalhador::where('idt_pessoa', $user->pessoa?->idt_pessoa)
                         ->whereHas('equipe', function ($q) {
-                            $q->where('des_grupo', 'like', '%Visitação%');
+                            $q->whereRaw('LOWER(des_grupo) LIKE ?', ['%visita%']);
                         })->latest('idt_trabalhador')->value('idt_evento');
                 }
             }
