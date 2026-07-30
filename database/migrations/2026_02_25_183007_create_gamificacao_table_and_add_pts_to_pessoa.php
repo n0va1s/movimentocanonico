@@ -12,20 +12,24 @@ return new class extends Migration
     public function up(): void
     {
         // 1. Criar a tabela de histórico (Gamificacao)
-        Schema::create('gamificacao', function (Blueprint $table) {
-            $table->id('idt_gamificacao');
-            $table->foreignId('idt_pessoa')->constrained('pessoa', 'idt_pessoa')->onDelete('cascade');
-            $table->integer('qtd_pontos'); // Pode ser positivo ou negativo
-            $table->string('des_motivo');   // Ex: "Trabalho no XXX VEM", "Participação Pós-VEM"
+        if (!Schema::hasTable('gamificacao')) {
+            Schema::create('gamificacao', function (Blueprint $table) {
+                $table->id('idt_gamificacao');
+                $table->foreignId('idt_pessoa')->constrained('pessoa', 'idt_pessoa')->onDelete('cascade');
+                $table->integer('qtd_pontos'); // Pode ser positivo ou negativo
+                $table->string('des_motivo');   // Ex: "Trabalho no XXX VEM", "Participação Pós-VEM"
 
-            // Polimorfismo: Para saber de qual model veio o ponto (Trabalhador ou Participante)
-            $table->nullableMorphs('origem');
-            $table->timestamps();
-        });
+                // Polimorfismo: Para saber de qual model veio o ponto (Trabalhador ou Participante)
+                $table->nullableMorphs('origem');
+                $table->timestamps();
+            });
+        }
 
         // 2. Adicionar a coluna de saldo na tabela Pessoa
         Schema::table('pessoa', function (Blueprint $table) {
-            $table->integer('qtd_pontos_total')->default(0)->after('ind_restricao');
+            if (!Schema::hasColumn('pessoa', 'qtd_pontos_total')) {
+                $table->integer('qtd_pontos_total')->default(0)->after('ind_restricao');
+            }
         });
     }
 

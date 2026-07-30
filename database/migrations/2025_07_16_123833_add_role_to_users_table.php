@@ -12,8 +12,12 @@ return new class extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('role')->default('user'); // valores possíveis: user, admin, coord
-            $table->foreignId('idt_movimento')->nullable()->constrained('tipo_movimento', 'idt_movimento')->nullOnDelete();
+            if (!Schema::hasColumn('users', 'role')) {
+                $table->string('role')->default('user'); // valores possíveis: user, admin, coord
+            }
+            if (!Schema::hasColumn('users', 'idt_movimento')) {
+                $table->foreignId('idt_movimento')->nullable()->constrained('tipo_movimento', 'idt_movimento')->nullOnDelete();
+            }
         });
     }
 

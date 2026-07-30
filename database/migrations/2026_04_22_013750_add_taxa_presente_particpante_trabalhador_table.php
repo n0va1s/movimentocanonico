@@ -12,19 +12,33 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('participante', function (Blueprint $table) {
-            $table->boolean('ind_taxa_pagou')->default(false);
-            $table->boolean('ind_presente')->default(false);
+            if (!Schema::hasColumn('participante', 'ind_taxa_pagou')) {
+                $table->boolean('ind_taxa_pagou')->default(false);
+            }
+            if (!Schema::hasColumn('participante', 'ind_presente')) {
+                $table->boolean('ind_presente')->default(false);
+            }
         });
 
         Schema::table('trabalhador', function (Blueprint $table) {
-            $table->boolean('ind_taxa_pagou')->default(false);
-            $table->boolean('ind_presente')->default(false);
+            if (!Schema::hasColumn('trabalhador', 'ind_taxa_pagou')) {
+                $table->boolean('ind_taxa_pagou')->default(false);
+            }
+            if (!Schema::hasColumn('trabalhador', 'ind_presente')) {
+                $table->boolean('ind_presente')->default(false);
+            }
         });
 
         Schema::table('evento', function (Blueprint $table) {
-            $table->decimal('val_receita', 8, 2)->nullable();
-            $table->decimal('val_despesa', 8, 2)->nullable();
-            $table->text('txt_relatorio')->nullable();
+            if (!Schema::hasColumn('evento', 'val_receita')) {
+                $table->decimal('val_receita', 8, 2)->nullable();
+            }
+            if (!Schema::hasColumn('evento', 'val_despesa')) {
+                $table->decimal('val_despesa', 8, 2)->nullable();
+            }
+            if (!Schema::hasColumn('evento', 'txt_relatorio')) {
+                $table->text('txt_relatorio')->nullable();
+            }
         });
     }
 

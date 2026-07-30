@@ -12,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('evento', function (Blueprint $table) {
-            $table->date('dat_limite_inscricao')->nullable();
-            $table->integer('qtd_vaga')->nullable();
+            if (!Schema::hasColumn('evento', 'dat_limite_inscricao')) {
+                $table->date('dat_limite_inscricao')->nullable();
+            }
+            if (!Schema::hasColumn('evento', 'qtd_vaga')) {
+                $table->integer('qtd_vaga')->nullable();
+            }
         });
     }
 
