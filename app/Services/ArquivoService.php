@@ -34,6 +34,10 @@ class ArquivoService
             ? $customName.'.'.$file->getClientOriginalExtension()
             : $file->hashName();
 
+        if (! Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->makeDirectory($path);
+        }
+
         $filePath = $file->storeAs($path, $fileName, 'public');
 
         $model->{$relationName}()->updateOrCreate(
@@ -63,6 +67,10 @@ class ArquivoService
         $fileName = $customName
             ? $customName.'.'.$file->getClientOriginalExtension()
             : $file->hashName();
+
+        if (! Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->makeDirectory($path);
+        }
 
         $filePath = $file->storeAs($path, $fileName, 'public');
 

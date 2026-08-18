@@ -34,9 +34,24 @@ Route::get('/limpar-tudo', function () {
 
 Route::get('/rodar-migrations', function () {
     try {
+        $pastas = [
+            public_path('storage'),
+            public_path('storage/livewire-tmp'),
+            public_path('storage/movimentos'),
+            public_path('storage/eventos'),
+            public_path('storage/fichas'),
+            storage_path('app/livewire-tmp'),
+            storage_path('app/public'),
+        ];
+        foreach ($pastas as $pasta) {
+            if (!is_dir($pasta)) {
+                @mkdir($pasta, 0777, true);
+            }
+        }
+
         Artisan::call('migrate', ['--force' => true]);
 
-        return 'Migrations executadas com sucesso!<br><pre>' . Artisan::output() . '</pre>';
+        return 'Migrations executadas e pastas de upload criadas com sucesso!<br><pre>' . Artisan::output() . '</pre>';
     } catch (\Exception $e) {
         return 'Erro ao rodar migrations: ' . $e->getMessage();
     }
