@@ -7,7 +7,7 @@
                 <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1">Eventos</flux:heading>
                 <p class="text-gray-600 mt-1 dark:text-gray-400">Visualize os próximos encontros, pós-encontros e desafios.</p>
                 <p class="text-sm text-yellow-600 dark:text-yellow-400 mt-2 flex items-center gap-1">
-                    <x-heroicon-o-information-circle class="w-4 h-4" />
+                    <flux:icon.information-circle class="w-4 h-4" />
                     Os eventos só estarão disponíveis para pessoas que já fizeram os encontros.
                 </p>
             </div>
@@ -25,12 +25,12 @@
                 <nav class="-mb-px flex space-x-8" aria-label="Tabs">
                     <a href="{{ route('eventos.index', array_merge(request()->except('page'), ['status' => 'ativos'])) }}" 
                        class="border-b-2 py-4 px-1 text-sm font-semibold transition-colors duration-200 flex items-center gap-2 {{ ($status ?? 'ativos') === 'ativos' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200' }}">
-                        <x-heroicon-o-calendar class="w-4 h-4" />
+                        <flux:icon.calendar class="w-4 h-4" />
                         <span>Eventos Ativos</span>
                     </a>
                     <a href="{{ route('eventos.index', array_merge(request()->except('page'), ['status' => 'encerrados'])) }}" 
                        class="border-b-2 py-4 px-1 text-sm font-semibold transition-colors duration-200 flex items-center gap-2 {{ ($status ?? 'ativos') === 'encerrados' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200' }}">
-                        <x-heroicon-o-archive-box class="w-4 h-4" />
+                        <flux:icon.archive-box class="w-4 h-4" />
                         <span>Eventos Encerrados</span>
                     </a>
                 </nav>
@@ -149,18 +149,18 @@
 
                         <div class="space-y-3">
                             <div class="flex items-center text-gray-600 dark:text-gray-300 text-sm">
-                                <x-heroicon-o-calendar class="w-4 h-4 mr-2 text-blue-500" />
+                                <flux:icon.calendar class="w-4 h-4 mr-2 text-blue-500" />
                                 <span>{{ $evento->getDataInicioFormatada() }} a {{ $evento->getDataTerminoFormatada() }}</span>
                             </div>
 
                             <div class="flex items-center text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">
-                                <x-heroicon-o-tag class="w-4 h-4 mr-2 shrink-0" />
+                                <flux:icon.tag class="w-4 h-4 mr-2 shrink-0" />
                                 <span class="flex-1">{{ $evento->tip_evento->label() }}</span>
                                     @can('acessar-gerenciamento-evento', $evento)
                                         <a href="{{ route('eventos.gerenciamento', $evento) }}"
                                            title="Gerenciamento"
                                            class="ml-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                            <x-heroicon-o-cog-6-tooth class="w-8 h-8" />
+                                            <flux:icon.cog-6-tooth class="w-8 h-8" />
                                         </a>
                                     @endcan
                             </div>
@@ -171,7 +171,7 @@
                         {{-- Botão de participação — visível para todos os perfis --}}
                         @if ($evento->ja_inscrito_participante || $evento->ja_inscrito_voluntario)
                             <div class="w-full py-2 bg-gray-100 dark:bg-zinc-700 text-gray-500 dark:text-gray-400 rounded-md font-bold text-center flex items-center justify-center gap-2 border border-gray-200 dark:border-zinc-600">
-                                <x-heroicon-s-check-circle class="w-5 h-5 text-green-500" />
+                                <flux:icon.check-circle class="w-5 h-5 text-green-500" />
                                 Inscrição Confirmada
                             </div>
                         @else

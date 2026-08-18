@@ -551,6 +551,50 @@ describe('Participantes — participantes.blade.php', function () {
             ->call('exportar')
             ->assertOk();
     });
+
+    test('abrirParentesco carrega os dados e abre modal', function () {
+        $this->participante->update(['des_parentesco' => 'irmã da Ana']);
+
+        Volt::test('evento.partials.participantes', ['evento' => $this->evento])
+            ->call('abrirParentesco', $this->participante->idt_participante)
+            ->assertSet('parentescoParticipanteId', $this->participante->idt_participante)
+            ->assertSet('desParentescoInput', 'irmã da Ana');
+    });
+
+    test('salvarParentesco atualiza des_parentesco e dispara notify', function () {
+        Volt::test('evento.partials.participantes', ['evento' => $this->evento])
+            ->set('parentescoParticipanteId', $this->participante->idt_participante)
+            ->set('desParentescoInput', 'irmã da Ana')
+            ->call('salvarParentesco')
+            ->assertHasNoErrors()
+            ->assertDispatched('notify');
+
+        expect($this->participante->fresh()->des_parentesco)->toBe('irmã da Ana');
+    });
+
+    test('removerParentesco desvincula parentesco zerando o campo des_parentesco', function () {
+        $this->participante->update(['des_parentesco' => 'irmã da Ana']);
+
+        Volt::test('evento.partials.participantes', ['evento' => $this->evento])
+            ->set('parentescoParticipanteId', $this->participante->idt_participante)
+            ->set('desParentescoInput', 'irmã da Ana')
+            ->call('removerParentesco')
+            ->assertHasNoErrors()
+            ->assertDispatched('notify');
+
+        expect($this->participante->fresh()->des_parentesco)->toBeNull();
+    });
+
+    test('exibe data de nascimento, idade e endereco na tabela de participantes', function () {
+        $this->pessoaP->update([
+            'dat_nascimento' => '2000-05-15',
+            'des_endereco' => 'Rua das Flores, 123',
+        ]);
+
+        Volt::test('evento.partials.participantes', ['evento' => $this->evento])
+            ->assertSee('15/05/2000')
+            ->assertSee('Rua das Flores, 123');
+    });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

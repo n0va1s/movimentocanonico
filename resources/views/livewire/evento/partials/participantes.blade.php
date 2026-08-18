@@ -13,6 +13,9 @@ new class extends Component {
     public string $search = '';
     public string $corTroca = '';
 
+    public ?int $parentescoParticipanteId = null;
+    public string $desParentescoInput = '';
+
     public function mount(Evento $evento): void
     {
         $this->evento = $evento;
@@ -38,6 +41,47 @@ new class extends Component {
         $corLabel = $corEnum ? $corEnum->label() : 'Nenhuma';
         
         $this->dispatch('notify', message: "A cor da troca de {$participante->pessoa->nom_apelido} agora é {$corLabel}!");
+    }
+
+    public function abrirParentesco(int $participanteId): void
+    {
+        $participante = \App\Models\Participante::findOrFail($participanteId);
+        $this->parentescoParticipanteId = $participante->idt_participante;
+        $this->desParentescoInput = $participante->des_parentesco ?? '';
+        $this->modal('modal-parentesco')->show();
+    }
+
+    public function salvarParentesco(): void
+    {
+        if (! $this->parentescoParticipanteId) {
+            return;
+        }
+
+        $participante = \App\Models\Participante::with('pessoa')->findOrFail($this->parentescoParticipanteId);
+        $novoParentesco = trim($this->desParentescoInput) ?: null;
+        $participante->update(['des_parentesco' => $novoParentesco]);
+
+        $this->modal('modal-parentesco')->close();
+        $this->parentescoParticipanteId = null;
+        $this->desParentescoInput = '';
+
+        $this->dispatch('notify', message: "Parentesco de {$participante->pessoa->nom_apelido} atualizado!");
+    }
+
+    public function removerParentesco(): void
+    {
+        if (! $this->parentescoParticipanteId) {
+            return;
+        }
+
+        $participante = \App\Models\Participante::with('pessoa')->findOrFail($this->parentescoParticipanteId);
+        $participante->update(['des_parentesco' => null]);
+
+        $this->modal('modal-parentesco')->close();
+        $this->parentescoParticipanteId = null;
+        $this->desParentescoInput = '';
+
+        $this->dispatch('notify', message: "Parentesco de {$participante->pessoa->nom_apelido} removido!");
     }
 
 
@@ -80,6 +124,10 @@ new class extends Component {
             'ID Participante',
             'Nome',
             'Apelido',
+            'Parentesco',
+            'Data de Nascimento',
+            'Idade',
+            'Endereço',
             'Gênero',
             'Telefone do Participante',
             'Cor da Troca',
@@ -142,10 +190,17 @@ new class extends Component {
                     }
                 }
 
+                $datNascStr = $p->pessoa->dat_nascimento ? $p->pessoa->dat_nascimento->format('d/m/Y') : '';
+                $idadeStr = $p->pessoa->dat_nascimento ? $p->pessoa->dat_nascimento->age . ' anos' : '';
+
                 fputcsv($handle, [
                     $p->idt_participante,
                     $p->pessoa->nom_pessoa,
                     $p->pessoa->nom_apelido ?? '',
+                    $p->des_parentesco ?? '',
+                    $datNascStr,
+                    $idadeStr,
+                    $p->pessoa->des_endereco ?? '',
                     $p->pessoa->tip_genero instanceof \App\Enums\Genero ? $p->pessoa->tip_genero->value : ($p->pessoa->tip_genero ?? ''),
                     $p->pessoa->tel_pessoa ?? '',
                     $p->tip_cor_troca ?? '',
@@ -247,6 +302,8 @@ new class extends Component {
     <flux:table>
         <flux:table.columns>
             <flux:table.column>Nome</flux:table.column>
+            <flux:table.column>Data Nasc</flux:table.column>
+            <flux:table.column>Endereço</flux:table.column>
             <flux:table.column>Cor do Grupo</flux:table.column>
             <flux:table.column>Camiseta</flux:table.column>
             <flux:table.column>Responsável</flux:table.column>
@@ -263,10 +320,45 @@ new class extends Component {
                             :initials="substr($p->pessoa->nom_pessoa, 0, 2)"
                             size="sm"
                         />
-                        <div>
+                        <div class="space-y-1">
                             <div class="font-medium text-zinc-900 dark:text-white">{{ $p->pessoa->nom_pessoa }}</div>
                             <div class="text-xs text-zinc-500">{{ $p->pessoa->nom_apelido }}</div>
+                            @if ($p->des_parentesco)
+                                <flux:badge
+                                    size="sm"
+                                    color="purple"
+                                    icon="user-group"
+                                    wire:click="abrirParentesco({{ $p->idt_participante }})"
+                                    class="cursor-pointer hover:opacity-80 transition-opacity"
+                                    title="Clique para editar parentesco"
+                                >
+                                    {{ $p->des_parentesco }}
+                                </flux:badge>
+                            @endif
                         </div>
+                    </flux:table.cell>
+
+                    {{-- Data Nasc --}}
+                    <flux:table.cell>
+                        @if ($p->pessoa->dat_nascimento)
+                            <div class="text-sm">
+                                <span class="text-zinc-800 dark:text-zinc-200 font-medium">{{ $p->pessoa->dat_nascimento->format('d/m/Y') }}</span>
+                                <span class="text-xs text-zinc-400 dark:text-zinc-500 ml-2">({{ $p->pessoa->dat_nascimento->age }} anos)</span>
+                            </div>
+                        @else
+                            <span class="text-xs text-zinc-400">—</span>
+                        @endif
+                    </flux:table.cell>
+
+                    {{-- Endereço --}}
+                    <flux:table.cell>
+                        @if ($p->pessoa->des_endereco)
+                            <span class="text-xs text-zinc-700 dark:text-zinc-300 max-w-[200px] truncate block" title="{{ $p->pessoa->des_endereco }}">
+                                {{ $p->pessoa->des_endereco }}
+                            </span>
+                        @else
+                            <span class="text-xs text-zinc-400">—</span>
+                        @endif
                     </flux:table.cell>
 
                     {{-- Cor da Troca --}}
@@ -345,6 +437,13 @@ new class extends Component {
                     <flux:table.cell>
                         <div class="flex justify-end gap-2">
                             <flux:button
+                                icon="user-plus"
+                                size="sm"
+                                variant="ghost"
+                                wire:click="abrirParentesco({{ $p->idt_participante }})"
+                                tooltip="Parentesco"
+                            />
+                            <flux:button
                                 icon="trash"
                                 size="sm"
                                 variant="ghost"
@@ -358,7 +457,7 @@ new class extends Component {
                 </flux:table.row>
             @empty
                 <flux:table.row>
-                    <flux:table.cell colspan="5" class="text-center py-10 text-zinc-500">
+                    <flux:table.cell colspan="7" class="text-center py-10 text-zinc-500">
                         Nenhum participante encontrado para este evento.
                     </flux:table.cell>
                 </flux:table.row>
@@ -369,4 +468,46 @@ new class extends Component {
     <div class="mt-4">
         {{ $participantes->links(data: ['scrollTo' => false]) }}
     </div>
+
+    {{-- Modal de Parentesco --}}
+    <flux:modal name="modal-parentesco" class="min-w-[20rem] md:min-w-[28rem]">
+        <form wire:submit="salvarParentesco" class="space-y-6">
+            <div>
+                <flux:heading size="lg">Gerenciar Parentesco</flux:heading>
+                <flux:subheading>Informe a relação de parentesco com outro participante do evento.</flux:subheading>
+            </div>
+
+            <div class="space-y-4">
+                <flux:input
+                    label="Parentesco"
+                    wire:model="desParentescoInput"
+                    placeholder="Ex: irmã da Ana, pai do Pedro"
+                    autofocus
+                />
+            </div>
+
+            <div class="flex items-center justify-between gap-2 pt-2 border-t border-zinc-200 dark:border-zinc-700">
+                <div>
+                    @if ($desParentescoInput)
+                        <flux:button
+                            type="button"
+                            variant="ghost"
+                            color="red"
+                            icon="trash"
+                            wire:click="removerParentesco"
+                        >
+                            Desvincular
+                        </flux:button>
+                    @endif
+                </div>
+
+                <div class="flex gap-2">
+                    <flux:modal.close>
+                        <flux:button variant="ghost">Cancelar</flux:button>
+                    </flux:modal.close>
+                    <flux:button type="submit" variant="primary">Salvar Parentesco</flux:button>
+                </div>
+            </div>
+        </form>
+    </flux:modal>
 </div>

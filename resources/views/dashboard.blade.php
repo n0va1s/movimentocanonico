@@ -53,7 +53,7 @@
                 <div class="p-4 md:p-6">
                     @if ($aniversariantes->isEmpty())
                         <div class="py-8 text-center">
-                            <x-heroicon-o-cake class="w-10 h-10 mx-auto text-gray-300 dark:text-zinc-600 mb-2" />
+                            <flux:icon.cake class="w-10 h-10 mx-auto text-gray-300 dark:text-zinc-600 mb-2" />
                             <p class="text-sm text-gray-400 dark:text-gray-500">Nenhum aniversariante nesta semana.</p>
                         </div>
                     @else

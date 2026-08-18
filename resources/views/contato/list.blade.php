@@ -17,7 +17,7 @@
                 </a>
                 <a href="{{ route('contatos.index', array_merge(request()->except('page'), ['status' => 'resolvidos'])) }}" 
                    class="border-b-2 py-4 px-1 text-sm font-semibold transition-colors duration-200 flex items-center gap-2 {{ ($status ?? 'pendentes') === 'resolvidos' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200' }}">
-                    <x-heroicon-o-archive-box class="w-4 h-4" />
+                    <flux:icon.archive-box class="w-4 h-4" />
                     <span>Resolvidos</span>
                 </a>
             </nav>

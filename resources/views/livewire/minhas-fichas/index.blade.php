@@ -1312,12 +1312,12 @@ new class extends Component {
 
                                 <div class="space-y-3">
                                     <div class="flex items-center text-gray-600 dark:text-gray-300 text-sm">
-                                        <x-heroicon-o-calendar class="w-4 h-4 mr-2 text-blue-500" />
+                                        <flux:icon.calendar class="w-4 h-4 mr-2 text-blue-500" />
                                         <span>{{ $evt->getDataInicioFormatada() }} a {{ $evt->getDataTerminoFormatada() }}</span>
                                     </div>
 
                                     <div class="flex items-center text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">
-                                        <x-heroicon-o-tag class="w-4 h-4 mr-2 shrink-0" />
+                                        <flux:icon.tag class="w-4 h-4 mr-2 shrink-0" />
                                         <span class="flex-1">{{ $evt->tip_evento->label() }}</span>
                                     </div>
                                 </div>

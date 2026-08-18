@@ -20,6 +20,7 @@ class Participante extends Model
         'idt_pessoa',
         'idt_evento',
         'tip_cor_troca',
+        'des_parentesco',
         'ind_taxa_pagou',
         'ind_presente',
     ];

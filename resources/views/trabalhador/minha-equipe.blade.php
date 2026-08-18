@@ -97,7 +97,7 @@
                             @endif
                             @if ($pessoa->dat_nascimento)
                                 <div class="flex items-center gap-2">
-                                    <x-heroicon-o-cake class="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                    <flux:icon.cake class="w-4 h-4 text-gray-400 flex-shrink-0" />
                                     <span>{{ $pessoa->dat_nascimento->format('d/m/Y') }}</span>
                                 </div>
                             @endif
