@@ -8,7 +8,7 @@
             <a href="{{ route('situacao.create') }}"
                 class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-500 focus:ring-2 focus:ring-green-500 focus:outline-none"
                 aria-label="Cadastrar novo tipo de situação">
-                <x-heroicon-s-plus class="w-5 h-5 mr-2" />
+                <flux:icon.plus class="w-5 h-5 mr-2" />
                 Novo
             </a>
         </div>
@@ -35,7 +35,7 @@
                                 <a href="{{ route('situacao.edit', $situacao) }}"
                                     class="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 dark:hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 px-2 py-1 rounded-md"
                                     aria-label="Editar {{ $situacao->nome }}">
-                                    <x-heroicon-o-pencil-square class="w-5 h-5" />
+                                    <flux:icon.pencil-square class="w-5 h-5" />
                                     <span class="sr-only sm:not-sr-only">Editar</span>
                                 </a>
 
@@ -46,7 +46,7 @@
                                     <button type="submit"
                                         class="inline-flex items-center gap-1 text-red-600 hover:text-red-800 dark:hover:text-red-400 focus:outline-none focus:ring-2 focus:ring-red-500 px-2 py-1 rounded-md cursor-pointer"
                                         aria-label="Excluir {{ $situacao->nome }}">
-                                        <x-heroicon-o-trash class="w-5 h-5" />
+                                        <flux:icon.trash class="w-5 h-5" />
                                         <span class="sr-only sm:not-sr-only">Excluir</span>
                                     </button>
                                 </form>

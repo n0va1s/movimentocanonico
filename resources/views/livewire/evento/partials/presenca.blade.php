@@ -15,9 +15,10 @@ use Livewire\Attributes\Computed;
 
 new class extends Component {
     public Evento $evento;
-    public string $search     = '';
+    public string $search         = '';
+    public string $filtroTipo     = 'todos';
     public string $equipeFiltroId = '';
-    public string $grupoFiltro = '';
+    public string $grupoFiltro   = '';
 
     public function mount(Evento $evento): void
     {
@@ -45,8 +46,8 @@ new class extends Component {
         $search = $this->search;
         $items  = [];
 
-        // 1. Carregar participantes se não houver filtro de equipe
-        if (!$this->equipeFiltroId) {
+        // 1. Carregar participantes se não houver filtro de equipe e se filtroTipo permitir
+        if (!$this->equipeFiltroId && in_array($this->filtroTipo, ['todos', 'participantes'])) {
             $participantes = Participante::where('idt_evento', $this->evento->idt_evento)
                 ->with('pessoa')
                 ->when($this->grupoFiltro, fn($q) => $q->where('tip_cor_troca', $this->grupoFiltro))
@@ -82,8 +83,8 @@ new class extends Component {
             }
         }
 
-        // 2. Carregar trabalhadores se não houver filtro de grupo
-        if (!$this->grupoFiltro) {
+        // 2. Carregar trabalhadores se não houver filtro de grupo e se filtroTipo permitir
+        if (!$this->grupoFiltro && in_array($this->filtroTipo, ['todos', 'trabalhadores'])) {
             $trabalhadores = Trabalhador::where('idt_evento', $this->evento->idt_evento)
                 ->whereHas('pessoa')
                 ->with(['pessoa', 'equipe'])

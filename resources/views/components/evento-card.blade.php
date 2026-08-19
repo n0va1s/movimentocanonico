@@ -39,7 +39,7 @@
     {{-- A setinha só aparece se houver um link --}}
     @if ($href)
         <div class="absolute right-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <x-heroicon-s-chevron-right class="w-2 h-2" />
+            <flux:icon.chevron-right class="w-2 h-2" />
         </div>
     @endif
     </{{ $tag }}>

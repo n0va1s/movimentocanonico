@@ -31,6 +31,16 @@ new class extends Component {
         $this->resetPage();
     }
 
+    public function toggleCorTroca(string $cor): void
+    {
+        if (strtolower($this->corTroca) === strtolower($cor)) {
+            $this->corTroca = '';
+        } else {
+            $this->corTroca = $cor;
+        }
+        $this->resetPage();
+    }
+
     public function atualizarTroca(int $participanteId, string $novaCor): void
     {
         $participante = \App\Models\Participante::with('pessoa')->findOrFail($participanteId);
@@ -262,25 +272,35 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-4">
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    @php
+        $quantidades = $this->getQuantidadePorCor();
+        $totalParticipantes = \App\Models\Participante::where('idt_evento', $this->evento->idt_evento)->count();
+
+        $gruposCadastrados = array_filter(CorTroca::cases(), function($cor) use ($quantidades) {
+            $val = $cor->value;
+            $qtd = $quantidades[strtolower($val)] ?? $quantidades[ucfirst($val)] ?? $quantidades[$val] ?? 0;
+            return $qtd > 0;
+        });
+    @endphp
+
+    {{-- 1. Cabeçalho --}}
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3">
                 <flux:heading size="lg">Participantes Confirmados</flux:heading>
                 <flux:badge size="sm" color="zinc" inset="top bottom" title="Total filtrado">{{ $participantes->total() }}</flux:badge>
                 <flux:button wire:click="exportar" icon="arrow-down-tray" variant="outline" size="sm" title="Exportar CSV">
                     Exportar
                 </flux:button>
             </div>
-            <flux:subheading>Gerencie as cores das trocas e informações básicas.</flux:subheading>
+            <flux:subheading class="mt-1">Gerencie as cores das trocas e informações básicas.</flux:subheading>
         </div>
+    </div>
 
-        @php
-            $quantidades = $this->getQuantidadePorCor();
-            $totalParticipantes = \App\Models\Participante::where('idt_evento', $this->evento->idt_evento)->count();
-        @endphp
-
-        <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-            <flux:select wire:model.live="corTroca" icon="funnel" placeholder="Todas as cores" class="w-full sm:w-64">
+    {{-- 2. Filtros e Busca (Linha dedicada com borda igual ao modelo de Fichas) --}}
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-3 w-full border-t border-zinc-100 dark:border-zinc-700/50 pt-4">
+        <div class="w-full sm:w-64">
+            <flux:select wire:model.live="corTroca" icon="funnel" placeholder="Todas as cores" class="w-full">
                 <option value="">Todas as cores ({{ $totalParticipantes }})</option>
                 @foreach (CorTroca::cases() as $cor)
                     @php
@@ -289,181 +309,222 @@ new class extends Component {
                     <option value="{{ $cor->value }}">{{ $cor->label() }} ({{ $qtd }})</option>
                 @endforeach
             </flux:select>
+        </div>
 
+        <div class="w-full sm:w-72">
             <flux:input
                 wire:model.live.debounce.300ms="search"
                 icon="magnifying-glass"
                 placeholder="Nome ou apelido..."
-                class="w-full sm:w-64"
+                class="w-full"
             />
         </div>
     </div>
 
-    <flux:table>
-        <flux:table.columns>
-            <flux:table.column>Nome</flux:table.column>
-            <flux:table.column>Data Nasc</flux:table.column>
-            <flux:table.column>Endereço</flux:table.column>
-            <flux:table.column>Cor do Grupo</flux:table.column>
-            <flux:table.column>Camiseta</flux:table.column>
-            <flux:table.column>Responsável</flux:table.column>
-            <flux:table.column align="end">Ações</flux:table.column>
-        </flux:table.columns>
+    {{-- 3. Dashboard de Grupos por Cor (Grid centralizado e responsivo) --}}
+    @if (!empty($gruposCadastrados))
+        @php
+            $numGrupos = count($gruposCadastrados);
+            $gridColsClass = match ($numGrupos) {
+                1 => 'grid-cols-1 max-w-xs mx-auto',
+                2 => 'grid-cols-2 max-w-lg mx-auto',
+                3 => 'grid-cols-2 sm:grid-cols-3 max-w-3xl mx-auto',
+                4 => 'grid-cols-2 sm:grid-cols-4 max-w-4xl mx-auto',
+                default => 'grid-cols-2 sm:grid-cols-3 md:grid-cols-5 max-w-5xl mx-auto',
+            };
+        @endphp
+        <div class="grid {{ $gridColsClass }} gap-3 my-2 w-full">
+            @foreach ($gruposCadastrados as $cor)
+                @php
+                    $val = $cor->value;
+                    $qtd = $quantidades[strtolower($val)] ?? $quantidades[ucfirst($val)] ?? $quantidades[$val] ?? 0;
+                    $isActive = strtolower($this->corTroca) === strtolower($val);
+                @endphp
+                <div
+                    wire:click="toggleCorTroca('{{ $val }}')"
+                    class="w-full cursor-pointer transition-all duration-200 rounded-xl p-3 flex flex-col border shadow-sm hover:shadow-md hover:-translate-y-0.5 {{ $isActive ? $cor->activeClass() : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700' }}"
+                >
+                    <div class="flex items-center gap-2">
+                        <span class="size-3 rounded-full shrink-0 {{ $cor->dotClass() }}"></span>
+                        <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 truncate">Grupo {{ $cor->label() }}</span>
+                    </div>
+                    <h4 class="text-xl font-bold text-zinc-900 dark:text-white mt-2">{{ $qtd }}</h4>
+                </div>
+            @endforeach
+        </div>
+    @endif
 
-        <flux:table.rows>
-            @forelse ($participantes as $p)
-                <flux:table.row :key="'participante-'.$p->idt_participante">
-                    {{-- Nome --}}
-                    <flux:table.cell class="flex items-center gap-3">
-                        <flux:avatar
-                            src="{{ $p->pessoa->foto?->url_foto ? asset('storage/'.$p->pessoa->foto->url_foto) : '' }}"
-                            :initials="substr($p->pessoa->nom_pessoa, 0, 2)"
-                            size="sm"
-                        />
-                        <div class="space-y-1">
-                            <div class="font-medium text-zinc-900 dark:text-white">{{ $p->pessoa->nom_pessoa }}</div>
-                            <div class="text-xs text-zinc-500">{{ $p->pessoa->nom_apelido }}</div>
-                            @if ($p->des_parentesco)
-                                <flux:badge
+    {{-- 4. Tabela com rolagem horizontal e padding adequado nas bordas --}}
+    <div class="overflow-x-auto border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 shadow-xs">
+        <table class="w-full text-left text-sm border-collapse min-w-[950px]">
+            <thead class="bg-zinc-50 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-700">
+                <tr>
+                    <th class="px-6 py-4 font-bold text-zinc-950 dark:text-white">Nome</th>
+                    <th class="px-6 py-4 font-bold text-zinc-950 dark:text-white whitespace-nowrap">Data Nasc</th>
+                    <th class="px-6 py-4 font-bold text-zinc-950 dark:text-white">Endereço</th>
+                    <th class="px-6 py-4 font-bold text-zinc-950 dark:text-white whitespace-nowrap">Cor do Grupo</th>
+                    <th class="px-6 py-4 font-bold text-zinc-950 dark:text-white whitespace-nowrap">Camiseta</th>
+                    <th class="px-6 py-4 font-bold text-zinc-950 dark:text-white whitespace-nowrap">Responsável</th>
+                    <th class="px-6 py-4 font-bold text-zinc-950 dark:text-white text-right whitespace-nowrap">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700/60">
+                @forelse ($participantes as $p)
+                    <tr class="hover:bg-zinc-50/50 dark:hover:bg-zinc-700/20 transition-colors">
+                        {{-- Nome --}}
+                        <td class="px-6 py-4 align-middle">
+                            <div class="flex items-center gap-3">
+                                <flux:avatar
+                                    src="{{ $p->pessoa->foto?->url_foto ? asset('storage/'.$p->pessoa->foto->url_foto) : '' }}"
+                                    :initials="substr($p->pessoa->nom_pessoa, 0, 2)"
                                     size="sm"
-                                    color="purple"
-                                    icon="user-group"
-                                    wire:click="abrirParentesco({{ $p->idt_participante }})"
-                                    class="cursor-pointer hover:opacity-80 transition-opacity"
-                                    title="Clique para editar parentesco"
-                                >
-                                    {{ $p->des_parentesco }}
-                                </flux:badge>
-                            @endif
-                        </div>
-                    </flux:table.cell>
-
-                    {{-- Data Nasc --}}
-                    <flux:table.cell>
-                        @if ($p->pessoa->dat_nascimento)
-                            <div class="text-sm">
-                                <span class="text-zinc-800 dark:text-zinc-200 font-medium">{{ $p->pessoa->dat_nascimento->format('d/m/Y') }}</span>
-                                <span class="text-xs text-zinc-400 dark:text-zinc-500 ml-2">({{ $p->pessoa->dat_nascimento->age }} anos)</span>
+                                />
+                                <div class="space-y-1">
+                                    <div class="font-medium text-zinc-900 dark:text-white">{{ $p->pessoa->nom_pessoa }}</div>
+                                    <div class="text-xs text-zinc-500">{{ $p->pessoa->nom_apelido }}</div>
+                                    @if ($p->des_parentesco)
+                                        <flux:badge
+                                            size="sm"
+                                            color="purple"
+                                            icon="user-group"
+                                            wire:click="abrirParentesco({{ $p->idt_participante }})"
+                                            class="cursor-pointer hover:opacity-80 transition-opacity"
+                                            title="Clique para editar parentesco"
+                                        >
+                                            {{ $p->des_parentesco }}
+                                        </flux:badge>
+                                    @endif
+                                </div>
                             </div>
-                        @else
-                            <span class="text-xs text-zinc-400">—</span>
-                        @endif
-                    </flux:table.cell>
+                        </td>
 
-                    {{-- Endereço --}}
-                    <flux:table.cell>
-                        @if ($p->pessoa->des_endereco)
-                            <span class="text-xs text-zinc-700 dark:text-zinc-300 max-w-[200px] truncate block" title="{{ $p->pessoa->des_endereco }}">
-                                {{ $p->pessoa->des_endereco }}
-                            </span>
-                        @else
-                            <span class="text-xs text-zinc-400">—</span>
-                        @endif
-                    </flux:table.cell>
+                        {{-- Data Nasc --}}
+                        <td class="px-6 py-4 align-middle whitespace-nowrap">
+                            @if ($p->pessoa->dat_nascimento)
+                                <div class="text-sm">
+                                    <span class="text-zinc-800 dark:text-zinc-200 font-medium">{{ $p->pessoa->dat_nascimento->format('d/m/Y') }}</span>
+                                    <span class="text-xs text-zinc-400 dark:text-zinc-500 ml-2">({{ $p->pessoa->dat_nascimento->age }} anos)</span>
+                                </div>
+                            @else
+                                <span class="text-xs text-zinc-400">—</span>
+                            @endif
+                        </td>
 
-                    {{-- Cor da Troca --}}
-                    <flux:table.cell>
-                        <select
-                            wire:change="atualizarTroca({{ $p->idt_participante }}, $event.target.value)"
-                            class="w-32 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 px-2.5 py-1.5 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 border-l-[5px] {{ \App\Enums\CorTroca::tryFrom(strtolower($p->tip_cor_troca))?->borderLClass() ?? 'border-l-zinc-200 dark:border-l-zinc-700' }}">
-                            <option value="" @selected(empty($p->tip_cor_troca)) class="text-zinc-800 bg-white dark:bg-zinc-900 dark:text-zinc-200">
-                                Selecionar...
-                            </option>
-                            @foreach (CorTroca::cases() as $cor)
-                                <option value="{{ $cor->value }}" @selected(strtolower($p->tip_cor_troca) === $cor->value) class="text-zinc-800 bg-white dark:bg-zinc-900 dark:text-zinc-200">
-                                    {{ $cor->label() }}
+                        {{-- Endereço --}}
+                        <td class="px-6 py-4 align-middle">
+                            @if ($p->pessoa->des_endereco)
+                                <span class="text-xs text-zinc-700 dark:text-zinc-300 max-w-[220px] truncate block" title="{{ $p->pessoa->des_endereco }}">
+                                    {{ $p->pessoa->des_endereco }}
+                                </span>
+                            @else
+                                <span class="text-xs text-zinc-400">—</span>
+                            @endif
+                        </td>
+
+                        {{-- Cor da Troca --}}
+                        <td class="px-6 py-4 align-middle whitespace-nowrap">
+                            <select
+                                wire:change="atualizarTroca({{ $p->idt_participante }}, $event.target.value)"
+                                class="w-32 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 px-2.5 py-1.5 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 border-l-[5px] {{ \App\Enums\CorTroca::tryFrom(strtolower($p->tip_cor_troca))?->borderLClass() ?? 'border-l-zinc-200 dark:border-l-zinc-700' }}">
+                                <option value="" @selected(empty($p->tip_cor_troca)) class="text-zinc-800 bg-white dark:bg-zinc-900 dark:text-zinc-200">
+                                    Selecionar...
                                 </option>
-                            @endforeach
-                        </select>
-                    </flux:table.cell>
+                                @foreach (CorTroca::cases() as $cor)
+                                    <option value="{{ $cor->value }}" @selected(strtolower($p->tip_cor_troca) === $cor->value) class="text-zinc-800 bg-white dark:bg-zinc-900 dark:text-zinc-200">
+                                        {{ $cor->label() }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </td>
 
-                    {{-- Camiseta --}}
-                    <flux:table.cell>
-                        @if ($p->pessoa->tam_camiseta)
-                            <flux:badge size="sm" color="zinc">
-                                {{ $p->pessoa->tam_camiseta->value }}
-                            </flux:badge>
-                        @else
-                            <span class="text-xs text-zinc-400">—</span>
-                        @endif
-                    </flux:table.cell>
+                        {{-- Camiseta --}}
+                        <td class="px-6 py-4 align-middle whitespace-nowrap">
+                            @if ($p->pessoa->tam_camiseta)
+                                <flux:badge size="sm" color="zinc">
+                                    {{ $p->pessoa->tam_camiseta->value }}
+                                </flux:badge>
+                            @else
+                                <span class="text-xs text-zinc-400">—</span>
+                            @endif
+                        </td>
 
-                    {{-- Responsável --}}
-                    <flux:table.cell>
-                        @php
-                            $ficha = $p->pessoa->fichas->first();
-                            $respName = null;
-                            $respPhone = null;
+                        {{-- Responsável --}}
+                        <td class="px-6 py-4 align-middle whitespace-nowrap">
+                            @php
+                                $ficha = $p->pessoa->fichas->first();
+                                $respName = null;
+                                $respPhone = null;
 
-                            if ($ficha) {
-                                if ($ficha->fichaVem) {
-                                    $fv = $ficha->fichaVem;
-                                    if (!empty($fv->tel_responsavel)) {
-                                        $respPhone = $fv->tel_responsavel;
-                                        $respName = $fv->nom_responsavel;
-                                    } elseif (!empty($fv->tel_mae)) {
-                                        $respPhone = $fv->tel_mae;
-                                        $respName = $fv->nom_mae;
-                                    } elseif (!empty($fv->tel_pai)) {
-                                        $respPhone = $fv->tel_pai;
-                                        $respName = $fv->nom_pai;
-                                    }
-                                } elseif ($ficha->fichaSGM) {
-                                    $fs = $ficha->fichaSGM;
-                                    if (!empty($fs->tel_falar_com)) {
-                                        $respPhone = $fs->tel_falar_com;
-                                        $respName = $fs->nom_falar_com;
-                                    } elseif (!empty($fs->tel_mae)) {
-                                        $respPhone = $fs->tel_mae;
-                                        $respName = $fs->nom_mae;
-                                    } elseif (!empty($fs->tel_pai)) {
-                                        $respPhone = $fs->tel_pai;
-                                        $respName = $fs->nom_pai;
+                                if ($ficha) {
+                                    if ($ficha->fichaVem) {
+                                        $fv = $ficha->fichaVem;
+                                        if (!empty($fv->tel_responsavel)) {
+                                            $respPhone = $fv->tel_responsavel;
+                                            $respName = $fv->nom_responsavel;
+                                        } elseif (!empty($fv->tel_mae)) {
+                                            $respPhone = $fv->tel_mae;
+                                            $respName = $fv->nom_mae;
+                                        } elseif (!empty($fv->tel_pai)) {
+                                            $respPhone = $fv->tel_pai;
+                                            $respName = $fv->nom_pai;
+                                        }
+                                    } elseif ($ficha->fichaSGM) {
+                                        $fs = $ficha->fichaSGM;
+                                        if (!empty($fs->tel_falar_com)) {
+                                            $respPhone = $fs->tel_falar_com;
+                                            $respName = $fs->nom_falar_com;
+                                        } elseif (!empty($fs->tel_mae)) {
+                                            $respPhone = $fs->tel_mae;
+                                            $respName = $fs->nom_mae;
+                                        } elseif (!empty($fs->tel_pai)) {
+                                            $respPhone = $fs->tel_pai;
+                                            $respName = $fs->nom_pai;
+                                        }
                                     }
                                 }
-                            }
-                        @endphp
-                        @if ($respPhone)
-                            <div class="flex flex-col">
-                                <span class="text-xs text-zinc-500 font-medium leading-none mb-1">{{ $respName ?: 'Responsável' }}</span>
-                                <span class="text-sm font-medium text-zinc-800 dark:text-zinc-200">{{ $respPhone }}</span>
-                            </div>
-                        @else
-                            <span class="text-xs text-zinc-400">—</span>
-                        @endif
-                    </flux:table.cell>
+                            @endphp
+                            @if ($respPhone)
+                                <div class="flex flex-col">
+                                    <span class="text-xs text-zinc-500 font-medium leading-none mb-1">{{ $respName ?: 'Responsável' }}</span>
+                                    <span class="text-sm font-medium text-zinc-800 dark:text-zinc-200">{{ $respPhone }}</span>
+                                </div>
+                            @else
+                                <span class="text-xs text-zinc-400">—</span>
+                            @endif
+                        </td>
 
-                    {{-- Ações --}}
-                    <flux:table.cell>
-                        <div class="flex justify-end gap-2">
-                            <flux:button
-                                icon="user-plus"
-                                size="sm"
-                                variant="ghost"
-                                wire:click="abrirParentesco({{ $p->idt_participante }})"
-                                tooltip="Parentesco"
-                            />
-                            <flux:button
-                                icon="trash"
-                                size="sm"
-                                variant="ghost"
-                                color="red"
-                                wire:click="excluirParticipante({{ $p->idt_participante }})"
-                                wire:confirm="Tem certeza que deseja excluir o participante {{ $p->pessoa->nom_pessoa }} deste evento?"
-                                tooltip="Excluir"
-                            />
-                        </div>
-                    </flux:table.cell>
-                </flux:table.row>
-            @empty
-                <flux:table.row>
-                    <flux:table.cell colspan="7" class="text-center py-10 text-zinc-500">
-                        Nenhum participante encontrado para este evento.
-                    </flux:table.cell>
-                </flux:table.row>
-            @endforelse
-        </flux:table.rows>
-    </flux:table>
+                        {{-- Ações --}}
+                        <td class="px-6 py-4 align-middle text-right whitespace-nowrap">
+                            <div class="flex justify-end gap-2">
+                                <flux:button
+                                    icon="user-plus"
+                                    size="sm"
+                                    variant="ghost"
+                                    wire:click="abrirParentesco({{ $p->idt_participante }})"
+                                    tooltip="Parentesco"
+                                />
+                                <flux:button
+                                    icon="trash"
+                                    size="sm"
+                                    variant="ghost"
+                                    color="red"
+                                    wire:click="excluirParticipante({{ $p->idt_participante }})"
+                                    wire:confirm="Tem certeza que deseja excluir o participante {{ $p->pessoa->nom_pessoa }} deste evento?"
+                                    tooltip="Excluir"
+                                />
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="7" class="text-center py-10 text-zinc-500">
+                            Nenhum participante encontrado para este evento.
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
 
     <div class="mt-4">
         {{ $participantes->links(data: ['scrollTo' => false]) }}

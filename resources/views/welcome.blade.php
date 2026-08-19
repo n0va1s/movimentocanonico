@@ -469,7 +469,7 @@
                         @endphp
                         <li
                             class="flex items-start gap-4 p-4 bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
-                            <x-heroicon-o-calendar class="w-6 h-6 text-blue-500 mt-1" />
+                            <flux:icon.calendar class="w-6 h-6 text-blue-500 mt-1" />
                             <div class="flex-1 flex flex-col w-full">
                                 <div class="flex justify-between items-start">
                                     <h3 class="text-base font-medium text-gray-900 dark:text-white">

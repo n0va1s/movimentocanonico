@@ -104,7 +104,7 @@
                         </div>
                     </li>
                     <li class="hidden sm:flex items-center text-gray-300 dark:text-zinc-600" aria-hidden="true">
-                        <x-heroicon-o-chevron-right class="w-5 h-5" />
+                        <flux:icon.chevron-right class="w-5 h-5" />
                     </li>
                     <li class="flex-1 flex items-start gap-3">
                         <span
@@ -121,7 +121,7 @@
                         </div>
                     </li>
                     <li class="hidden sm:flex items-center text-gray-300 dark:text-zinc-600" aria-hidden="true">
-                        <x-heroicon-o-chevron-right class="w-5 h-5" />
+                        <flux:icon.chevron-right class="w-5 h-5" />
                     </li>
                     <li class="flex-1 flex items-start gap-3">
                         <span
@@ -182,10 +182,10 @@
                         
                         @if($isCurrent)
                             <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold {{ $style['light'] }} shadow-sm">
-                                <x-heroicon-s-check class="w-4 h-4" />
+                                <flux:icon.check class="w-4 h-4" />
                                 {{ $situacao->label() }}
                                 @if($situacao->mail()[0] === 'Sim')
-                                    <x-heroicon-o-envelope class="w-4 h-4" title="Envia e-mail ao ser alterado para esta situação" />
+                                    <flux:icon.envelope class="w-4 h-4" title="Envia e-mail ao ser alterado para esta situação" />
                                 @endif
                             </span>
                         @else
@@ -195,31 +195,31 @@
                                 <button type="submit" 
                                     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border transition-all duration-200 cursor-pointer hover:text-white {{ $style['light'] }} {{ $style['hover'] }}">
                                     @if($situacao->value === 'N')
-                                        <x-heroicon-o-document-text class="w-4 h-4" />
+                                        <flux:icon.document-text class="w-4 h-4" />
                                     @elseif($situacao->value === 'S')
-                                        <x-heroicon-o-check-circle class="w-4 h-4" />
+                                        <flux:icon.check-circle class="w-4 h-4" />
                                     @elseif($situacao->value === 'E')
-                                        <x-heroicon-o-paper-airplane class="w-4 h-4" />
+                                        <flux:icon.paper-airplane class="w-4 h-4" />
                                     @elseif($situacao->value === 'R')
-                                        <x-heroicon-o-document-check class="w-4 h-4" />
+                                        <flux:icon.document-check class="w-4 h-4" />
                                     @elseif($situacao->value === 'P')
-                                        <x-heroicon-o-credit-card class="w-4 h-4" />
+                                        <flux:icon.credit-card class="w-4 h-4" />
                                     @elseif($situacao->value === 'C')
-                                        <x-heroicon-o-x-circle class="w-4 h-4" />
+                                        <flux:icon.x-circle class="w-4 h-4" />
                                     @elseif($situacao->value === 'A')
-                                        <x-heroicon-o-sparkles class="w-4 h-4" />
+                                        <flux:icon.sparkles class="w-4 h-4" />
                                     @elseif($situacao->value === 'F')
-                                        <x-heroicon-o-phone class="w-4 h-4" />
+                                        <flux:icon.phone class="w-4 h-4" />
                                     @elseif($situacao->value === 'W')
-                                        <x-heroicon-o-clock class="w-4 h-4" />
+                                        <flux:icon.clock class="w-4 h-4" />
                                     @elseif($situacao->value === 'V')
-                                        <x-heroicon-o-check-circle class="w-4 h-4" />
+                                        <flux:icon.check-circle class="w-4 h-4" />
                                     @elseif($situacao->value === 'D')
-                                        <x-heroicon-o-x-circle class="w-4 h-4" />
+                                        <flux:icon.x-circle class="w-4 h-4" />
                                     @endif
                                     {{ $situacao->label() }}
                                     @if($situacao->mail()[0] === 'Sim')
-                                        <x-heroicon-o-envelope class="w-4 h-4" title="Envia e-mail ao ser alterado para esta situação" />
+                                        <flux:icon.envelope class="w-4 h-4" title="Envia e-mail ao ser alterado para esta situação" />
                                     @endif
                                 </button>
                             </form>
@@ -289,7 +289,7 @@
                                         class="w-full h-full object-cover" />
                                 </template>
                                 <template x-if="!photoPreview">
-                                    <x-heroicon-o-user class="w-14 h-14 text-gray-400 dark:text-gray-500"
+                                    <flux:icon.user class="w-14 h-14 text-gray-400 dark:text-gray-500"
                                         aria-hidden="true" />
                                 </template>
                             </div>
@@ -527,7 +527,7 @@
                                         class="w-full h-full object-cover" />
                                 </template>
                                 <template x-if="!photoPreview">
-                                    <x-heroicon-o-user class="w-14 h-14 text-gray-400 dark:text-gray-500"
+                                    <flux:icon.user class="w-14 h-14 text-gray-400 dark:text-gray-500"
                                         aria-hidden="true" />
                                 </template>
                             </div>
@@ -1062,7 +1062,7 @@
                                 restrições alimentares, necessidades especiais)
                             </span>
                         </div>
-                        <x-heroicon-o-heart class="w-6 h-6 text-amber-400 dark:text-amber-500 ml-auto shrink-0"
+                        <flux:icon.heart class="w-6 h-6 text-amber-400 dark:text-amber-500 ml-auto shrink-0"
                             aria-hidden="true" />
                     </label>
                     @error('ind_restricao')
@@ -1080,7 +1080,7 @@
                         <div x-show="mostrarRestricoes && !temRestricaoSelecionada" x-transition
                             class="mb-4 flex items-center gap-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 px-4 py-3"
                             role="alert">
-                            <x-heroicon-o-exclamation-circle class="w-5 h-5 text-red-500 shrink-0" aria-hidden="true" />
+                            <flux:icon.exclamation-circle class="w-5 h-5 text-red-500 shrink-0" aria-hidden="true" />
                             <p class="text-sm text-red-700 dark:text-red-400">
                                 Nenhuma restrição ou alergia foi informada. Desmarque a opção Informações de Saúde por favor.
                             </p>
@@ -1186,7 +1186,7 @@
                 <div class="mt-8 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
                     <button type="submit" x-bind:disabled="bloqueado || enviando"
                         class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                        <x-heroicon-o-check class="w-5 h-5 mr-2" aria-hidden="true" />
+                        <flux:icon.check class="w-5 h-5 mr-2" aria-hidden="true" />
                         <span x-text="enviando ? 'Salvando...' : 'Salvar'"></span>
                     </button>
                 </div>
@@ -1198,7 +1198,7 @@
                     {{-- Cards de informações rápidas --}}
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3" role="list" aria-label="Informações do evento">
                     <div role="listitem" class="flex items-center gap-2 sm:gap-3 bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 p-2 sm:p-3">
-                        <x-heroicon-o-users class="w-5 h-5 text-blue-500 shrink-0" />
+                        <flux:icon.users class="w-5 h-5 text-blue-500 shrink-0" />
                         <div>
                             <p class="text-xs text-gray-500">Público</p>
                             <p class="text-xs sm:text-sm font-medium" x-text="info.faixa"></p>
@@ -1206,7 +1206,7 @@
                     </div>
 
                     <div role="listitem" class="flex items-center gap-2 sm:gap-3 bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 p-2 sm:p-3">
-                        <x-heroicon-o-calendar class="w-5 h-5 text-red-500 shrink-0" />
+                        <flux:icon.calendar class="w-5 h-5 text-red-500 shrink-0" />
                         <div>
                             <p class="text-xs text-gray-500">Inscrições até</p>
                             <p class="text-xs sm:text-sm font-medium" x-text="info.data_limite"></p>
@@ -1214,7 +1214,7 @@
                     </div>
 
                     <div role="listitem" class="flex items-center gap-2 sm:gap-3 bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 p-2 sm:p-3">
-                        <x-heroicon-o-ticket class="w-5 h-5 text-green-500 shrink-0" />
+                        <flux:icon.ticket class="w-5 h-5 text-green-500 shrink-0" />
                         <div>
                             <p class="text-xs text-gray-500">Vagas</p>
                             <p class="text-xs sm:text-sm font-medium"><span x-text="info.vaga"></span> vagas</p>
@@ -1222,7 +1222,7 @@
                     </div>
 
                     <div role="listitem" class="flex items-center gap-2 sm:gap-3 bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 p-2 sm:p-3">
-                        <x-heroicon-o-currency-dollar class="w-5 h-5 text-yellow-500 shrink-0" />
+                        <flux:icon.currency-dollar class="w-5 h-5 text-yellow-500 shrink-0" />
                         <div>
                             <p class="text-xs text-gray-500">Taxa</p>
                             <p class="text-xs sm:text-sm font-medium">R$ <span x-text="info.valor"></span></p>
@@ -1232,7 +1232,7 @@
                 {{-- Datas, local, roupas, garrafinha --}}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                     <div class="flex items-start gap-3 bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 p-3">
-                        <x-heroicon-o-calendar-days class="w-5 h-5 text-purple-500 shrink-0 mt-0.5" aria-hidden="true" />
+                        <flux:icon.calendar-days class="w-5 h-5 text-purple-500 shrink-0 mt-0.5" aria-hidden="true" />
                         <div>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Datas</p>
                             <p class="text-sm font-medium text-gray-800 dark:text-gray-100">
@@ -1242,7 +1242,7 @@
                     </div>
                     <div
                         class="flex items-start gap-3 bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 p-3">
-                        <x-heroicon-o-map-pin class="w-5 h-5 text-rose-500 shrink-0 mt-0.5" aria-hidden="true" />
+                        <flux:icon.map-pin class="w-5 h-5 text-rose-500 shrink-0 mt-0.5" aria-hidden="true" />
                         <div>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Local</p>
                             <p class="text-sm font-medium text-gray-800 dark:text-gray-100">Paróquia Nossa Senhora do Lago
@@ -1251,7 +1251,7 @@
                     </div>
                     <div
                         class="flex items-start gap-3 bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 p-3">
-                        <x-heroicon-o-sparkles class="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" aria-hidden="true" />
+                        <flux:icon.sparkles class="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" aria-hidden="true" />
                         <div>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Roupas</p>
                             <p class="text-sm font-medium text-gray-800 dark:text-gray-100">Leves e adequadas para a capela
@@ -1260,7 +1260,7 @@
                     </div>
                     <div
                         class="flex items-start gap-3 bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 p-3">
-                        <x-heroicon-o-beaker class="w-5 h-5 text-cyan-500 shrink-0 mt-0.5" aria-hidden="true" />
+                        <flux:icon.beaker class="w-5 h-5 text-cyan-500 shrink-0 mt-0.5" aria-hidden="true" />
                         <div>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Lembrete</p>
                             <p class="text-sm font-medium text-gray-800 dark:text-gray-100">Leve sua garrafinha</p>
@@ -1272,7 +1272,7 @@
             <div role="status" aria-live="polite">
                 <div
                     class="flex flex-col items-center justify-center text-center p-8 sm:p-10 mt-4 bg-white dark:bg-zinc-800 rounded-xl shadow border border-dashed border-gray-300 dark:border-zinc-600">
-                    <x-heroicon-o-user-group class="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4"
+                    <flux:icon.user-group class="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4"
                         aria-hidden="true" />
                     <p class="text-base sm:text-lg font-medium text-gray-600 dark:text-gray-300">Nenhum evento
                         disponível no momento</p>

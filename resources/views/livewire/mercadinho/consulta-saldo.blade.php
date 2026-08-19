@@ -88,7 +88,7 @@ new class extends Component {
 <div class="space-y-6">
     <div class="px-6 py-4 flex justify-between items-center">
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <x-heroicon-s-banknotes class="w-5 h-5 text-emerald-600" />
+            <flux:icon.banknotes class="w-5 h-5 text-emerald-600" />
             Consulta de Saldo
         </h3>
         @if($resultado)

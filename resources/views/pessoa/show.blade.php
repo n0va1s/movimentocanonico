@@ -21,7 +21,7 @@
                     class="w-20 h-20 rounded-full object-cover border-2 border-gray-300 dark:border-zinc-600 shadow">
             @else
                 <div class="w-20 h-20 rounded-full bg-gray-200 dark:bg-zinc-700 flex items-center justify-center flex-shrink-0">
-                    <x-heroicon-o-user class="w-10 h-10 text-gray-400 dark:text-gray-500" />
+                    <flux:icon.user class="w-10 h-10 text-gray-400 dark:text-gray-500" />
                 </div>
             @endif
             <div class="flex-1 min-w-0">
@@ -40,7 +40,7 @@
                 @if (Auth::user()->isAdmin())
                     <a href="{{ route('pessoas.edit', $pessoa->idt_pessoa) }}"
                         class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline mt-1">
-                        <x-heroicon-o-pencil-square class="w-4 h-4" />
+                        <flux:icon.pencil-square class="w-4 h-4" />
                         Editar
                     </a>
                 @endif
@@ -50,7 +50,7 @@
         {{-- DADOS PESSOAIS --}}
         <div class="bg-white dark:bg-zinc-800 rounded-xl shadow border border-gray-200 dark:border-zinc-700 p-6 mb-6">
             <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                <x-heroicon-o-identification class="w-5 h-5 text-blue-500" />
+                <flux:icon.identification class="w-5 h-5 text-blue-500" />
                 Dados Pessoais
             </h2>
             <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
@@ -97,7 +97,7 @@
         @if ($pessoa->restricoes->isNotEmpty())
             <div class="bg-white dark:bg-zinc-800 rounded-xl shadow border border-gray-200 dark:border-zinc-700 p-6 mb-6">
                 <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                    <x-heroicon-o-heart class="w-5 h-5 text-red-500" />
+                    <flux:icon.heart class="w-5 h-5 text-red-500" />
                     Restrições de Saúde
                 </h2>
                 <div class="space-y-2">
@@ -122,7 +122,7 @@
         @if ($pessoa->trabalhadores->isNotEmpty())
             <div class="bg-white dark:bg-zinc-800 rounded-xl shadow border border-gray-200 dark:border-zinc-700 p-6">
                 <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                    <x-heroicon-o-briefcase class="w-5 h-5 text-green-500" />
+                    <flux:icon.briefcase class="w-5 h-5 text-green-500" />
                     Histórico de Trabalho
                 </h2>
                 <ul class="space-y-2">

@@ -53,4 +53,37 @@ enum CorTroca: string
             self::LARANJA => 'bg-orange-100 text-orange-800 dark:bg-orange-950/40 dark:text-orange-300 border border-orange-200 dark:border-orange-800',
         };
     }
+
+    public function textClass(): string
+    {
+        return match ($this) {
+            self::VERMELHA => 'text-red-600 dark:text-red-400',
+            self::AZUL => 'text-blue-600 dark:text-blue-400',
+            self::VERDE => 'text-emerald-600 dark:text-emerald-400',
+            self::AMARELA => 'text-amber-500 dark:text-amber-400',
+            self::LARANJA => 'text-orange-600 dark:text-orange-400',
+        };
+    }
+
+    public function activeClass(): string
+    {
+        return match ($this) {
+            self::VERMELHA => 'ring-2 ring-red-500 bg-red-50 dark:bg-red-950/20 border-red-500',
+            self::AZUL => 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950/20 border-blue-500',
+            self::VERDE => 'ring-2 ring-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 border-emerald-500',
+            self::AMARELA => 'ring-2 ring-amber-500 bg-amber-50 dark:bg-amber-950/20 border-amber-500',
+            self::LARANJA => 'ring-2 ring-orange-500 bg-orange-50 dark:bg-orange-950/20 border-orange-500',
+        };
+    }
+
+    public function dotClass(): string
+    {
+        return match ($this) {
+            self::VERMELHA => 'bg-red-500',
+            self::AZUL => 'bg-blue-500',
+            self::VERDE => 'bg-emerald-500',
+            self::AMARELA => 'bg-amber-400',
+            self::LARANJA => 'bg-orange-500',
+        };
+    }
 }

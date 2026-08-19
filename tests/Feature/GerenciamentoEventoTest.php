@@ -595,6 +595,17 @@ describe('Participantes — participantes.blade.php', function () {
             ->assertSee('15/05/2000')
             ->assertSee('Rua das Flores, 123');
     });
+
+    test('exibe dashboard de grupos por cor apenas para grupos cadastrados e permite filtrar via toggleCorTroca', function () {
+        $this->participante->update(['tip_cor_troca' => 'vermelha']);
+
+        Volt::test('evento.partials.participantes', ['evento' => $this->evento])
+            ->assertSee('Vermelha')
+            ->call('toggleCorTroca', 'vermelha')
+            ->assertSet('corTroca', 'vermelha')
+            ->call('toggleCorTroca', 'vermelha')
+            ->assertSet('corTroca', '');
+    });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

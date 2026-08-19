@@ -1224,7 +1224,7 @@ new class extends Component {
                 <nav class="-mb-px flex space-x-8" aria-label="Tabs">
                     <button wire:click="$set('status', 'ativos')" 
                        class="border-b-2 py-4 px-1 text-sm font-semibold transition-colors duration-200 flex items-center gap-2 {{ $status === 'ativos' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200' }}">
-                        <x-heroicon-o-calendar class="w-4 h-4" />
+                        <flux:icon.calendar class="w-4 h-4" />
                         <span>Eventos Ativos</span>
                     </button>
                     <button wire:click="$set('status', 'encerrados')" 
@@ -1260,12 +1260,12 @@ new class extends Component {
 
                                 <div class="space-y-3">
                                     <div class="flex items-center text-gray-600 dark:text-gray-300 text-sm">
-                                        <x-heroicon-o-calendar class="w-4 h-4 mr-2 text-blue-500" />
+                                        <flux:icon.calendar class="w-4 h-4 mr-2 text-blue-500" />
                                         <span>{{ $evt->getDataInicioFormatada() }} a {{ $evt->getDataTerminoFormatada() }}</span>
                                     </div>
 
                                     <div class="flex items-center text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">
-                                        <x-heroicon-o-tag class="w-4 h-4 mr-2 shrink-0" />
+                                        <flux:icon.tag class="w-4 h-4 mr-2 shrink-0" />
                                         <span class="flex-1">{{ $evt->tip_evento->label() }}</span>
                                     </div>
                                 </div>

@@ -12,7 +12,7 @@
             <nav class="-mb-px flex space-x-8" aria-label="Tabs">
                 <a href="{{ route('contatos.index', array_merge(request()->except('page'), ['status' => 'pendentes'])) }}" 
                    class="border-b-2 py-4 px-1 text-sm font-semibold transition-colors duration-200 flex items-center gap-2 {{ ($status ?? 'pendentes') === 'pendentes' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200' }}">
-                    <x-heroicon-o-inbox class="w-4 h-4" />
+                    <flux:icon.inbox class="w-4 h-4" />
                     <span>Pendentes</span>
                 </a>
                 <a href="{{ route('contatos.index', array_merge(request()->except('page'), ['status' => 'resolvidos'])) }}" 
@@ -67,12 +67,12 @@
 
                         <div class="space-y-3">
                             <div class="flex items-center text-gray-600 dark:text-gray-300 text-sm">
-                                <x-heroicon-o-envelope class="w-4 h-4 mr-2 text-blue-500" />
+                                <flux:icon.envelope class="w-4 h-4 mr-2 text-blue-500" />
                                 <span class="truncate" title="{{ $contato->eml_contato }}">{{ $contato->eml_contato }}</span>
                             </div>
 
                             <div class="flex items-center text-gray-600 dark:text-gray-300 text-sm">
-                                <x-heroicon-o-phone class="w-4 h-4 mr-2 text-blue-500" />
+                                <flux:icon.phone class="w-4 h-4 mr-2 text-blue-500" />
                                 <span>{{ $contato->tel_contato }}</span>
                             </div>
 
@@ -94,7 +94,7 @@
                             </form>
                         @else
                             <div class="w-full py-2 bg-gray-100 dark:bg-zinc-700 text-gray-500 dark:text-gray-400 rounded-md font-bold text-center flex items-center justify-center gap-2 border border-gray-200 dark:border-zinc-600 text-sm">
-                                <x-heroicon-s-check-circle class="w-5 h-5 text-green-500" />
+                                <flux:icon.check-circle class="w-5 h-5 text-green-500" />
                                 Resolvido em {{ $contato->deleted_at?->format('d/m/Y') }}
                             </div>
                         @endif

@@ -8,7 +8,7 @@
             </p>
             @if (!$pessoa->exists)
                 <p class="text-sm text-yellow-600 dark:text-yellow-400 mt-2 flex items-center gap-1">
-                    <x-heroicon-o-information-circle class="w-4 h-4" />
+                    <flux:icon.information-circle class="w-4 h-4" />
                     Não é possível cadastrar pessoas que estão com fichas em andamento.
                 </p>
             @endif
@@ -36,7 +36,7 @@
                                     @@error="photoPreview = ''" />
                             </template>
                             <template x-if="!photoPreview">
-                                <x-heroicon-o-user class="w-14 h-14 text-gray-400 dark:text-gray-500"
+                                <flux:icon.user class="w-14 h-14 text-gray-400 dark:text-gray-500"
                                     aria-hidden="true" />
                             </template>
                         </div>
@@ -275,7 +275,7 @@
                                 restrições alimentares, necessidades especiais)
                             </span>
                         </div>
-                        <x-heroicon-o-heart class="w-6 h-6 text-amber-400 dark:text-amber-500 ml-auto shrink-0"
+                        <flux:icon.heart class="w-6 h-6 text-amber-400 dark:text-amber-500 ml-auto shrink-0"
                             aria-hidden="true" />
                     </label>
 
@@ -290,7 +290,7 @@
                         <div x-show="mostrarRestricoes && !temRestricaoSelecionada" x-transition
                             class="mb-4 flex items-center gap-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 px-4 py-3"
                             role="alert">
-                            <x-heroicon-o-exclamation-circle class="w-5 h-5 text-red-500 shrink-0" aria-hidden="true" />
+                            <flux:icon.exclamation-circle class="w-5 h-5 text-red-500 shrink-0" aria-hidden="true" />
                             <p class="text-sm text-red-700 dark:text-red-400">
                                 Nenhuma restrição ou alergia foi informada. Desmarque a opção Informações de Saúde por favor.
                             </p>

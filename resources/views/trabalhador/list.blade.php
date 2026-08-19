@@ -75,7 +75,7 @@
                                     @else
                                         <div
                                             class="w-10 h-10 rounded-full bg-gray-200 dark:bg-zinc-700 flex items-center justify-center text-gray-400">
-                                            <x-heroicon-o-user class="w-5 h-5" />
+                                            <flux:icon.user class="w-5 h-5" />
                                         </div>
                                     @endif
                                 </td>
@@ -117,7 +117,7 @@
                 <div class="col-span-full">
                     <div
                         class="flex flex-col items-center justify-center text-center p-10 bg-white dark:bg-zinc-800 rounded-xl shadow border border-dashed border-gray-300 dark:border-zinc-600">
-                        <x-heroicon-o-briefcase class="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+                        <flux:icon.briefcase class="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
                         <p class="text-lg font-medium text-gray-600 dark:text-gray-300">{{ __('messages.empty.trabalhador.title') }}</p>
                         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                             {{ __('messages.empty.trabalhador.description') }}

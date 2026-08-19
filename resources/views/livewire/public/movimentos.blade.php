@@ -92,7 +92,7 @@ new class extends Component {
                         <img src="{{ $imagem }}" class="w-full h-64 md:h-30 object-contain flex-shrink-0 rounded-2xl mb-4 bg-gray-50 dark:bg-gray-900" alt="Logo {{ $movimento->nom_movimento }}">
                     @else
                         <div class="w-full h-64 md:h-30 flex-shrink-0 rounded-2xl mb-4 bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">
-                            <x-heroicon-o-photo class="w-16 h-16 opacity-50" />
+                            <flux:icon.photo class="w-16 h-16 opacity-50" />
                         </div>
                     @endif
 

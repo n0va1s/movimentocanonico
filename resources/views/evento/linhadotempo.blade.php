@@ -3,7 +3,7 @@
 
         <div class="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-purple-700 to-indigo-900 rounded-[2rem] p-6 md:p-10 shadow-2xl text-white">
             <div class="absolute top-0 right-0 -mt-10 -mr-10 opacity-10 rotate-12">
-                <x-heroicon-s-sparkles class="w-80 h-80" />
+                <flux:icon.sparkles class="w-80 h-80" />
             </div>
 
             <div class="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
@@ -24,7 +24,7 @@
                     <div>
                         <div class="flex items-center justify-center md:justify-start gap-2 mb-1">
                             <h1 class="text-3xl font-black tracking-tight" aria-label="Nome do usuário: {{ $pessoa->nom_apelido ?? $pessoa->nom_pessoa }}">{{ $pessoa->nom_apelido ?? $pessoa->nom_pessoa }}</h1>
-                            <x-heroicon-s-check-badge class="w-6 h-6 text-blue-400" aria-label="Conta verificada" />
+                            <flux:icon.check-badge class="w-6 h-6 text-blue-400" aria-label="Conta verificada" />
                         </div>
                         <p class="text-indigo-100 font-medium opacity-90 max-w-sm">
                             Sua Aura reflete sua dedicação. Participe de eventos para desbloquear novas conquistas!
@@ -45,7 +45,7 @@
                 <div class="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
                     <div class="flex-1 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-5 flex items-center gap-4 min-w-[200px]">
                         <div class="bg-yellow-400 p-3 rounded-xl shadow-lg shadow-yellow-500/40">
-                            <x-heroicon-s-bolt class="w-6 h-6 text-indigo-900" />
+                            <flux:icon.bolt class="w-6 h-6 text-indigo-900" />
                         </div>
                         <div>
                             <p class="text-[10px] font-black uppercase text-indigo-200 tracking-widest leading-none">Total XP</p>
@@ -54,7 +54,7 @@
                     </div>
                     <div class="flex-1 bg-indigo-950/40 backdrop-blur-xl border border-white/10 rounded-2xl p-5 flex items-center gap-4 min-w-[200px]">
                         <div class="bg-blue-500 p-3 rounded-xl shadow-lg shadow-blue-500/40">
-                            <x-heroicon-s-trophy class="w-6 h-6 text-white" />
+                            <flux:icon.trophy class="w-6 h-6 text-white" />
                         </div>
                         <div>
                             <p class="text-[10px] font-black uppercase text-blue-200 tracking-widest leading-none">Ranking</p>
@@ -70,7 +70,7 @@
             <aside class="lg:col-span-3 space-y-6 lg:sticky lg:top-8">
                 <div class="bg-white dark:bg-zinc-800 rounded-3xl p-6 border border-gray-100 dark:border-zinc-700 shadow-sm">
                     <h3 class="text-sm font-black uppercase text-gray-400 dark:text-zinc-500 mb-4 flex items-center gap-2" aria-hidden="true">
-                        <x-heroicon-o-chart-bar class="w-4 h-4" /> Resumo de Atividades
+                        <flux:icon.chart-bar class="w-4 h-4" /> Resumo de Atividades
                     </h3>
                     <div class="space-y-4">
                         <div class="flex justify-between items-end">
@@ -139,13 +139,13 @@
                                                 </span>
                                                 @if ($eventEntry['details']['coordenador'] ?? false)
                                                     <span class="flex items-center gap-1 text-[10px] font-bold text-yellow-600 dark:text-yellow-400 uppercase italic">
-                                                        <x-heroicon-s-star class="w-3 h-3" /> Liderança
+                                                        <flux:icon.star class="w-3 h-3" /> Liderança
                                                     </span>
                                                 @endif
                                             </div>
                                             
                                             <span class="bg-yellow-400/20 text-yellow-700 dark:text-yellow-400 text-[10px] font-black px-2.5 py-1 rounded-full border border-yellow-400/30 flex items-center gap-1 shadow-sm">
-                                                <x-heroicon-s-bolt class="w-3.5 h-3.5 text-yellow-500" />
+                                                <flux:icon.bolt class="w-3.5 h-3.5 text-yellow-500" />
                                                 +{{ $eventEntry['pontos'] }} XP
                                             </span>
                                         </div>
@@ -154,10 +154,10 @@
                                     @if ($eventEntry['type'] === 'Trabalhador')
                                         <div class="mt-4 pt-3 border-t border-dashed border-gray-100 dark:border-zinc-700 flex items-center justify-between">
                                             <div class="flex items-center gap-2">
-                                                <x-heroicon-o-users class="w-4 h-4 text-gray-400" />
+                                                <flux:icon.users class="w-4 h-4 text-gray-400" />
                                                 <span class="text-[11px] font-bold text-gray-500">{{ $eventEntry['details']['equipe'] }}</span>
                                             </div>
-                                            <x-heroicon-o-chevron-right class="w-4 h-4 text-gray-300 group-hover:translate-x-1 transition-transform" />
+                                            <flux:icon.chevron-right class="w-4 h-4 text-gray-300 group-hover:translate-x-1 transition-transform" />
                                         </div>
                                     @endif
                                 </div>
