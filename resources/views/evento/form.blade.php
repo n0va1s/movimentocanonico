@@ -6,7 +6,7 @@
         </div>
         <div class="flex justify-end mt-4">
             <x-botao-navegar href="{{ route('eventos.index') }}" aria-label="Voltar para a lista de eventos">
-                <x-heroicon-o-arrow-left class="w-5 h-5 mr-2" />
+                <flux:icon.arrow-left class="w-5 h-5 mr-2" />
                 Eventos
             </x-botao-navegar>
         </div>
@@ -40,7 +40,7 @@
                                     class="absolute inset-0 w-full h-full object-cover">
                                 <div x-show="!preview"
                                     class="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center">
-                                    <x-heroicon-o-photo class="w-8 h-8 text-gray-400 dark:text-zinc-500" />
+                                    <flux:icon.photo class="w-8 h-8 text-gray-400 dark:text-zinc-500" />
                                     <span class="text-xs text-gray-500 dark:text-zinc-400">Clique para selecionar</span>
                                 </div>
                             </div>
@@ -67,7 +67,7 @@
                                     class="absolute inset-0 w-full h-full object-contain p-2">
                                 <div x-show="!preview"
                                     class="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center">
-                                    <x-heroicon-o-photo class="w-8 h-8 text-gray-400 dark:text-zinc-500" />
+                                    <flux:icon.photo class="w-8 h-8 text-gray-400 dark:text-zinc-500" />
                                     <span class="text-xs text-gray-500 dark:text-zinc-400">Clique para selecionar</span>
                                 </div>
                             </div>
@@ -331,13 +331,13 @@
                     <button type="submit"
                         class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                         aria-label="Salvar o evento">
-                        <x-heroicon-c-arrow-long-right class="w-5 h-5 mr-2" />
+                        <flux:icon.arrow-right class="w-5 h-5 mr-2" />
                         Salvar
                     </button>
                     <a href="{{ route('eventos.index') }}"
                         class="inline-flex items-center px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md focus:ring-2 focus:ring-gray-500 focus:outline-none"
                         aria-label="Cancelar a operação">
-                        <x-heroicon-o-x-mark class="w-5 h-5 mr-2" />
+                        <flux:icon.x-mark class="w-5 h-5 mr-2" />
                         Cancelar
                     </a>
                 </div>

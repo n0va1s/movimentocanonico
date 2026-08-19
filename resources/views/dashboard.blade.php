@@ -22,7 +22,7 @@
                 {{-- Pessoas Evangelizadas --}}
                 <div class="flex items-center gap-3 px-5 py-3 bg-white dark:bg-zinc-800 rounded-2xl border border-gray-100 dark:border-zinc-700 shadow-sm w-full sm:w-auto">
                     <div class="flex items-center justify-center h-10 w-10 rounded-xl bg-green-50 dark:bg-green-900/20">
-                        <x-heroicon-o-users class="h-5 w-5 text-green-600" />
+                        <flux:icon.users class="h-5 w-5 text-green-600" />
                     </div>
                     <div class="flex-1 sm:flex-initial">
                         <p class="text-[10px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest">Pessoas Evangelizadas</p>
@@ -44,7 +44,7 @@
                 <header
                     class="px-5 md:px-6 py-4 border-b border-gray-100 dark:border-zinc-700 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-800/50">
                     <h2 class="font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                        <x-heroicon-s-cake class="w-5 h-5 text-pink-500" />
+                        <flux:icon.cake class="w-5 h-5 text-pink-500" />
                         Aniversariantes da Semana
                     </h2>
                     <flux:badge color="pink" size="sm">{{ $aniversariantes->count() }}</flux:badge>
@@ -53,7 +53,7 @@
                 <div class="p-4 md:p-6">
                     @if ($aniversariantes->isEmpty())
                         <div class="py-8 text-center">
-                            <x-heroicon-o-cake class="w-10 h-10 mx-auto text-gray-300 dark:text-zinc-600 mb-2" />
+                            <flux:icon.cake class="w-10 h-10 mx-auto text-gray-300 dark:text-zinc-600 mb-2" />
                             <p class="text-sm text-gray-400 dark:text-gray-500">Nenhum aniversariante nesta semana.</p>
                         </div>
                     @else
@@ -116,7 +116,7 @@
                 <header
                     class="px-5 md:px-6 py-4 border-b border-gray-100 dark:border-zinc-700 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-800/50">
                     <h2 class="font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                        <x-heroicon-s-trophy class="w-5 h-5 text-amber-500" />
+                        <flux:icon.trophy class="w-5 h-5 text-amber-500" />
                         Líderes de Aura
                     </h2>
                     <flux:badge color="amber" size="sm">Top {{ $lideresAura->count() }}</flux:badge>
@@ -125,7 +125,7 @@
                 <div class="p-4 md:p-6">
                     @if ($lideresAura->isEmpty())
                         <div class="py-8 text-center">
-                            <x-heroicon-o-trophy class="w-10 h-10 mx-auto text-gray-300 dark:text-zinc-600 mb-2" />
+                            <flux:icon.trophy class="w-10 h-10 mx-auto text-gray-300 dark:text-zinc-600 mb-2" />
                             <p class="text-sm text-gray-400 dark:text-gray-500">Nenhum líder com pontuação registrada.</p>
                         </div>
                     @else
@@ -179,7 +179,7 @@
 
                                     {{-- Pontuação --}}
                                     <div class="flex items-center gap-1.5 flex-shrink-0">
-                                        <x-heroicon-s-star class="w-4 h-4 {{ $isPodio ? 'text-amber-500' : 'text-gray-400 dark:text-zinc-500' }}" />
+                                        <flux:icon.star class="w-4 h-4 {{ $isPodio ? 'text-amber-500' : 'text-gray-400 dark:text-zinc-500' }}" />
                                         <span class="text-sm font-black tabular-nums {{ $isPodio ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-gray-300' }}">
                                             {{ number_format($lider->qtd_pontos_total, 0, '', '.') }}
                                         </span>
@@ -202,7 +202,7 @@
                 <header
                     class="px-5 md:px-6 py-4 border-b border-gray-100 dark:border-zinc-700 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-800/50">
                     <h2 class="font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                        <x-heroicon-s-calendar-days class="w-5 h-5 text-blue-600" />
+                        <flux:icon.calendar-days class="w-5 h-5 text-blue-600" />
                         Próximos Eventos
                     </h2>
                     <a href="{{ route('eventos.index') }}"
@@ -235,12 +235,12 @@
                                 <a href="{{ route('eventos.index') }}"
                                     class="p-2 text-gray-400 hover:text-blue-600 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 rounded"
                                     aria-label="Ver evento {{ $evento->des_evento }}">
-                                    <x-heroicon-s-chevron-right class="w-5 h-5" />
+                                    <flux:icon.chevron-right class="w-5 h-5" />
                                 </a>
                             </li>
                         @empty
                             <div class="py-8 text-center">
-                                <x-heroicon-o-calendar class="w-10 h-10 mx-auto text-gray-300 dark:text-zinc-600 mb-2" />
+                                <flux:icon.calendar class="w-10 h-10 mx-auto text-gray-300 dark:text-zinc-600 mb-2" />
                                 <p class="text-sm text-gray-400 dark:text-gray-500">Nenhum evento agendado.</p>
                             </div>
                         @endforelse
@@ -255,7 +255,7 @@
                 <header
                     class="px-5 md:px-6 py-4 border-b border-gray-100 dark:border-zinc-700 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-800/50">
                     <h2 class="font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                        <x-heroicon-s-envelope class="w-5 h-5 text-indigo-500" />
+                        <flux:icon.envelope class="w-5 h-5 text-indigo-500" />
                         Entre em Contato
                     </h2>
                 </header>

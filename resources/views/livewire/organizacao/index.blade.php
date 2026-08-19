@@ -268,7 +268,7 @@ new #[Title('Organização')] class extends Component {
             <div class="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 shadow-sm flex flex-col">
                 <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-zinc-700">
                     <h2 class="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                        <x-heroicon-o-building-library class="w-5 h-5 text-violet-500" />
+                        <flux:icon.building-library class="w-5 h-5 text-violet-500" />
                         Paróquias
                     </h2>
                     <flux:button size="sm" icon="plus" wire:click="abrirModalParoquia()" variant="primary" class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md" aria-label="Nova paróquia">
@@ -323,7 +323,7 @@ new #[Title('Organização')] class extends Component {
                         {{ is_null($paroquiaSelecionada) ? 'opacity-50 pointer-events-none' : '' }}">
                 <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-zinc-700">
                     <h2 class="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                        <x-heroicon-o-flag class="w-5 h-5 text-blue-500" />
+                        <flux:icon.flag class="w-5 h-5 text-blue-500" />
                         Movimentos
                     </h2>
                     @if ($paroquiaSelecionada)
@@ -391,7 +391,7 @@ new #[Title('Organização')] class extends Component {
                         {{ is_null($movimentoSelecionado) ? 'opacity-50 pointer-events-none' : '' }}">
                 <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-zinc-700">
                     <h2 class="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                        <x-heroicon-o-user-group class="w-5 h-5 text-emerald-500" />
+                        <flux:icon.user-group class="w-5 h-5 text-emerald-500" />
                         Equipes
                     </h2>
                     @if ($movimentoSelecionado)
@@ -506,7 +506,7 @@ new #[Title('Organização')] class extends Component {
                 
                 @if ($logo_atual)
                     <div class="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                        <x-heroicon-o-check-circle class="w-4 h-4 text-green-500" />
+                        <flux:icon.check-circle class="w-4 h-4 text-green-500" />
                         Uma imagem já está cadastrada. Enviar uma nova irá substituí-la.
                     </div>
                 @endif

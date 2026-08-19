@@ -19,7 +19,7 @@
         @if (!$pessoa)
             {{-- Estado de cadastro incompleto --}}
             <div class="flex flex-col items-center justify-center text-center p-12 bg-white dark:bg-zinc-800 rounded-xl shadow border border-dashed border-gray-300 dark:border-zinc-600">
-                <x-heroicon-o-identification class="w-14 h-14 text-gray-400 dark:text-gray-500 mb-4" />
+                <flux:icon.identification class="w-14 h-14 text-gray-400 dark:text-gray-500 mb-4" />
                 <p class="text-lg font-medium text-gray-600 dark:text-gray-300">Cadastro Incompleto</p>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     Precisamos dos seus dados completos para saber em que equipe você está.
@@ -28,7 +28,7 @@
         @elseif (! $coordenacao)
             {{-- Estado vazio: usuário não é coordenador em nenhum evento --}}
             <div class="flex flex-col items-center justify-center text-center p-12 bg-white dark:bg-zinc-800 rounded-xl shadow border border-dashed border-gray-300 dark:border-zinc-600">
-                <x-heroicon-o-user-group class="w-14 h-14 text-gray-400 dark:text-gray-500 mb-4" />
+                <flux:icon.user-group class="w-14 h-14 text-gray-400 dark:text-gray-500 mb-4" />
                 <p class="text-lg font-medium text-gray-600 dark:text-gray-300">Você não é coordenador(a) de nenhuma equipe</p>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     Quando você for confirmado(a) como coordenador(a) de uma equipe, os membros aparecerão aqui.
@@ -37,7 +37,7 @@
         @elseif ($membros->isEmpty())
             {{-- Coordenador confirmado, mas sem outros membros ainda --}}
             <div class="flex flex-col items-center justify-center text-center p-12 bg-white dark:bg-zinc-800 rounded-xl shadow border border-dashed border-gray-300 dark:border-zinc-600">
-                <x-heroicon-o-user-group class="w-14 h-14 text-gray-400 dark:text-gray-500 mb-4" />
+                <flux:icon.user-group class="w-14 h-14 text-gray-400 dark:text-gray-500 mb-4" />
                 <p class="text-lg font-medium text-gray-600 dark:text-gray-300">Nenhum membro na equipe ainda</p>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     Os membros confirmados na equipe <strong>{{ $equipe->des_grupo }}</strong> aparecerão aqui.
@@ -58,7 +58,7 @@
                                     class="w-12 h-12 rounded-full object-cover border border-gray-300 dark:border-zinc-600 shadow-sm flex-shrink-0">
                             @else
                                 <div class="w-12 h-12 rounded-full bg-gray-200 dark:bg-zinc-700 flex items-center justify-center flex-shrink-0">
-                                    <x-heroicon-o-user class="w-6 h-6 text-gray-400 dark:text-gray-500" />
+                                    <flux:icon.user class="w-6 h-6 text-gray-400 dark:text-gray-500" />
                                 </div>
                             @endif
 
@@ -91,13 +91,13 @@
                         <div class="space-y-1 text-sm text-gray-700 dark:text-gray-300">
                             @if ($pessoa->tel_pessoa)
                                 <div class="flex items-center gap-2">
-                                    <x-heroicon-o-phone class="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                    <flux:icon.phone class="w-4 h-4 text-gray-400 flex-shrink-0" />
                                     <span>{{ $pessoa->tel_pessoa }}</span>
                                 </div>
                             @endif
                             @if ($pessoa->dat_nascimento)
                                 <div class="flex items-center gap-2">
-                                    <x-heroicon-o-cake class="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                    <flux:icon.cake class="w-4 h-4 text-gray-400 flex-shrink-0" />
                                     <span>{{ $pessoa->dat_nascimento->format('d/m/Y') }}</span>
                                 </div>
                             @endif
@@ -124,7 +124,7 @@
                         <div class="mt-auto pt-3 border-t border-gray-100 dark:border-zinc-700">
                             <a href="{{ route('pessoas.show', $pessoa->idt_pessoa) }}"
                                 class="inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline">
-                                <x-heroicon-o-arrow-top-right-on-square class="w-4 h-4" />
+                                <flux:icon.arrow-up-right class="w-4 h-4" />
                                 Ver cadastro completo
                             </a>
                         </div>

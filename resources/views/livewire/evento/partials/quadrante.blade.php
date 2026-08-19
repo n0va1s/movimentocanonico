@@ -93,7 +93,7 @@ new class extends Component {
                 />
             @else
                 <div class="w-32 h-32 flex items-center justify-center rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-600 text-zinc-400">
-                    <x-heroicon-o-photo class="w-10 h-10" />
+                    <flux:icon.photo class="w-10 h-10" />
                 </div>
             @endif
         </div>
@@ -119,11 +119,11 @@ new class extends Component {
 
             <div class="flex flex-wrap gap-4 mt-3 text-sm text-zinc-600 dark:text-zinc-400">
                 <span class="flex items-center gap-1">
-                    <x-heroicon-o-calendar class="w-4 h-4" />
+                    <flux:icon.calendar class="w-4 h-4" />
                     Início: <strong>{{ \Carbon\Carbon::parse($evento->dat_inicio)->format('d/m/Y') }}</strong>
                 </span>
                 <span class="flex items-center gap-1">
-                    <x-heroicon-o-calendar class="w-4 h-4" />
+                    <flux:icon.calendar class="w-4 h-4" />
                     Término: <strong>{{ \Carbon\Carbon::parse($evento->dat_termino)->format('d/m/Y') }}</strong>
                 </span>
             </div>
@@ -181,7 +181,7 @@ new class extends Component {
                         <div class="flex items-baseline gap-2 text-sm">
                             {{-- Destaque para coordenador (se participante tiver esse campo) --}}
                             @if(!empty($p->ind_coordenador))
-                                <x-heroicon-o-star class="w-3.5 h-3.5 text-yellow-500 shrink-0" />
+                                <flux:icon.star class="w-3.5 h-3.5 text-yellow-500 shrink-0" />
                             @else
                                 <span class="w-3.5 shrink-0"></span>
                             @endif
@@ -227,7 +227,7 @@ new class extends Component {
                     @foreach ($grupo->sortByDesc('ind_coordenador')->sortBy('pessoa.nom_pessoa') as $t)
                         <div class="flex items-baseline gap-2 text-sm">
                             @if($t->ind_coordenador)
-                                <x-heroicon-o-star class="w-3.5 h-3.5 text-yellow-500 shrink-0" title="Coordenador" />
+                                <flux:icon.star class="w-3.5 h-3.5 text-yellow-500 shrink-0" title="Coordenador" />
                             @else
                                 <span class="w-3.5 shrink-0"></span>
                             @endif

@@ -265,7 +265,7 @@ new class extends Component {
             <flux:table.row>
                 <flux:table.cell colspan="5" class="text-center py-12">
                     <div class="flex flex-col items-center">
-                        <x-heroicon-o-document-magnifying-glass class="w-12 h-12 text-zinc-300 mb-2" />
+                        <flux:icon.document-magnifying-glass class="w-12 h-12 text-zinc-300 mb-2" />
                         <flux:text>Nenhuma ficha de visitação encontrada.</flux:text>
                     </div>
                 </flux:table.cell>

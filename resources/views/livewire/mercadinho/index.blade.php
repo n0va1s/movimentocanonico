@@ -30,6 +30,7 @@ new class extends Component {
     public bool $showCompraModal = false;
     public bool $showCreditoModal = false;
     public bool $showExtratoModal = false;
+    public bool $showUserModal = false;
 
     // Aportes de Crédito / Quitação
     public string $val_aporte = '';
@@ -271,6 +272,12 @@ new class extends Component {
     {
         $this->selectedPessoaId = $idt_pessoa;
         $this->showExtratoModal = true;
+    }
+
+    public function openUserModal(int $idt_pessoa): void
+    {
+        $this->selectedPessoaId = $idt_pessoa;
+        $this->showUserModal = true;
     }
 
     // Lógicas de Carrinho
@@ -716,7 +723,11 @@ new class extends Component {
                                         @endphp
                                         <flux:table.row :key="$pessoa->idt_pessoa">
                                             <flux:table.cell class="px-4 py-3 align-middle">
-                                                <div class="font-semibold text-zinc-950 dark:text-white">
+                                                <div 
+                                                    wire:click="openUserModal({{ $pessoa->idt_pessoa }})"
+                                                    class="font-semibold text-zinc-950 dark:text-white cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors"
+                                                    title="Clique para ver os detalhes do usuário"
+                                                >
                                                     {{ $pessoa->nom_pessoa }}
                                                 </div>
                                                 @if($pessoa->nom_apelido)
@@ -783,7 +794,11 @@ new class extends Component {
                                             class="w-full flex items-center justify-between p-4 text-left focus:outline-none"
                                         >
                                             <div class="flex-1 min-w-0 pr-4">
-                                                <div class="font-semibold text-zinc-950 dark:text-white truncate">
+                                                <div 
+                                                    wire:click.stop="openUserModal({{ $pessoa->idt_pessoa }})"
+                                                    class="font-semibold text-zinc-950 dark:text-white truncate cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors"
+                                                    title="Clique para ver os detalhes do usuário"
+                                                >
                                                     {{ $pessoa->nom_pessoa }}
                                                 </div>
                                                 <div class="flex items-center gap-2 mt-1 flex-wrap">
@@ -864,6 +879,93 @@ new class extends Component {
                     {{-- Paginação --}}
                     <div class="mt-4">
                         {{ $this->pessoas->links() }}
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        {{-- MODAL DETALHES DO USUÁRIO --}}
+        @if($showUserModal && $selectedPessoaId)
+            @php
+                $pessoaUserModal = Pessoa::find($selectedPessoaId);
+                
+                $equipeUserModal = 'Sem Equipe';
+                if ($pessoaUserModal && $evento) {
+                    $trab = $pessoaUserModal->trabalhadores()->where('idt_evento', $evento->idt_evento)->first();
+                    if ($trab && $trab->equipe) {
+                        $equipeUserModal = $trab->equipe->des_grupo;
+                    } else {
+                        $part = $pessoaUserModal->participantes()->where('idt_evento', $evento->idt_evento)->first();
+                        if ($part && $part->tip_cor_troca) {
+                            $equipeUserModal = 'Grupo ' . ucfirst($part->tip_cor_troca);
+                        } elseif ($part) {
+                            $equipeUserModal = 'Participante';
+                        }
+                    }
+                }
+
+                $rawTel = $pessoaUserModal?->tel_pessoa;
+                $cleanTel = \App\Services\PhoneService::clean($rawTel);
+                $formattedTel = \App\Services\PhoneService::format($rawTel) ?: ($rawTel ?: 'Não informado');
+                $waUrl = $cleanTel ? "https://wa.me/55{$cleanTel}" : null;
+            @endphp
+            <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" wire:click.self="$set('showUserModal', false)">
+                <div class="w-full max-w-md bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-2xl rounded-2xl p-6 space-y-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <flux:heading size="lg">Detalhes do Usuário</flux:heading>
+                            <flux:subheading>Informações de contato e equipe no evento.</flux:subheading>
+                        </div>
+                        <flux:button variant="ghost" icon="x-mark" wire:click="$set('showUserModal', false)"></flux:button>
+                    </div>
+
+                    <div class="space-y-4">
+                        {{-- Nome --}}
+                        <div class="bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 space-y-1">
+                            <div class="text-xs font-bold text-zinc-400 uppercase tracking-wider">Nome</div>
+                            <div class="font-bold text-base text-zinc-950 dark:text-white">
+                                {{ $pessoaUserModal->nom_pessoa }}
+                            </div>
+                            @if($pessoaUserModal->nom_apelido)
+                                <div class="text-xs text-zinc-500 dark:text-zinc-400">
+                                    Apelido: {{ $pessoaUserModal->nom_apelido }}
+                                </div>
+                            @endif
+                        </div>
+
+                        {{-- Equipe --}}
+                        <div class="bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 space-y-1">
+                            <div class="text-xs font-bold text-zinc-400 uppercase tracking-wider">Equipe / Grupo</div>
+                            <div class="font-semibold text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                                <flux:icon.user-group class="size-4 text-indigo-500 shrink-0" />
+                                <span>{{ $equipeUserModal }}</span>
+                            </div>
+                        </div>
+
+                        {{-- WhatsApp --}}
+                        <div class="bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 space-y-1">
+                            <div class="text-xs font-bold text-zinc-400 uppercase tracking-wider">WhatsApp</div>
+                            @if($waUrl)
+                                <a 
+                                    href="{{ $waUrl }}" 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    class="inline-flex items-center gap-2 text-green-600 dark:text-green-400 font-bold text-base hover:underline hover:text-green-700 dark:hover:text-green-300 transition-colors"
+                                >
+                                    <flux:icon.phone class="size-4 text-green-500 shrink-0" />
+                                    <span>{{ $formattedTel }}</span>
+                                    <flux:icon.arrow-up-right class="size-3.5 text-green-500 shrink-0" />
+                                </a>
+                            @else
+                                <div class="text-sm text-zinc-500 dark:text-zinc-400 italic">
+                                    {{ $formattedTel }}
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end pt-2 border-t border-zinc-200 dark:border-zinc-700">
+                        <flux:button variant="ghost" wire:click="$set('showUserModal', false)">Fechar</flux:button>
                     </div>
                 </div>
             </div>
@@ -1224,12 +1326,12 @@ new class extends Component {
                 <nav class="-mb-px flex space-x-8" aria-label="Tabs">
                     <button wire:click="$set('status', 'ativos')" 
                        class="border-b-2 py-4 px-1 text-sm font-semibold transition-colors duration-200 flex items-center gap-2 {{ $status === 'ativos' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200' }}">
-                        <x-heroicon-o-calendar class="w-4 h-4" />
+                        <flux:icon.calendar class="w-4 h-4" />
                         <span>Eventos Ativos</span>
                     </button>
                     <button wire:click="$set('status', 'encerrados')" 
                        class="border-b-2 py-4 px-1 text-sm font-semibold transition-colors duration-200 flex items-center gap-2 {{ $status === 'encerrados' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200' }}">
-                        <x-heroicon-o-archive-box class="w-4 h-4" />
+                        <flux:icon.archive-box class="w-4 h-4" />
                         <span>Eventos Encerrados</span>
                     </button>
                 </nav>
@@ -1260,12 +1362,12 @@ new class extends Component {
 
                                 <div class="space-y-3">
                                     <div class="flex items-center text-gray-600 dark:text-gray-300 text-sm">
-                                        <x-heroicon-o-calendar class="w-4 h-4 mr-2 text-blue-500" />
+                                        <flux:icon.calendar class="w-4 h-4 mr-2 text-blue-500" />
                                         <span>{{ $evt->getDataInicioFormatada() }} a {{ $evt->getDataTerminoFormatada() }}</span>
                                     </div>
 
                                     <div class="flex items-center text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">
-                                        <x-heroicon-o-tag class="w-4 h-4 mr-2 shrink-0" />
+                                        <flux:icon.tag class="w-4 h-4 mr-2 shrink-0" />
                                         <span class="flex-1">{{ $evt->tip_evento->label() }}</span>
                                     </div>
                                 </div>

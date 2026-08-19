@@ -9,7 +9,7 @@
         {{-- Cabeçalho Principal --}}
         <header class="mb-8 border-b border-gray-200 dark:border-zinc-700 pb-5">
             <flux:heading size="xl" class="text-indigo-900 dark:text-indigo-100 font-bold tracking-tight mb-1 flex items-center gap-3">
-                <x-heroicon-o-cloud-arrow-up class="w-8 h-8 text-blue-500" />
+                <flux:icon.arrow-up-tray class="w-8 h-8 text-blue-500" />
                 Importar Planilhas de Eventos
             </flux:heading>
             <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm md:text-base">
@@ -20,7 +20,7 @@
         {{-- Alerta de Informações Gerais --}}
         <div class="mb-8 p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl text-sm text-blue-800 dark:text-blue-200">
             <div class="flex items-start gap-3">
-                <x-heroicon-s-information-circle class="w-5 h-5 mt-0.5 shrink-0" />
+                <flux:icon.information-circle class="w-5 h-5 mt-0.5 shrink-0" />
                 <div>
                     <strong class="font-bold">Regras de Processamento Importantes:</strong>
                     <ul class="list-disc ml-5 mt-1 space-y-1">
@@ -37,7 +37,7 @@
         @if (session('success'))
             <div class="mb-8 p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-xl text-sm text-green-800 dark:text-green-200 whitespace-pre-line">
                 <div class="flex items-start gap-3">
-                    <x-heroicon-s-check-circle class="w-5 h-5 mt-0.5 shrink-0" />
+                    <flux:icon.check-circle class="w-5 h-5 mt-0.5 shrink-0" />
                     <div>{{ session('success') }}</div>
                 </div>
             </div>
@@ -46,7 +46,7 @@
         @if (session('error'))
             <div class="mb-8 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl text-sm text-red-800 dark:text-red-200 whitespace-pre-line">
                 <div class="flex items-start gap-3">
-                    <x-heroicon-s-x-circle class="w-5 h-5 mt-0.5 shrink-0" />
+                    <flux:icon.x-circle class="w-5 h-5 mt-0.5 shrink-0" />
                     <div>{{ session('error') }}</div>
                 </div>
             </div>
@@ -60,7 +60,7 @@
                 <div class="flex justify-between items-start mb-6">
                     <div>
                         <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                            <x-heroicon-o-users class="w-5 h-5 text-indigo-500" />
+                            <flux:icon.users class="w-5 h-5 text-indigo-500" />
                             1. Importar Participantes
                         </h2>
                         <p class="text-gray-500 dark:text-gray-400 text-xs mt-1">Inscreva participantes em massa em um evento ativo.</p>
@@ -95,7 +95,7 @@
                         {{-- Arquivo --}}
                         <div class="p-4 border-2 border-dashed border-gray-200 dark:border-zinc-700 rounded-lg bg-gray-50 dark:bg-zinc-800/40 text-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
                             <label for="arquivo_participantes" class="cursor-pointer block">
-                                <x-heroicon-o-document-text class="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                                <flux:icon.document-text class="w-8 h-8 mx-auto text-gray-400 mb-2" />
                                 <span class="text-xs font-bold text-gray-700 dark:text-zinc-300 block mb-1">Escolher planilha CSV</span>
                                 <span class="text-[10px] text-gray-500 dark:text-zinc-400 block mb-1">Arquivos do tipo .csv separados por ; ou ,</span>
                                 <span id="nome_arquivo_participantes" class="text-xs text-indigo-600 dark:text-indigo-400 mt-2 block font-medium hidden"></span>
@@ -121,7 +121,7 @@
                 <div class="flex justify-between items-start mb-6">
                     <div>
                         <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                            <x-heroicon-o-briefcase class="w-5 h-5 text-emerald-500" />
+                            <flux:icon.briefcase class="w-5 h-5 text-emerald-500" />
                             2. Importar Trabalhadores
                         </h2>
                         <p class="text-gray-500 dark:text-gray-400 text-xs mt-1">Aloque equipes e trabalhadores em massa em um evento ativo.</p>
@@ -156,7 +156,7 @@
                         {{-- Arquivo --}}
                         <div class="p-4 border-2 border-dashed border-gray-200 dark:border-zinc-700 rounded-lg bg-gray-50 dark:bg-zinc-800/40 text-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
                             <label for="arquivo_trabalhadores" class="cursor-pointer block">
-                                <x-heroicon-o-document-text class="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                                <flux:icon.document-text class="w-8 h-8 mx-auto text-gray-400 mb-2" />
                                 <span class="text-xs font-bold text-gray-700 dark:text-zinc-300 block mb-1">Escolher planilha CSV</span>
                                 <span class="text-[10px] text-gray-500 dark:text-zinc-400 block mb-1">Arquivos do tipo .csv separados por ; ou ,</span>
                                 <span id="nome_arquivo_trabalhadores" class="text-xs text-emerald-600 dark:text-emerald-400 mt-2 block font-medium hidden"></span>
@@ -182,7 +182,7 @@
         {{-- Explicação dos Campos --}}
         <flux:card class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 shadow-sm p-6 rounded-xl">
             <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                <x-heroicon-o-table-cells class="w-5 h-5 text-blue-500" />
+                <flux:icon.table-cells class="w-5 h-5 text-blue-500" />
                 Guia de Colunas do CSV e Formatações
             </h3>
             <p class="text-gray-600 dark:text-gray-400 text-sm mb-6">
