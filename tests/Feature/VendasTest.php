@@ -210,6 +210,39 @@ test('gestor pode cadastrar produtos pelo componente de catalogo', function () {
     expect($produto->ind_favorito)->toBeTrue();
 });
 
+test('gestor pode cadastrar produto consignado com loja e filtrar por loja no catalogo', function () {
+    $this->actingAs($this->admin);
+
+    Volt::test('mercadinho.produtos', ['evento' => $this->evento])
+        ->call('openCreateModal')
+        ->set('nom_produto', 'Camiseta do Evento')
+        ->set('val_preco', '35.00')
+        ->set('qtd_produto', '15')
+        ->set('ind_consignado', true)
+        ->set('nom_loja', 'Malharia Paroquial')
+        ->call('salvar')
+        ->assertSee('Camiseta do Evento')
+        ->assertSee('Consignado')
+        ->assertSee('Malharia Paroquial');
+
+    $produto = Produto::where('nom_produto', 'Camiseta do Evento')->first();
+    expect($produto)->not->toBeNull();
+    expect($produto->ind_consignado)->toBeTrue();
+    expect($produto->nom_loja)->toBe('Malharia Paroquial');
+
+    // Testar os filtros por tipo e loja no componente
+    Volt::test('mercadinho.produtos', ['evento' => $this->evento])
+        ->set('tipoFilter', 'consignado')
+        ->assertSee('Camiseta do Evento')
+        ->set('tipoFilter', 'proprio')
+        ->assertDontSee('Camiseta do Evento')
+        ->set('tipoFilter', '')
+        ->set('lojaFilter', 'Malharia Paroquial')
+        ->assertSee('Camiseta do Evento')
+        ->set('lojaFilter', 'Outra Loja Inexistente')
+        ->assertDontSee('Camiseta do Evento');
+});
+
 test('gestor pode registrar compra no mercadinho usando o component Volt', function () {
     $this->actingAs($this->admin);
 
