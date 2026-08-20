@@ -606,6 +606,52 @@ describe('Participantes — participantes.blade.php', function () {
             ->call('toggleCorTroca', 'vermelha')
             ->assertSet('corTroca', '');
     });
+
+    test('sortBy altera coluna e direção de ordenação e reinicia paginação', function () {
+        Volt::test('evento.partials.participantes', ['evento' => $this->evento])
+            ->assertSet('sortColumn', 'nom_pessoa')
+            ->assertSet('sortDirection', 'asc')
+            ->call('sortBy', 'dat_nascimento')
+            ->assertSet('sortColumn', 'dat_nascimento')
+            ->assertSet('sortDirection', 'asc')
+            ->call('sortBy', 'dat_nascimento')
+            ->assertSet('sortColumn', 'dat_nascimento')
+            ->assertSet('sortDirection', 'desc')
+            ->call('sortBy', 'coluna_invalida')
+            ->assertSet('sortColumn', 'dat_nascimento');
+    });
+
+    test('ordenar por data de nascimento organiza participantes por idade', function () {
+        $pMaisNovo = Pessoa::factory()->create([
+            'nom_pessoa' => 'Ana Jovem',
+            'dat_nascimento' => '2010-01-01',
+        ]);
+        $pMaisVelho = Pessoa::factory()->create([
+            'nom_pessoa' => 'Zeca Idoso',
+            'dat_nascimento' => '1950-01-01',
+        ]);
+
+        Participante::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'idt_pessoa' => $pMaisNovo->idt_pessoa,
+        ]);
+        Participante::factory()->create([
+            'idt_evento' => $this->evento->idt_evento,
+            'idt_pessoa' => $pMaisVelho->idt_pessoa,
+        ]);
+
+        $test = Volt::test('evento.partials.participantes', ['evento' => $this->evento])
+            ->call('sortBy', 'dat_nascimento');
+
+        $lista = $test->get('participantes')->pluck('pessoa.nom_pessoa')->all();
+        // Em ordem crescente de data de nascimento: 1950 vem antes de 2010
+        expect($lista[0])->toBe('Zeca Idoso');
+
+        $test->call('sortBy', 'dat_nascimento');
+        $listaDesc = $test->get('participantes')->pluck('pessoa.nom_pessoa')->all();
+        // Em ordem decrescente de data de nascimento: 2010 vem antes de 1950
+        expect($listaDesc[0])->toBe('Ana Jovem');
+    });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

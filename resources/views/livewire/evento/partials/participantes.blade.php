@@ -12,6 +12,8 @@ new class extends Component {
     public Evento $evento;
     public string $search = '';
     public string $corTroca = '';
+    public string $sortColumn = 'nom_pessoa';
+    public string $sortDirection = 'asc';
 
     public ?int $parentescoParticipanteId = null;
     public string $desParentescoInput = '';
@@ -29,6 +31,61 @@ new class extends Component {
     public function updatedCorTroca(): void
     {
         $this->resetPage();
+    }
+
+    public function sortBy(string $column): void
+    {
+        $allowedColumns = ['nom_pessoa', 'dat_nascimento', 'des_endereco', 'tip_cor_troca', 'tam_camiseta', 'responsavel'];
+        if (! in_array($column, $allowedColumns)) {
+            return;
+        }
+
+        if ($this->sortColumn === $column) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortColumn = $column;
+            $this->sortDirection = 'asc';
+        }
+
+        $this->resetPage();
+    }
+
+    protected function applySorting($query)
+    {
+        switch ($this->sortColumn) {
+            case 'dat_nascimento':
+                return $query->orderBy('pessoa.dat_nascimento', $this->sortDirection);
+            case 'des_endereco':
+                return $query->orderBy('pessoa.des_endereco', $this->sortDirection);
+            case 'tip_cor_troca':
+                return $query->orderBy('participante.tip_cor_troca', $this->sortDirection);
+            case 'tam_camiseta':
+                return $query->orderBy('pessoa.tam_camiseta', $this->sortDirection);
+            case 'responsavel':
+                $eventoId = $this->evento->idt_evento;
+                return $query
+                    ->leftJoin('ficha', function ($join) use ($eventoId) {
+                        $join->on('ficha.idt_pessoa', '=', 'pessoa.idt_pessoa')
+                            ->where('ficha.idt_evento', '=', $eventoId)
+                            ->whereNull('ficha.deleted_at');
+                    })
+                    ->leftJoin('ficha_vem', 'ficha_vem.idt_ficha', '=', 'ficha.idt_ficha')
+                    ->leftJoin('ficha_sgm', 'ficha_sgm.idt_ficha', '=', 'ficha.idt_ficha')
+                    ->orderByRaw("
+                        COALESCE(
+                            NULLIF(ficha_vem.nom_responsavel, ''),
+                            NULLIF(ficha_vem.nom_mae, ''),
+                            NULLIF(ficha_vem.nom_pai, ''),
+                            NULLIF(ficha_sgm.nom_falar_com, ''),
+                            NULLIF(ficha_sgm.nom_mae, ''),
+                            NULLIF(ficha_sgm.nom_pai, ''),
+                            'ZZZZZZ'
+                        ) {$this->sortDirection}
+                    ");
+            case 'nom_pessoa':
+            default:
+                return $query->orderBy('pessoa.nom_pessoa', $this->sortDirection);
+        }
     }
 
     public function toggleCorTroca(string $cor): void
@@ -107,7 +164,7 @@ new class extends Component {
     {
         $eventoId = $this->evento->idt_evento;
 
-        $participantes = \App\Models\Participante::query()
+        $participantesQuery = \App\Models\Participante::query()
             ->select('participante.*')
             ->join('pessoa', 'participante.idt_pessoa', '=', 'pessoa.idt_pessoa')
             ->where('participante.idt_evento', $eventoId)
@@ -126,9 +183,11 @@ new class extends Component {
                     $query->where('idt_evento', $eventoId)
                         ->with(['fichaVem', 'fichaSGM']);
                 }
-            ])
-            ->orderBy('pessoa.nom_pessoa', 'asc')
-            ->get();
+            ]);
+
+        $this->applySorting($participantesQuery);
+
+        $participantes = $participantesQuery->get();
 
         $cabecalho = [
             'ID Participante',
@@ -243,30 +302,32 @@ new class extends Component {
 
     public function with(): array
     {
+        $query = \App\Models\Participante::query()
+            ->select('participante.*')
+            ->join('pessoa', 'participante.idt_pessoa', '=', 'pessoa.idt_pessoa')
+            ->where('participante.idt_evento', $this->evento->idt_evento)
+            ->with([
+                'pessoa.foto',
+                'pessoa.restricoes',
+                'pessoa.fichas' => function ($query) {
+                    $query->where('idt_evento', $this->evento->idt_evento)
+                        ->with(['fichaVem', 'fichaSGM']);
+                }
+            ])
+            ->when($this->corTroca, function ($query) {
+                $query->where('participante.tip_cor_troca', $this->corTroca);
+            })
+            ->when($this->search, function ($query) {
+                $query->where(function ($q) {
+                    $q->where('pessoa.nom_pessoa', 'like', '%' . $this->search . '%')
+                        ->orWhere('pessoa.nom_apelido', 'like', '%' . $this->search . '%');
+                });
+            });
+
+        $this->applySorting($query);
+
         return [
-            'participantes' => \App\Models\Participante::query()
-                ->select('participante.*')
-                ->join('pessoa', 'participante.idt_pessoa', '=', 'pessoa.idt_pessoa')
-                ->where('participante.idt_evento', $this->evento->idt_evento)
-                ->with([
-                    'pessoa.foto',
-                    'pessoa.restricoes',
-                    'pessoa.fichas' => function ($query) {
-                        $query->where('idt_evento', $this->evento->idt_evento)
-                            ->with(['fichaVem', 'fichaSGM']);
-                    }
-                ])
-                ->when($this->corTroca, function ($query) {
-                    $query->where('participante.tip_cor_troca', $this->corTroca);
-                })
-                ->when($this->search, function ($query) {
-                    $query->where(function ($q) {
-                        $q->where('pessoa.nom_pessoa', 'like', '%' . $this->search . '%')
-                            ->orWhere('pessoa.nom_apelido', 'like', '%' . $this->search . '%');
-                    });
-                })
-                ->orderBy('pessoa.nom_pessoa', 'asc')
-                ->paginate(10),
+            'participantes' => $query->paginate(10),
         ];
     }
 }; ?>
@@ -357,15 +418,99 @@ new class extends Component {
     {{-- 4. Tabela com rolagem horizontal e padding adequado nas bordas --}}
     <div class="overflow-x-auto border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 shadow-xs">
         <table class="w-full text-left text-sm border-collapse min-w-[950px]">
-            <thead class="bg-zinc-50 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-700">
+            <thead class="bg-zinc-50 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-700 select-none">
                 <tr>
-                    <th class="px-6 py-4 font-bold text-zinc-950 dark:text-white">Nome</th>
-                    <th class="px-6 py-4 font-bold text-zinc-950 dark:text-white whitespace-nowrap">Data Nasc</th>
-                    <th class="px-6 py-4 font-bold text-zinc-950 dark:text-white">Endereço</th>
-                    <th class="px-6 py-4 font-bold text-zinc-950 dark:text-white whitespace-nowrap">Cor do Grupo</th>
-                    <th class="px-6 py-4 font-bold text-zinc-950 dark:text-white whitespace-nowrap">Camiseta</th>
-                    <th class="px-6 py-4 font-bold text-zinc-950 dark:text-white whitespace-nowrap">Responsável</th>
-                    <th class="px-6 py-4 font-bold text-zinc-950 dark:text-white text-right whitespace-nowrap">Ações</th>
+                    <th scope="col" class="px-6 py-4 font-bold text-zinc-950 dark:text-white" aria-sort="{{ $sortColumn === 'nom_pessoa' ? ($sortDirection === 'asc' ? 'ascending' : 'descending') : 'none' }}">
+                        <button
+                            type="button"
+                            wire:click="sortBy('nom_pessoa')"
+                            class="group inline-flex items-center gap-1.5 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded transition-colors"
+                            title="Clique para ordenar por Nome"
+                        >
+                            <span>Nome</span>
+                            @if ($sortColumn === 'nom_pessoa')
+                                <flux:icon :icon="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-4 text-indigo-600 dark:text-indigo-400" />
+                            @else
+                                <flux:icon.arrows-up-down class="size-3.5 text-zinc-400 opacity-40 group-hover:opacity-100 transition-opacity" />
+                            @endif
+                        </button>
+                    </th>
+                    <th scope="col" class="px-6 py-4 font-bold text-zinc-950 dark:text-white whitespace-nowrap" aria-sort="{{ $sortColumn === 'dat_nascimento' ? ($sortDirection === 'asc' ? 'ascending' : 'descending') : 'none' }}">
+                        <button
+                            type="button"
+                            wire:click="sortBy('dat_nascimento')"
+                            class="group inline-flex items-center gap-1.5 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded transition-colors"
+                            title="Clique para ordenar por Data de Nascimento / Idade"
+                        >
+                            <span>Data Nasc</span>
+                            @if ($sortColumn === 'dat_nascimento')
+                                <flux:icon :icon="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-4 text-indigo-600 dark:text-indigo-400" />
+                            @else
+                                <flux:icon.arrows-up-down class="size-3.5 text-zinc-400 opacity-40 group-hover:opacity-100 transition-opacity" />
+                            @endif
+                        </button>
+                    </th>
+                    <th scope="col" class="px-6 py-4 font-bold text-zinc-950 dark:text-white" aria-sort="{{ $sortColumn === 'des_endereco' ? ($sortDirection === 'asc' ? 'ascending' : 'descending') : 'none' }}">
+                        <button
+                            type="button"
+                            wire:click="sortBy('des_endereco')"
+                            class="group inline-flex items-center gap-1.5 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded transition-colors"
+                            title="Clique para ordenar por Endereço"
+                        >
+                            <span>Endereço</span>
+                            @if ($sortColumn === 'des_endereco')
+                                <flux:icon :icon="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-4 text-indigo-600 dark:text-indigo-400" />
+                            @else
+                                <flux:icon.arrows-up-down class="size-3.5 text-zinc-400 opacity-40 group-hover:opacity-100 transition-opacity" />
+                            @endif
+                        </button>
+                    </th>
+                    <th scope="col" class="px-6 py-4 font-bold text-zinc-950 dark:text-white whitespace-nowrap" aria-sort="{{ $sortColumn === 'tip_cor_troca' ? ($sortDirection === 'asc' ? 'ascending' : 'descending') : 'none' }}">
+                        <button
+                            type="button"
+                            wire:click="sortBy('tip_cor_troca')"
+                            class="group inline-flex items-center gap-1.5 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded transition-colors"
+                            title="Clique para ordenar por Cor do Grupo"
+                        >
+                            <span>Cor do Grupo</span>
+                            @if ($sortColumn === 'tip_cor_troca')
+                                <flux:icon :icon="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-4 text-indigo-600 dark:text-indigo-400" />
+                            @else
+                                <flux:icon.arrows-up-down class="size-3.5 text-zinc-400 opacity-40 group-hover:opacity-100 transition-opacity" />
+                            @endif
+                        </button>
+                    </th>
+                    <th scope="col" class="px-6 py-4 font-bold text-zinc-950 dark:text-white whitespace-nowrap" aria-sort="{{ $sortColumn === 'tam_camiseta' ? ($sortDirection === 'asc' ? 'ascending' : 'descending') : 'none' }}">
+                        <button
+                            type="button"
+                            wire:click="sortBy('tam_camiseta')"
+                            class="group inline-flex items-center gap-1.5 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded transition-colors"
+                            title="Clique para ordenar por Tamanho de Camiseta"
+                        >
+                            <span>Camiseta</span>
+                            @if ($sortColumn === 'tam_camiseta')
+                                <flux:icon :icon="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-4 text-indigo-600 dark:text-indigo-400" />
+                            @else
+                                <flux:icon.arrows-up-down class="size-3.5 text-zinc-400 opacity-40 group-hover:opacity-100 transition-opacity" />
+                            @endif
+                        </button>
+                    </th>
+                    <th scope="col" class="px-6 py-4 font-bold text-zinc-950 dark:text-white whitespace-nowrap" aria-sort="{{ $sortColumn === 'responsavel' ? ($sortDirection === 'asc' ? 'ascending' : 'descending') : 'none' }}">
+                        <button
+                            type="button"
+                            wire:click="sortBy('responsavel')"
+                            class="group inline-flex items-center gap-1.5 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded transition-colors"
+                            title="Clique para ordenar por Nome do Responsável"
+                        >
+                            <span>Responsável</span>
+                            @if ($sortColumn === 'responsavel')
+                                <flux:icon :icon="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-4 text-indigo-600 dark:text-indigo-400" />
+                            @else
+                                <flux:icon.arrows-up-down class="size-3.5 text-zinc-400 opacity-40 group-hover:opacity-100 transition-opacity" />
+                            @endif
+                        </button>
+                    </th>
+                    <th scope="col" class="px-6 py-4 font-bold text-zinc-950 dark:text-white text-right whitespace-nowrap">Ações</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700/60">
