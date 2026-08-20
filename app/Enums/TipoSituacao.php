@@ -180,6 +180,11 @@ enum TipoSituacao: string
                 'icon' => 'x-circle',
                 'label' => 'Desistência'
             ],
+            self::APROVADA => [
+                'bg' => 'bg-teal-50 dark:bg-teal-950/20 border border-teal-200 dark:border-teal-900 text-teal-700 dark:text-teal-400',
+                'icon' => 'check-circle',
+                'label' => 'Aprovada'
+            ],
             default => [
                 'bg' => 'bg-zinc-50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-900 text-zinc-700 dark:text-zinc-400',
                 'icon' => 'document-text',

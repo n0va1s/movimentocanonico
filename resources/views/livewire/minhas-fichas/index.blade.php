@@ -64,6 +64,7 @@ new class extends Component {
                 TipoSituacao::CONTATO->value,
                 TipoSituacao::AGUARDANDO->value,
                 TipoSituacao::VISITADA->value,
+                TipoSituacao::APROVADA->value,
                 TipoSituacao::DESISTENCIA->value
             ])
             ->groupBy('tip_situacao')
@@ -75,6 +76,7 @@ new class extends Component {
             TipoSituacao::CONTATO->value => $counts[TipoSituacao::CONTATO->value] ?? 0,
             TipoSituacao::AGUARDANDO->value => $counts[TipoSituacao::AGUARDANDO->value] ?? 0,
             TipoSituacao::VISITADA->value => $counts[TipoSituacao::VISITADA->value] ?? 0,
+            TipoSituacao::APROVADA->value => $counts[TipoSituacao::APROVADA->value] ?? 0,
             TipoSituacao::DESISTENCIA->value => $counts[TipoSituacao::DESISTENCIA->value] ?? 0,
         ];
     }
@@ -144,6 +146,13 @@ new class extends Component {
     public function alterarSituacao(int $fichaId, string $novaSituacao): void
     {
         try {
+            $ficha = Ficha::findOrFail($fichaId);
+            if ($ficha->tip_situacao === TipoSituacao::APROVADA) {
+                $this->dispatch('notify', message: 'Não é possível alterar o status de uma ficha que já foi aprovada.', type: 'erro');
+                \Flux::toast('Não é possível alterar o status de uma ficha que já foi aprovada.', variant: 'warning');
+                return;
+            }
+
             $situacaoEnum = TipoSituacao::from($novaSituacao);
             \App\Services\FichaService::atualizarSituacaoFicha($fichaId, $situacaoEnum);
             \Flux::toast(__('messages.alerts.success.ficha_updated'), variant: 'success');
@@ -402,13 +411,16 @@ new class extends Component {
                         TipoSituacao::CONTATO,
                         TipoSituacao::AGUARDANDO,
                         TipoSituacao::VISITADA,
+                        TipoSituacao::APROVADA,
                         TipoSituacao::DESISTENCIA
                     ]);
                 } else {
                     $query->whereIn('tip_situacao', [
                         TipoSituacao::SELECIONADA,
                         TipoSituacao::CONTATO,
-                        TipoSituacao::AGUARDANDO
+                        TipoSituacao::AGUARDANDO,
+                        TipoSituacao::VISITADA,
+                        TipoSituacao::APROVADA
                     ]);
                 }
             });
@@ -492,7 +504,9 @@ new class extends Component {
                 $query->whereIn('tip_situacao', [
                     TipoSituacao::SELECIONADA,
                     TipoSituacao::CONTATO,
-                    TipoSituacao::AGUARDANDO
+                    TipoSituacao::AGUARDANDO,
+                    TipoSituacao::VISITADA,
+                    TipoSituacao::APROVADA
                 ]);
             })
             ->orderBy('created_at', 'desc')
@@ -690,6 +704,7 @@ new class extends Component {
                                     App\Enums\TipoSituacao::CONTATO, 
                                     App\Enums\TipoSituacao::AGUARDANDO,
                                     App\Enums\TipoSituacao::VISITADA,
+                                    App\Enums\TipoSituacao::APROVADA,
                                     App\Enums\TipoSituacao::DESISTENCIA,
                                 ] as $sit)
                                     <flux:select.option value="{{ $sit->value }}">{{ $sit === App\Enums\TipoSituacao::SELECIONADA ? 'Aguardando' : $sit->label() }}</flux:select.option>
@@ -848,68 +863,75 @@ new class extends Component {
 
                             {{-- Actions Footer --}}
                             <div class="mt-6 pt-4 border-t border-zinc-100 dark:border-zinc-700">
-                                <div class="text-[10px] text-zinc-400 dark:text-zinc-500 font-semibold tracking-wider text-center uppercase mb-3">
-                                    ATUALIZAR STATUS
-                                </div>
-                                
-                                <div class="flex flex-row gap-2 w-full">
-                                    {{-- Contato Feito --}}
-                                    @php $isActive = $ficha->tip_situacao->value === 'F'; @endphp
-                                    <button 
-                                        wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'F')" 
-                                        @disabled($isActive)
-                                        class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-xl transition duration-150 cursor-pointer text-center text-[10px] font-medium leading-tight tracking-tight border w-full
-                                        {{ $isActive 
-                                            ? 'bg-cyan-50/70 border-cyan-100 text-cyan-600 dark:bg-cyan-950/20 dark:border-cyan-900/60 dark:text-cyan-400 opacity-60 cursor-not-allowed' 
-                                            : 'bg-white border-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:bg-cyan-50 hover:text-cyan-700 hover:border-cyan-300 dark:hover:bg-cyan-950/20 dark:hover:text-cyan-400 dark:hover:border-cyan-800' }}"
-                                    >
-                                        <flux:icon.phone class="size-4 mb-1" />
-                                        <span>Contato Feito</span>
-                                    </button>
+                                @if ($ficha->tip_situacao === \App\Enums\TipoSituacao::APROVADA)
+                                    <div class="flex items-center justify-center gap-2 p-3 rounded-xl bg-teal-50 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-300 text-xs font-semibold text-center">
+                                        <flux:icon.check-circle class="size-4 shrink-0 text-teal-600 dark:text-teal-400" />
+                                        <span>Ficha Aprovada (Status Concluído)</span>
+                                    </div>
+                                @else
+                                    <div class="text-[10px] text-zinc-400 dark:text-zinc-500 font-semibold tracking-wider text-center uppercase mb-3">
+                                        ATUALIZAR STATUS
+                                    </div>
+                                    
+                                    <div class="flex flex-row gap-2 w-full">
+                                        {{-- Contato Feito --}}
+                                        @php $isActive = $ficha->tip_situacao->value === 'F'; @endphp
+                                        <button 
+                                            wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'F')" 
+                                            @disabled($isActive)
+                                            class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-xl transition duration-150 cursor-pointer text-center text-[10px] font-medium leading-tight tracking-tight border w-full
+                                            {{ $isActive 
+                                                ? 'bg-cyan-50/70 border-cyan-100 text-cyan-600 dark:bg-cyan-950/20 dark:border-cyan-900/60 dark:text-cyan-400 opacity-60 cursor-not-allowed' 
+                                                : 'bg-white border-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:bg-cyan-50 hover:text-cyan-700 hover:border-cyan-300 dark:hover:bg-cyan-950/20 dark:hover:text-cyan-400 dark:hover:border-cyan-800' }}"
+                                        >
+                                            <flux:icon.phone class="size-4 mb-1" />
+                                            <span>Contato Feito</span>
+                                        </button>
 
-                                    {{-- Agendado --}}
-                                    @php $isActive = $ficha->tip_situacao->value === 'W'; @endphp
-                                    <button 
-                                        wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'W')" 
-                                        @disabled($isActive)
-                                        class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-xl transition duration-150 cursor-pointer text-center text-[10px] font-medium leading-tight tracking-tight border w-full
-                                        {{ $isActive 
-                                            ? 'bg-amber-50/70 border-amber-100 text-amber-600 dark:bg-amber-950/20 dark:border-amber-900/60 dark:text-amber-400 opacity-60 cursor-not-allowed' 
-                                            : 'bg-white border-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300 dark:hover:bg-amber-950/20 dark:hover:text-amber-400 dark:hover:border-amber-800' }}"
-                                    >
-                                        <flux:icon.clock class="size-4 mb-1" />
-                                        <span>Agendado</span>
-                                    </button>
+                                        {{-- Agendado --}}
+                                        @php $isActive = $ficha->tip_situacao->value === 'W'; @endphp
+                                        <button 
+                                            wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'W')" 
+                                            @disabled($isActive)
+                                            class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-xl transition duration-150 cursor-pointer text-center text-[10px] font-medium leading-tight tracking-tight border w-full
+                                            {{ $isActive 
+                                                ? 'bg-amber-50/70 border-amber-100 text-amber-600 dark:bg-amber-950/20 dark:border-amber-900/60 dark:text-amber-400 opacity-60 cursor-not-allowed' 
+                                                : 'bg-white border-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300 dark:hover:bg-amber-950/20 dark:hover:text-amber-400 dark:hover:border-amber-800' }}"
+                                        >
+                                            <flux:icon.clock class="size-4 mb-1" />
+                                            <span>Agendado</span>
+                                        </button>
 
-                                    {{-- Visitado --}}
-                                    @php $isActive = $ficha->tip_situacao->value === 'V'; @endphp
-                                    <button 
-                                        wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'V')" 
-                                        @disabled($isActive)
-                                        class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-xl transition duration-150 cursor-pointer text-center text-[10px] font-medium leading-tight tracking-tight border w-full
-                                        {{ $isActive 
-                                            ? 'bg-emerald-50/70 border-emerald-100 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900/60 dark:text-emerald-400 opacity-60 cursor-not-allowed' 
-                                            : 'bg-white border-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 dark:hover:bg-emerald-950/20 dark:hover:text-emerald-400 dark:hover:border-emerald-800' }}"
-                                    >
-                                        <flux:icon.book-open class="size-4 mb-1" />
-                                        <span>Visitado</span>
-                                    </button>
+                                        {{-- Visitado --}}
+                                        @php $isActive = $ficha->tip_situacao->value === 'V'; @endphp
+                                        <button 
+                                            wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'V')" 
+                                            @disabled($isActive)
+                                            class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-xl transition duration-150 cursor-pointer text-center text-[10px] font-medium leading-tight tracking-tight border w-full
+                                            {{ $isActive 
+                                                ? 'bg-emerald-50/70 border-emerald-100 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900/60 dark:text-emerald-400 opacity-60 cursor-not-allowed' 
+                                                : 'bg-white border-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 dark:hover:bg-emerald-950/20 dark:hover:text-emerald-400 dark:hover:border-emerald-800' }}"
+                                        >
+                                            <flux:icon.book-open class="size-4 mb-1" />
+                                            <span>Visitado</span>
+                                        </button>
 
-                                    {{-- Desistência --}}
-                                    @php $isActive = $ficha->tip_situacao->value === 'D'; @endphp
-                                    <button 
-                                        wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'D')" 
-                                        @disabled($isActive)
-                                        wire:confirm="Tem certeza de que deseja marcar esta ficha como desistência?"
-                                        class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-xl transition duration-150 cursor-pointer text-center text-[10px] font-medium leading-tight tracking-tight border w-full
-                                        {{ $isActive 
-                                            ? 'bg-rose-50/70 border-rose-100 text-rose-600 dark:bg-rose-950/20 dark:border-rose-900/60 dark:text-rose-400 opacity-60 cursor-not-allowed' 
-                                            : 'bg-white border-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 dark:hover:bg-rose-950/20 dark:hover:text-rose-400 dark:hover:border-rose-800' }}"
-                                    >
-                                        <flux:icon.x-circle class="size-4 mb-1" />
-                                        <span>Desistência</span>
-                                    </button>
-                                </div>
+                                        {{-- Desistência --}}
+                                        @php $isActive = $ficha->tip_situacao->value === 'D'; @endphp
+                                        <button 
+                                            wire:click="alterarSituacao({{ $ficha->idt_ficha }}, 'D')" 
+                                            @disabled($isActive)
+                                            wire:confirm="Tem certeza de que deseja marcar esta ficha como desistência?"
+                                            class="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-xl transition duration-150 cursor-pointer text-center text-[10px] font-medium leading-tight tracking-tight border w-full
+                                            {{ $isActive 
+                                                ? 'bg-rose-50/70 border-rose-100 text-rose-600 dark:bg-rose-950/20 dark:border-rose-900/60 dark:text-rose-400 opacity-60 cursor-not-allowed' 
+                                                : 'bg-white border-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 dark:hover:bg-rose-950/20 dark:hover:text-rose-400 dark:hover:border-rose-800' }}"
+                                        >
+                                            <flux:icon.x-circle class="size-4 mb-1" />
+                                            <span>Desistência</span>
+                                        </button>
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     @endforeach
@@ -931,12 +953,13 @@ new class extends Component {
             @endif
         @else
             {{-- Dashboard de Status --}}
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
                 @foreach ([
                     ['status' => App\Enums\TipoSituacao::SELECIONADA, 'bg' => 'bg-blue-500/10 text-blue-500 border-blue-500/20', 'icon' => 'check-circle', 'label' => 'Aguardando'],
                     ['status' => App\Enums\TipoSituacao::CONTATO, 'bg' => 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20', 'icon' => 'phone', 'label' => 'Contato Feito'],
                     ['status' => App\Enums\TipoSituacao::AGUARDANDO, 'bg' => 'bg-amber-500/10 text-amber-500 border-amber-500/20', 'icon' => 'clock', 'label' => 'Agendado'],
                     ['status' => App\Enums\TipoSituacao::VISITADA, 'bg' => 'bg-green-500/10 text-green-500 border-green-500/20', 'icon' => 'book-open', 'label' => 'Visitado'],
+                    ['status' => App\Enums\TipoSituacao::APROVADA, 'bg' => 'bg-teal-500/10 text-teal-500 border-teal-500/20', 'icon' => 'check-circle', 'label' => 'Aprovada'],
                     ['status' => App\Enums\TipoSituacao::DESISTENCIA, 'bg' => 'bg-rose-500/10 text-rose-500 border-rose-500/20', 'icon' => 'x-circle', 'label' => 'Desistência'],
                 ] as $item)
                     @php
@@ -999,6 +1022,7 @@ new class extends Component {
                             App\Enums\TipoSituacao::CONTATO, 
                             App\Enums\TipoSituacao::AGUARDANDO,
                             App\Enums\TipoSituacao::VISITADA,
+                            App\Enums\TipoSituacao::APROVADA,
                             App\Enums\TipoSituacao::DESISTENCIA,
                             App\Enums\TipoSituacao::CANCELADA
                         ] as $sit)

@@ -169,7 +169,7 @@ describe('Minhas Fichas Scoping and Filtering', function () {
     });
 
 
-    test('ficha disappears from the visitor list when marked as VISITADA', function () {
+    test('ficha permanece na tela do casal visitador quando marcada como VISITADA ou APROVADA', function () {
         $visitorUser = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
         $visitorPessoa = $visitorUser->pessoa;
 
@@ -188,7 +188,33 @@ describe('Minhas Fichas Scoping and Filtering', function () {
         $ficha->update(['tip_situacao' => TipoSituacao::VISITADA]);
  
         Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
-            ->assertDontSee('Visitada Candidate');
+            ->assertSee('Visitada Candidate');
+
+        $ficha->update(['tip_situacao' => TipoSituacao::APROVADA]);
+
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
+            ->assertSee('Visitada Candidate')
+            ->assertSee('Ficha Aprovada (Status Concluído)');
+    });
+
+    test('nao permite alterar status de ficha quando a situacao for APROVADA', function () {
+        $visitorUser = createVisitorUser(['idt_movimento' => 2], $this->eventoVem);
+        $visitorPessoa = $visitorUser->pessoa;
+
+        $ficha = Ficha::factory()->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'idt_pessoa_visitacao' => $visitorPessoa->idt_pessoa,
+            'nom_candidato' => 'Aprovada Candidate',
+            'tip_situacao' => TipoSituacao::APROVADA
+        ]);
+
+        $this->actingAs($visitorUser);
+
+        Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])->call('loadData')
+            ->call('alterarSituacao', $ficha->idt_ficha, 'F')
+            ->assertDispatched('notify');
+
+        expect($ficha->fresh()->tip_situacao)->toBe(TipoSituacao::APROVADA);
     });
 
     test('admin only sees fichas where they are the designated visitor', function () {
@@ -599,6 +625,10 @@ describe('Minhas Fichas Consultation Tab', function () {
             'idt_evento' => $this->eventoVem->idt_evento,
             'tip_situacao' => TipoSituacao::VISITADA
         ]);
+        Ficha::factory()->count(4)->create([
+            'idt_evento' => $this->eventoVem->idt_evento,
+            'tip_situacao' => TipoSituacao::APROVADA
+        ]);
 
         $component = Volt::test('minhas-fichas.index', ['evento' => $this->eventoVem])
             ->call('loadData')
@@ -608,6 +638,7 @@ describe('Minhas Fichas Consultation Tab', function () {
         expect($counts[TipoSituacao::SELECIONADA->value])->toBe(2);
         expect($counts[TipoSituacao::CONTATO->value])->toBe(1);
         expect($counts[TipoSituacao::VISITADA->value])->toBe(3);
+        expect($counts[TipoSituacao::APROVADA->value])->toBe(4);
 
         $component->call('toggleSituacao', TipoSituacao::VISITADA->value)
             ->assertSet('situacao', TipoSituacao::VISITADA->value);
