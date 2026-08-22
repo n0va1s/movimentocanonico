@@ -16,13 +16,18 @@ new class extends Component {
     public string $val_preco = '';
     public string $qtd_produto = '0';
     public bool $ind_favorito = false;
-    
+    public bool $ind_consignado = false;
+    public string $nom_loja = '';
+    public string $cod_produto_loja = '';
+
     public ?Produto $editingProduct = null;
     public bool $showModal = false;
     public bool $showImportModal = false;
     public ?int $eventoOrigemId = null;
 
     public string $search = '';
+    public string $tipoFilter = '';
+    public string $lojaFilter = '';
 
     protected $rules = [
         'nom_produto' => 'required|string|max:100',
@@ -30,6 +35,9 @@ new class extends Component {
         'val_preco' => 'required|numeric|min:0',
         'qtd_produto' => 'required|integer|min:0',
         'ind_favorito' => 'boolean',
+        'ind_consignado' => 'boolean',
+        'nom_loja' => 'nullable|string|max:100',
+        'cod_produto_loja' => 'nullable|string|max:50',
     ];
 
     #[Computed]
@@ -42,12 +50,36 @@ new class extends Component {
             ->when($this->search, function($query) {
                 $query->where(function($q) {
                     $q->where('nom_produto', 'like', '%' . $this->search . '%')
-                      ->orWhere('des_produto', 'like', '%' . $this->search . '%');
+                      ->orWhere('des_produto', 'like', '%' . $this->search . '%')
+                      ->orWhere('nom_loja', 'like', '%' . $this->search . '%')
+                      ->orWhere('cod_produto_loja', 'like', '%' . $this->search . '%');
                 });
+            })
+            ->when($this->lojaFilter, function($query) {
+                $query->where('nom_loja', $this->lojaFilter);
+            })
+            ->when($this->tipoFilter === 'consignado', function($query) {
+                $query->where('ind_consignado', true);
+            })
+            ->when($this->tipoFilter === 'proprio', function($query) {
+                $query->where('ind_consignado', false);
             })
             ->orderBy('ind_favorito', 'desc')
             ->orderBy('nom_produto', 'asc')
             ->get();
+    }
+
+    #[Computed]
+    public function lojasDisponiveis()
+    {
+        if (!$this->evento) return collect();
+
+        return Produto::where('idt_evento', $this->evento->idt_evento)
+            ->whereNotNull('nom_loja')
+            ->where('nom_loja', '!=', '')
+            ->distinct()
+            ->orderBy('nom_loja', 'asc')
+            ->pluck('nom_loja');
     }
 
     #[Computed]
@@ -70,6 +102,9 @@ new class extends Component {
         $this->val_preco = '';
         $this->qtd_produto = '0';
         $this->ind_favorito = false;
+        $this->ind_consignado = false;
+        $this->nom_loja = '';
+        $this->cod_produto_loja = '';
         $this->showModal = true;
     }
 
@@ -82,6 +117,9 @@ new class extends Component {
         $this->val_preco = (string) $produto->val_preco;
         $this->qtd_produto = (string) $produto->qtd_produto;
         $this->ind_favorito = (bool) $produto->ind_favorito;
+        $this->ind_consignado = (bool) $produto->ind_consignado;
+        $this->nom_loja = $produto->nom_loja ?? '';
+        $this->cod_produto_loja = $produto->cod_produto_loja ?? '';
         $this->showModal = true;
     }
 
@@ -96,7 +134,7 @@ new class extends Component {
             \Flux::toast(__('messages.alerts.success.product_updated'), variant: 'success');
         } else {
             Produto::create(array_merge($validated, [
-                'idt_evento' => $this->evento->idt_evento,
+                'idt_evento' => $this->evento?->idt_evento,
                 'usu_inclusao' => Auth::id(),
             ]));
             \Flux::toast(__('messages.alerts.success.product_created'), variant: 'success');
@@ -134,7 +172,6 @@ new class extends Component {
                     ->exists();
 
                 if (!$existe) {
-                    // Busca os detalhes do produto original se possível, para pegar o preço (ou pega da transacao? Melhor pegar o preço atual no banco do produto original)
                     $produtoOrigem = $venda->idt_produto ? Produto::find($venda->idt_produto) : null;
                     
                     Produto::create([
@@ -142,8 +179,10 @@ new class extends Component {
                         'nom_produto' => $venda->nom_item,
                         'des_produto' => $produtoOrigem ? $produtoOrigem->des_produto : null,
                         'val_preco' => $produtoOrigem ? $produtoOrigem->val_preco : 0,
-                        'qtd_produto' => 0, // Inicia com estoque zero
+                        'qtd_produto' => 0,
                         'ind_favorito' => false,
+                        'ind_consignado' => $produtoOrigem ? (bool) $produtoOrigem->ind_consignado : false,
+                        'nom_loja' => $produtoOrigem ? $produtoOrigem->nom_loja : null,
                         'usu_inclusao' => Auth::id(),
                     ]);
                 }
@@ -180,7 +219,7 @@ new class extends Component {
     <div class="flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
             <flux:heading size="lg">Catálogo de Produtos</flux:heading>
-            <flux:subheading>Gerencie os produtos disponíveis para venda e seus estoques.</flux:subheading>
+            <flux:subheading>Gerencie os produtos disponíveis para venda, itens consignados e estoques.</flux:subheading>
         </div>
         <div class="flex flex-col sm:flex-row gap-3 mt-4 md:mt-0 w-full md:w-auto">
             <flux:button variant="ghost" icon="arrow-down-tray" class="w-full sm:w-auto" wire:click="$set('showImportModal', true)">
@@ -198,9 +237,28 @@ new class extends Component {
         </div>
     @endif
 
-    {{-- Filtro de Busca --}}
-    <div class="w-full md:w-96">
-        <flux:input wire:model.live.debounce.300ms="search" placeholder="Buscar produto..." icon="magnifying-glass" />
+    {{-- Barra de Filtros --}}
+    <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+        <div class="w-full sm:w-72">
+            <flux:input wire:model.live.debounce.300ms="search" placeholder="Buscar produto ou loja..." icon="magnifying-glass" />
+        </div>
+        <div class="w-full sm:w-44">
+            <flux:select wire:model.live="tipoFilter" placeholder="Todos os Tipos">
+                <flux:select.option value="">Todos os Tipos</flux:select.option>
+                <flux:select.option value="proprio">Próprios</flux:select.option>
+                <flux:select.option value="consignado">Consignados</flux:select.option>
+            </flux:select>
+        </div>
+        @if($this->lojasDisponiveis->isNotEmpty())
+            <div class="w-full sm:w-56">
+                <flux:select wire:model.live="lojaFilter" placeholder="Todas as Lojas">
+                    <flux:select.option value="">Todas as Lojas</flux:select.option>
+                    @foreach($this->lojasDisponiveis as $loja)
+                        <flux:select.option value="{{ $loja }}">{{ $loja }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+            </div>
+        @endif
     </div>
 
     {{-- Tabela de Produtos (Desktop) --}}
@@ -214,6 +272,7 @@ new class extends Component {
                 <flux:table.columns>
                     <flux:table.column class="px-4 py-3 align-middle">Nome</flux:table.column>
                     <flux:table.column class="px-4 py-3 align-middle">Descrição</flux:table.column>
+                    <flux:table.column class="px-4 py-3 align-middle">Origem / Loja</flux:table.column>
                     <flux:table.column class="px-4 py-3 align-middle">Preço Unitário</flux:table.column>
                     <flux:table.column class="px-4 py-3 align-middle text-center" align="center">Estoque</flux:table.column>
                     <flux:table.column class="px-4 py-3 align-middle text-right" align="end">Ações</flux:table.column>
@@ -232,6 +291,21 @@ new class extends Component {
                             </flux:table.cell>
                             <flux:table.cell class="px-4 py-3 align-middle text-zinc-500 max-w-xs truncate">
                                 {{ $prod->des_produto ?? '-' }}
+                            </flux:table.cell>
+                            <flux:table.cell class="px-4 py-3 align-middle">
+                                @if($prod->ind_consignado)
+                                    <div class="flex flex-col gap-0.5">
+                                        <flux:badge color="amber" size="sm" class="w-fit">Consignado</flux:badge>
+                                        @if($prod->nom_loja)
+                                            <span class="text-xs text-zinc-500 font-medium">{{ $prod->nom_loja }}</span>
+                                        @endif
+                                        @if($prod->cod_produto_loja)
+                                            <span class="text-xs text-zinc-400 font-mono">Cód: {{ $prod->cod_produto_loja }}</span>
+                                        @endif
+                                    </div>
+                                @else
+                                    <flux:badge color="zinc" size="sm" class="w-fit">Próprio</flux:badge>
+                                @endif
                             </flux:table.cell>
                             <flux:table.cell class="px-4 py-3 align-middle font-medium">
                                 R$ {{ number_format($prod->val_preco, 2, ',', '.') }}
@@ -260,7 +334,7 @@ new class extends Component {
             </div>
         @else
             @foreach($this->produtos as $prod)
-                <div class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 shadow-xs space-y-2">
+                <div class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 shadow-xs space-y-3">
                     <div class="flex justify-between items-start gap-4">
                         <div class="font-bold text-zinc-950 dark:text-white text-base flex items-center gap-1.5">
                             @if($prod->ind_favorito)
@@ -277,6 +351,22 @@ new class extends Component {
                     <div class="text-zinc-500 dark:text-zinc-400 text-sm">
                         {{ $prod->des_produto ?? '-' }}
                     </div>
+
+                    @if($prod->ind_consignado)
+                        <div class="flex flex-wrap items-center gap-2 text-xs">
+                            <flux:badge color="amber" size="sm">Consignado</flux:badge>
+                            @if($prod->nom_loja)
+                                <span class="text-zinc-600 dark:text-zinc-400 font-medium">Loja: {{ $prod->nom_loja }}</span>
+                            @endif
+                            @if($prod->cod_produto_loja)
+                                <span class="text-zinc-500 dark:text-zinc-400 font-mono">(Cód: {{ $prod->cod_produto_loja }})</span>
+                            @endif
+                        </div>
+                    @else
+                        <div class="text-xs">
+                            <flux:badge color="zinc" size="sm">Próprio</flux:badge>
+                        </div>
+                    @endif
 
                     <div class="flex justify-between items-center pt-3 mt-3 border-t border-zinc-100 dark:border-zinc-700">
                         <div class="font-medium text-sm text-zinc-900 dark:text-white">
@@ -313,6 +403,15 @@ new class extends Component {
 
                     <flux:switch wire:model="ind_favorito" label="Favorito (Exibir no topo)" />
 
+                    <div class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-200 dark:border-zinc-700 space-y-3">
+                        <flux:switch wire:model.live="ind_consignado" label="Item Consignado" description="Marque se este produto foi fornecido por consignação." />
+                        
+                        <div x-show="$wire.ind_consignado" x-collapse class="space-y-3">
+                            <flux:input wire:model="nom_loja" label="Nome da Loja / Fornecedor" placeholder="Ex: Loja Paroquial São José" />
+                            <flux:input wire:model="cod_produto_loja" label="Código do Produto na Loja (Opcional)" placeholder="Ex: COD-10293 ou 789123456789" />
+                        </div>
+                    </div>
+
                     <flux:separator />
 
                     <div class="flex justify-end gap-3">
@@ -337,7 +436,7 @@ new class extends Component {
                     <flux:select wire:model="eventoOrigemId" label="Selecionar Evento" required>
                         <option value="">Escolha um evento...</option>
                         @foreach($this->eventosAnteriores as $ev)
-                            <option value="{{ $ev->idt_evento }}">{{ $ev->des_evento }} ({{ $ev->getDataInicioFormatada() }})</option>
+                            <option value="{{ $ev->des_evento }} ({{ $ev->getDataInicioFormatada() }})">{{ $ev->des_evento }}</option>
                         @endforeach
                     </flux:select>
 

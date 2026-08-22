@@ -107,7 +107,49 @@ new class extends Component {
         $corEnum = CorTroca::tryFrom($novaCor);
         $corLabel = $corEnum ? $corEnum->label() : 'Nenhuma';
         
+        
         $this->dispatch('notify', message: "A cor da troca de {$participante->pessoa->nom_apelido} agora é {$corLabel}!");
+    }
+
+    public function abrirParentesco(int $participanteId): void
+    {
+        $participante = \App\Models\Participante::findOrFail($participanteId);
+        $this->parentescoParticipanteId = $participante->idt_participante;
+        $this->desParentescoInput = $participante->des_parentesco ?? '';
+        $this->modal('modal-parentesco')->show();
+    }
+
+    public function salvarParentesco(): void
+    {
+        if (! $this->parentescoParticipanteId) {
+            return;
+        }
+
+        $participante = \App\Models\Participante::with('pessoa')->findOrFail($this->parentescoParticipanteId);
+        $novoParentesco = trim($this->desParentescoInput) ?: null;
+        $participante->update(['des_parentesco' => $novoParentesco]);
+
+        $this->modal('modal-parentesco')->close();
+        $this->parentescoParticipanteId = null;
+        $this->desParentescoInput = '';
+
+        $this->dispatch('notify', message: "Parentesco de {$participante->pessoa->nom_apelido} atualizado!");
+    }
+
+    public function removerParentesco(): void
+    {
+        if (! $this->parentescoParticipanteId) {
+            return;
+        }
+
+        $participante = \App\Models\Participante::with('pessoa')->findOrFail($this->parentescoParticipanteId);
+        $participante->update(['des_parentesco' => null]);
+
+        $this->modal('modal-parentesco')->close();
+        $this->parentescoParticipanteId = null;
+        $this->desParentescoInput = '';
+
+        $this->dispatch('notify', message: "Parentesco de {$participante->pessoa->nom_apelido} removido!");
     }
 
     public function abrirParentesco(int $participanteId): void

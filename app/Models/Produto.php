@@ -22,6 +22,9 @@ class Produto extends Model
         'val_preco',
         'qtd_produto',
         'ind_favorito',
+        'ind_consignado',
+        'nom_loja',
+        'cod_produto_loja',
         'usu_inclusao',
         'usu_alteracao',
     ];
@@ -30,6 +33,7 @@ class Produto extends Model
         'val_preco' => 'decimal:2',
         'qtd_produto' => 'integer',
         'ind_favorito' => 'boolean',
+        'ind_consignado' => 'boolean',
     ];
 
     public function criador(): BelongsTo

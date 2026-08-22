@@ -133,10 +133,12 @@ class PessoaRequest extends FormRequest
             function ($validator) {
                 if ($this->boolean('ind_restricao')) {
                     $restricoes = $this->input('restricoes', []);
-                    $hasAnyTrue = collect($restricoes)->filter(fn($val) => filter_var($val, FILTER_VALIDATE_BOOLEAN))->isNotEmpty();
+                    $complementos = $this->input('complementos', []);
+                    $hasAnyCheck = collect($restricoes)->filter(fn($val) => filter_var($val, FILTER_VALIDATE_BOOLEAN))->isNotEmpty();
+                    $hasAnyText = collect($complementos)->filter(fn($val) => !empty(trim((string) $val)))->isNotEmpty();
                     
-                    if (!$hasAnyTrue) {
-                        $validator->errors()->add('ind_restricao', 'Você marcou que a pessoa possui informações de saúde, portanto deve selecionar ao menos uma restrição.');
+                    if (!$hasAnyCheck && !$hasAnyText) {
+                        $validator->errors()->add('ind_restricao', 'Você marcou que a pessoa possui informações de saúde, portanto deve selecionar ao menos uma restrição ou informar um complemento.');
                     }
                 }
             }

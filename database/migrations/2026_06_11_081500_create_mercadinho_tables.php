@@ -16,6 +16,7 @@ return new class extends Migration
             Schema::create('produto', function (Blueprint $table) {
                 $table->id('idt_produto');
                 $table->foreignId('idt_evento')
+                    ->nullable()
                     ->constrained('evento', 'idt_evento')
                     ->onDelete('cascade');
                 $table->string('nom_produto', 100);

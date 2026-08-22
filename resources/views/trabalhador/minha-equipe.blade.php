@@ -20,6 +20,7 @@
             {{-- Estado de cadastro incompleto --}}
             <div class="flex flex-col items-center justify-center text-center p-12 bg-white dark:bg-zinc-800 rounded-xl shadow border border-dashed border-gray-300 dark:border-zinc-600">
                 <flux:icon.identification class="w-14 h-14 text-gray-400 dark:text-gray-500 mb-4" />
+                <flux:icon.identification class="w-14 h-14 text-gray-400 dark:text-gray-500 mb-4" />
                 <p class="text-lg font-medium text-gray-600 dark:text-gray-300">Cadastro Incompleto</p>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     Precisamos dos seus dados completos para saber em que equipe você está.
@@ -28,6 +29,7 @@
         @elseif (! $coordenacao)
             {{-- Estado vazio: usuário não é coordenador em nenhum evento --}}
             <div class="flex flex-col items-center justify-center text-center p-12 bg-white dark:bg-zinc-800 rounded-xl shadow border border-dashed border-gray-300 dark:border-zinc-600">
+                <flux:icon.user-group class="w-14 h-14 text-gray-400 dark:text-gray-500 mb-4" />
                 <flux:icon.user-group class="w-14 h-14 text-gray-400 dark:text-gray-500 mb-4" />
                 <p class="text-lg font-medium text-gray-600 dark:text-gray-300">Você não é coordenador(a) de nenhuma equipe</p>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">

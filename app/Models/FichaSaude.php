@@ -13,6 +13,10 @@ class FichaSaude extends Model
 
     public $timestamps = false;
 
+    public $incrementing = false;
+
+    protected $primaryKey = null;
+
     protected $fillable = [
         'idt_ficha',
         'idt_restricao',

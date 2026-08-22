@@ -13,6 +13,10 @@ class PessoaSaude extends Model
 
     public $timestamps = true;
 
+    public $incrementing = false;
+
+    protected $primaryKey = null;
+
     protected $fillable = [
         'idt_pessoa',
         'idt_restricao',
