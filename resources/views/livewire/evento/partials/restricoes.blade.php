@@ -10,6 +10,7 @@ new class extends Component {
     public Evento $evento;
     public string $search = '';
     public string $tipo = '';
+    public string $tip_restricao = '';
 
     public function mount(Evento $evento): void
     {
@@ -22,34 +23,66 @@ new class extends Component {
         $eventoSelecionadoId = $this->evento->idt_evento;
         $restricoes = [];
 
+        $isAlimentar = fn ($tip) => in_array($tip, ['ALE', 'INT', 'VEG']);
+        $matchFiltro = function ($tip) use ($isAlimentar) {
+            if (! $this->tip_restricao) return true;
+            if ($this->tip_restricao === 'alimentares') return $isAlimentar($tip);
+            return $tip === $this->tip_restricao;
+        };
+
+        $fichasDoEvento = \App\Models\Ficha::where('idt_evento', $eventoSelecionadoId)
+            ->with(['fichaSaude.restricao'])
+            ->get();
+
+        $fichasPorPessoa = $fichasDoEvento->whereNotNull('idt_pessoa')->keyBy('idt_pessoa');
+
         // 1. Participantes Aprovados com Restrição
         if ($this->tipo === '' || $this->tipo === 'Participante') {
             $participantes = Participante::where('idt_evento', $eventoSelecionadoId)
                 ->whereHas('pessoa', function ($query) {
-                    $query->whereHas('restricoes')
-                        ->when($this->search, function ($q) {
-                            $q->where(function ($sub) {
-                                $sub->where('nom_pessoa', 'like', '%' . $this->search . '%')
-                                    ->orWhere('nom_apelido', 'like', '%' . $this->search . '%');
-                            });
+                    $query->when($this->search, function ($q) {
+                        $q->where(function ($sub) {
+                            $sub->where('nom_pessoa', 'like', '%' . $this->search . '%')
+                                ->orWhere('nom_apelido', 'like', '%' . $this->search . '%');
                         });
+                    });
                 })
                 ->with(['pessoa.restricoes'])
                 ->get();
 
             foreach ($participantes as $part) {
-                if ($part->pessoa->restricoes->isEmpty()) {
-                    continue;
-                }
-
                 $itens = [];
+                $restricoesVistas = [];
+
                 foreach ($part->pessoa->restricoes as $restricao) {
+                    if (! $matchFiltro($restricao->tip_restricao)) continue;
                     $txt_complemento = $restricao->pivot?->txt_complemento;
                     $itens[] = (object) [
                         'tipo' => $restricao->getTipo(),
                         'cor' => $restricao->getCor(),
                         'descricao' => $restricao->des_restricao . ($txt_complemento ? " — " . $txt_complemento : ""),
                     ];
+                    $restricoesVistas[$restricao->idt_restricao] = true;
+                }
+
+                $ficha = $fichasPorPessoa->get($part->idt_pessoa);
+                if ($ficha && $ficha->fichaSaude) {
+                    foreach ($ficha->fichaSaude as $fs) {
+                        $r = $fs->restricao;
+                        if ($r && ! isset($restricoesVistas[$r->idt_restricao]) && $matchFiltro($r->tip_restricao)) {
+                            $txt_complemento = $fs->txt_complemento;
+                            $itens[] = (object) [
+                                'tipo' => $r->getTipo(),
+                                'cor' => $r->getCor(),
+                                'descricao' => $r->des_restricao . ($txt_complemento ? " — " . $txt_complemento : ""),
+                            ];
+                            $restricoesVistas[$r->idt_restricao] = true;
+                        }
+                    }
+                }
+
+                if (empty($itens)) {
+                    continue;
                 }
 
                 $restricoes[] = (object) [
@@ -67,30 +100,49 @@ new class extends Component {
         if ($this->tipo === '' || $this->tipo === 'Trabalhador') {
             $trabalhadores = Trabalhador::where('idt_evento', $eventoSelecionadoId)
                 ->whereHas('pessoa', function ($query) {
-                    $query->whereHas('restricoes')
-                        ->when($this->search, function ($q) {
-                            $q->where(function ($sub) {
-                                $sub->where('nom_pessoa', 'like', '%' . $this->search . '%')
-                                    ->orWhere('nom_apelido', 'like', '%' . $this->search . '%');
-                            });
+                    $query->when($this->search, function ($q) {
+                        $q->where(function ($sub) {
+                            $sub->where('nom_pessoa', 'like', '%' . $this->search . '%')
+                                ->orWhere('nom_apelido', 'like', '%' . $this->search . '%');
                         });
+                    });
                 })
                 ->with(['pessoa.restricoes', 'equipe'])
                 ->get();
 
             foreach ($trabalhadores as $trab) {
-                if ($trab->pessoa->restricoes->isEmpty()) {
-                    continue;
-                }
-
                 $itens = [];
+                $restricoesVistas = [];
+
                 foreach ($trab->pessoa->restricoes as $restricao) {
+                    if (! $matchFiltro($restricao->tip_restricao)) continue;
                     $txt_complemento = $restricao->pivot?->txt_complemento;
                     $itens[] = (object) [
                         'tipo' => $restricao->getTipo(),
                         'cor' => $restricao->getCor(),
                         'descricao' => $restricao->des_restricao . ($txt_complemento ? " — " . $txt_complemento : ""),
                     ];
+                    $restricoesVistas[$restricao->idt_restricao] = true;
+                }
+
+                $ficha = $fichasPorPessoa->get($trab->idt_pessoa);
+                if ($ficha && $ficha->fichaSaude) {
+                    foreach ($ficha->fichaSaude as $fs) {
+                        $r = $fs->restricao;
+                        if ($r && ! isset($restricoesVistas[$r->idt_restricao]) && $matchFiltro($r->tip_restricao)) {
+                            $txt_complemento = $fs->txt_complemento;
+                            $itens[] = (object) [
+                                'tipo' => $r->getTipo(),
+                                'cor' => $r->getCor(),
+                                'descricao' => $r->des_restricao . ($txt_complemento ? " — " . $txt_complemento : ""),
+                            ];
+                            $restricoesVistas[$r->idt_restricao] = true;
+                        }
+                    }
+                }
+
+                if (empty($itens)) {
+                    continue;
                 }
 
                 $restricoes[] = (object) [
@@ -99,6 +151,53 @@ new class extends Component {
                     'troca' => '-',
                     'troca_cor' => '',
                     'equipe' => $trab->equipe ? $trab->equipe->des_grupo : 'Sem Equipe',
+                    'itens' => $itens,
+                ];
+            }
+        }
+
+        // 3. Fichas de Candidatos Inscritos no Evento
+        $participantesPessoasId = isset($participantes) ? $participantes->pluck('idt_pessoa')->filter() : collect();
+        $fichasNaoVinculadas = $fichasDoEvento->filter(fn ($f) => ! $f->idt_pessoa || ! $participantesPessoasId->contains($f->idt_pessoa));
+
+        if ($this->tipo === '' || $this->tipo === 'Participante') {
+            foreach ($fichasNaoVinculadas as $ficha) {
+                if (! $ficha->fichaSaude || $ficha->fichaSaude->isEmpty()) {
+                    continue;
+                }
+
+                if ($this->search) {
+                    $searchLower = mb_strtolower($this->search);
+                    $nomeMatch = str_contains(mb_strtolower($ficha->nom_candidato), $searchLower);
+                    $apelidoMatch = $ficha->nom_apelido && str_contains(mb_strtolower($ficha->nom_apelido), $searchLower);
+                    if (! $nomeMatch && ! $apelidoMatch) {
+                        continue;
+                    }
+                }
+
+                $itens = [];
+                foreach ($ficha->fichaSaude as $fs) {
+                    $r = $fs->restricao;
+                    if ($r && $matchFiltro($r->tip_restricao)) {
+                        $txt_complemento = $fs->txt_complemento;
+                        $itens[] = (object) [
+                            'tipo' => $r->getTipo(),
+                            'cor' => $r->getCor(),
+                            'descricao' => $r->des_restricao . ($txt_complemento ? " — " . $txt_complemento : ""),
+                        ];
+                    }
+                }
+
+                if (empty($itens)) {
+                    continue;
+                }
+
+                $restricoes[] = (object) [
+                    'nome' => $ficha->nom_candidato . ($ficha->nom_apelido ? " ({$ficha->nom_apelido})" : ""),
+                    'tipo_cadastro' => 'Participante (Inscrito)',
+                    'troca' => 'Não definido',
+                    'troca_cor' => '',
+                    'equipe' => '-',
                     'itens' => $itens,
                 ];
             }
@@ -118,10 +217,22 @@ new class extends Component {
             <flux:subheading>Visualize as restrições alimentares e médicas dos participantes e trabalhadores deste evento.</flux:subheading>
         </div>
         <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto print:hidden">
-            <flux:select wire:model.live="tipo" icon="funnel" placeholder="Todos os tipos" class="w-full sm:w-48">
-                <option value="">Todos os tipos</option>
+            <flux:select wire:model.live="tipo" icon="funnel" placeholder="Todos os cadastros" class="w-full sm:w-48">
+                <option value="">Todos os cadastros</option>
                 <option value="Participante">Participante</option>
                 <option value="Trabalhador">Trabalhador</option>
+            </flux:select>
+
+            <flux:select wire:model.live="tip_restricao" icon="funnel" placeholder="Todas restrições" class="w-full sm:w-48">
+                <option value="">Todas restrições</option>
+                <option value="alimentares">Alimentares (Alergia/Intol./Veg.)</option>
+                <option value="ALE">Alergia</option>
+                <option value="INT">Intolerância</option>
+                <option value="MED">Medicamento</option>
+                <option value="CUT">Cutânea</option>
+                <option value="PNE">Necessidade Especial</option>
+                <option value="VEG">Vegetarianismo</option>
+                <option value="RES">Respiratório</option>
             </flux:select>
 
             <flux:input
@@ -131,9 +242,27 @@ new class extends Component {
                 class="w-full sm:w-64"
             />
 
-            <flux:button onclick="window.print()" icon="printer" variant="outline">
-                Imprimir
-            </flux:button>
+            <flux:dropdown>
+                <flux:button icon="printer" variant="outline">
+                    Exportar
+                </flux:button>
+                <flux:menu>
+                    <flux:menu.item 
+                        icon="document-text" 
+                        target="_blank" 
+                        href="{{ route('eventos.print-restricoes', ['evento' => $this->evento->idt_evento, 'tipo' => $this->tipo, 'tip_restricao' => $this->tip_restricao]) }}" 
+                        data-navigate-track="false" wire:navigate="false">
+                        Imprimir / PDF
+                    </flux:menu.item>
+                    <flux:menu.item 
+                        icon="table-cells" 
+                        target="_blank" 
+                        href="{{ route('eventos.export-restricoes-excel', ['evento' => $this->evento->idt_evento, 'tipo' => $this->tipo, 'tip_restricao' => $this->tip_restricao]) }}" 
+                        data-navigate-track="false" wire:navigate="false">
+                        Exportar Excel (.csv)
+                    </flux:menu.item>
+                </flux:menu>
+            </flux:dropdown>
         </div>
     </div>
 

@@ -374,4 +374,258 @@ class EventoController extends Controller
             'ms' => round((microtime(true) - $start) * 1000, 2),
         ]);
     }
+
+    /**
+     * Helper para obter a lista de restrições filtradas.
+     */
+    private function getRestricoesFiltradas(Request $request, Evento $evento): array
+    {
+        $filtroTipoRestricao = $request->input('tip_restricao', '');
+        $filtroTipoCadastro = $request->input('tipo', '');
+
+        $restricoes = [];
+
+        // Mapa de siglas para labels legíveis
+        $tipoLabels = [
+            'ALE' => 'Alergia',
+            'INT' => 'Intolerância',
+            'MED' => 'Medicamento',
+            'CUT' => 'Cutânea',
+            'PNE' => 'Necessidade Especial',
+            'VEG' => 'Vegetarianismo',
+            'RES' => 'Respiratório',
+        ];
+
+        $isAlimentar = fn ($tip) => in_array($tip, ['ALE', 'INT', 'VEG']);
+
+        $matchFiltro = function ($tip) use ($filtroTipoRestricao, $isAlimentar) {
+            if (! $filtroTipoRestricao) {
+                return true;
+            }
+            if ($filtroTipoRestricao === 'alimentares') {
+                return $isAlimentar($tip);
+            }
+
+            return $tip === $filtroTipoRestricao;
+        };
+
+        // Carrega todas as Fichas do evento com FichaSaude + TipoRestricao
+        $fichasDoEvento = \App\Models\Ficha::where('idt_evento', $evento->idt_evento)
+            ->with(['fichaSaude.restricao'])
+            ->get();
+
+        $fichasPorPessoa = $fichasDoEvento->whereNotNull('idt_pessoa')->keyBy('idt_pessoa');
+
+        // 1. Participantes
+        if (empty($filtroTipoCadastro) || $filtroTipoCadastro === 'Participante') {
+            $participantes = \App\Models\Participante::where('idt_evento', $evento->idt_evento)
+                ->with(['pessoa.restricoes'])
+                ->get();
+
+            foreach ($participantes as $part) {
+                $itens = [];
+                $restricoesVistas = [];
+
+                // Restrições de pessoa_saude
+                foreach ($part->pessoa->restricoes as $restricao) {
+                    if (! $matchFiltro($restricao->tip_restricao)) {
+                        continue;
+                    }
+                    $txt = $restricao->pivot?->txt_complemento;
+                    $itens[] = (object) [
+                        'tipo' => $restricao->getTipo(),
+                        'tip_restricao_raw' => $restricao->tip_restricao,
+                        'descricao' => $restricao->des_restricao . ($txt ? " — " . $txt : ""),
+                    ];
+                    $restricoesVistas[$restricao->idt_restricao] = true;
+                }
+
+                // Restrições de ficha_saude (fallback ou complemento)
+                $ficha = $fichasPorPessoa->get($part->idt_pessoa);
+                if ($ficha && $ficha->fichaSaude) {
+                    foreach ($ficha->fichaSaude as $fs) {
+                        $r = $fs->restricao;
+                        if ($r && ! isset($restricoesVistas[$r->idt_restricao]) && $matchFiltro($r->tip_restricao)) {
+                            $txt = $fs->txt_complemento;
+                            $itens[] = (object) [
+                                'tipo' => $r->getTipo(),
+                                'tip_restricao_raw' => $r->tip_restricao,
+                                'descricao' => $r->des_restricao . ($txt ? " — " . $txt : ""),
+                            ];
+                            $restricoesVistas[$r->idt_restricao] = true;
+                        }
+                    }
+                }
+
+                if (empty($itens)) {
+                    continue;
+                }
+
+                $restricoes[] = (object) [
+                    'nome' => $part->pessoa->nom_pessoa . ($part->pessoa->nom_apelido ? " ({$part->pessoa->nom_apelido})" : ""),
+                    'tipo_cadastro' => 'Participante',
+                    'troca' => $part->tip_cor_troca ? ucfirst($part->tip_cor_troca) : 'Não definido',
+                    'equipe' => '-',
+                    'itens' => $itens,
+                ];
+            }
+        }
+
+        // 2. Trabalhadores
+        if (empty($filtroTipoCadastro) || $filtroTipoCadastro === 'Trabalhador') {
+            $trabalhadores = \App\Models\Trabalhador::where('idt_evento', $evento->idt_evento)
+                ->with(['pessoa.restricoes', 'equipe'])
+                ->get();
+
+            foreach ($trabalhadores as $trab) {
+                $itens = [];
+                $restricoesVistas = [];
+
+                // Restrições de pessoa_saude
+                foreach ($trab->pessoa->restricoes as $restricao) {
+                    if (! $matchFiltro($restricao->tip_restricao)) {
+                        continue;
+                    }
+                    $txt = $restricao->pivot?->txt_complemento;
+                    $itens[] = (object) [
+                        'tipo' => $restricao->getTipo(),
+                        'tip_restricao_raw' => $restricao->tip_restricao,
+                        'descricao' => $restricao->des_restricao . ($txt ? " — " . $txt : ""),
+                    ];
+                    $restricoesVistas[$restricao->idt_restricao] = true;
+                }
+
+                // Restrições de ficha_saude (fallback se houver ficha cadastrada)
+                $ficha = $fichasPorPessoa->get($trab->idt_pessoa);
+                if ($ficha && $ficha->fichaSaude) {
+                    foreach ($ficha->fichaSaude as $fs) {
+                        $r = $fs->restricao;
+                        if ($r && ! isset($restricoesVistas[$r->idt_restricao]) && $matchFiltro($r->tip_restricao)) {
+                            $txt = $fs->txt_complemento;
+                            $itens[] = (object) [
+                                'tipo' => $r->getTipo(),
+                                'tip_restricao_raw' => $r->tip_restricao,
+                                'descricao' => $r->des_restricao . ($txt ? " — " . $txt : ""),
+                            ];
+                            $restricoesVistas[$r->idt_restricao] = true;
+                        }
+                    }
+                }
+
+                if (empty($itens)) {
+                    continue;
+                }
+
+                $restricoes[] = (object) [
+                    'nome' => $trab->pessoa->nom_pessoa . ($trab->pessoa->nom_apelido ? " ({$trab->pessoa->nom_apelido})" : ""),
+                    'tipo_cadastro' => 'Trabalhador',
+                    'troca' => '-',
+                    'equipe' => $trab->equipe ? $trab->equipe->des_grupo : 'Sem Equipe',
+                    'itens' => $itens,
+                ];
+            }
+        }
+
+        // 3. Fichas de Candidatos Inscritos no Evento (Fichas Recebidas / Enviadas ainda não vinculadas a Participante)
+        $participantesPessoasId = isset($participantes) ? $participantes->pluck('idt_pessoa')->filter() : collect();
+        $fichasNaoVinculadas = $fichasDoEvento->filter(fn ($f) => ! $f->idt_pessoa || ! $participantesPessoasId->contains($f->idt_pessoa));
+
+        if (empty($filtroTipoCadastro) || $filtroTipoCadastro === 'Participante') {
+            foreach ($fichasNaoVinculadas as $ficha) {
+                if (! $ficha->fichaSaude || $ficha->fichaSaude->isEmpty()) {
+                    continue;
+                }
+
+                $itens = [];
+                foreach ($ficha->fichaSaude as $fs) {
+                    $r = $fs->restricao;
+                    if ($r && $matchFiltro($r->tip_restricao)) {
+                        $txt = $fs->txt_complemento;
+                        $itens[] = (object) [
+                            'tipo' => $r->getTipo(),
+                            'tip_restricao_raw' => $r->tip_restricao,
+                            'descricao' => $r->des_restricao . ($txt ? " — " . $txt : ""),
+                        ];
+                    }
+                }
+
+                if (empty($itens)) {
+                    continue;
+                }
+
+                $restricoes[] = (object) [
+                    'nome' => $ficha->nom_candidato . ($ficha->nom_apelido ? " ({$ficha->nom_apelido})" : ""),
+                    'tipo_cadastro' => 'Participante (Inscrito)',
+                    'troca' => 'Não definido',
+                    'equipe' => '-',
+                    'itens' => $itens,
+                ];
+            }
+        }
+
+        // Ordenar por nome
+        usort($restricoes, fn ($a, $b) => strcmp($a->nome, $b->nome));
+
+        return [
+            'restricoes' => $restricoes,
+            'filtroTipo' => $filtroTipoRestricao === 'alimentares' ? 'Alimentares (Alergia/Intolerância/Vegetarianismo)' : ($filtroTipoRestricao ? ($tipoLabels[$filtroTipoRestricao] ?? $filtroTipoRestricao) : null),
+            'filtroTipoCadastro' => $filtroTipoCadastro ?: null,
+        ];
+    }
+
+    /**
+     * Impressão organizada (PDF / Impressora) das restrições de saúde de um evento.
+     */
+    public function printRestricoes(Request $request, Evento $evento): View
+    {
+        $dados = $this->getRestricoesFiltradas($request, $evento);
+
+        return view('evento.print-restricoes', [
+            'evento' => $evento,
+            'restricoes' => $dados['restricoes'],
+            'filtroTipo' => $dados['filtroTipo'],
+            'filtroTipoCadastro' => $dados['filtroTipoCadastro'],
+        ]);
+    }
+
+    /**
+     * Exportação Excel (CSV formatado com UTF-8 BOM e delimitador ;) das restrições.
+     */
+    public function exportRestricoesExcel(Request $request, Evento $evento)
+    {
+        $dados = $this->getRestricoesFiltradas($request, $evento);
+        $restricoes = $dados['restricoes'];
+
+        $filename = 'restricoes_saude_evento_' . $evento->num_evento . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function () use ($restricoes) {
+            $file = fopen('php://output', 'w');
+            // UTF-8 BOM para Excel
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+            fputcsv($file, ['Nome', 'Tipo Cadastro', 'Grupo / Cor Troca', 'Equipe', 'Tipo Restricao', 'Detalhes / Complemento'], ';');
+
+            foreach ($restricoes as $r) {
+                foreach ($r->itens as $item) {
+                    fputcsv($file, [
+                        $r->nome,
+                        $r->tipo_cadastro,
+                        $r->troca,
+                        $r->equipe,
+                        $item->tipo,
+                        $item->descricao,
+                    ], ';');
+                }
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

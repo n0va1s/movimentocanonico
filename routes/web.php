@@ -149,6 +149,14 @@ Route::middleware(['auth'])->group(function () {
     // -----------------------------------------------------------------------
 
     Route::middleware(['role:admin,dirig,coord'])->group(function () {
+        Route::get('eventos/{evento}/print-restricoes', [EventoController::class, 'printRestricoes'])
+            ->name('eventos.print-restricoes')
+            ->withTrashed();
+
+        Route::get('eventos/{evento}/export-restricoes-excel', [EventoController::class, 'exportRestricoesExcel'])
+            ->name('eventos.export-restricoes-excel')
+            ->withTrashed();
+
         Volt::route('eventos/{evento}/gerenciamento', 'evento.gerenciamento')
             ->name('eventos.gerenciamento')
             ->withTrashed();
