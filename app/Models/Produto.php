@@ -24,6 +24,7 @@ class Produto extends Model
         'ind_favorito',
         'ind_consignado',
         'nom_loja',
+        'cod_produto_loja',
         'usu_inclusao',
         'usu_alteracao',
     ];

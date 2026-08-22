@@ -133,6 +133,11 @@ class User extends Authenticatable
             ->exists();
     }
 
+    public function pertenceAoMercadinho(): bool
+    {
+        return $this->autorizaSales();
+    }
+
     /**
      * Verifica se o usuário está trabalhando em um evento específico.
      */

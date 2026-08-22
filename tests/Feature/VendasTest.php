@@ -193,7 +193,7 @@ test('usuario gestor pode abrir painel de vendas e ver a pessoa do evento', func
 test('gestor pode cadastrar produtos pelo componente de catalogo', function () {
     $this->actingAs($this->admin);
 
-    Volt::test('mercadinho.produtos')
+    Volt::test('mercadinho.produtos', ['evento' => $this->evento])
         ->call('openCreateModal')
         ->set('nom_produto', 'Bolo de Cenoura')
         ->set('des_produto', 'Cobertura de chocolate')
@@ -210,7 +210,7 @@ test('gestor pode cadastrar produtos pelo componente de catalogo', function () {
     expect($produto->ind_favorito)->toBeTrue();
 });
 
-test('gestor pode cadastrar produto consignado com loja e filtrar por loja no catalogo', function () {
+test('gestor pode cadastrar produto consignado com loja e codigo e buscar por codigo no catalogo', function () {
     $this->actingAs($this->admin);
 
     Volt::test('mercadinho.produtos', ['evento' => $this->evento])
@@ -220,15 +220,25 @@ test('gestor pode cadastrar produto consignado com loja e filtrar por loja no ca
         ->set('qtd_produto', '15')
         ->set('ind_consignado', true)
         ->set('nom_loja', 'Malharia Paroquial')
+        ->set('cod_produto_loja', 'COD-12345')
         ->call('salvar')
         ->assertSee('Camiseta do Evento')
         ->assertSee('Consignado')
-        ->assertSee('Malharia Paroquial');
+        ->assertSee('Malharia Paroquial')
+        ->assertSee('COD-12345');
 
     $produto = Produto::where('nom_produto', 'Camiseta do Evento')->first();
     expect($produto)->not->toBeNull();
     expect($produto->ind_consignado)->toBeTrue();
     expect($produto->nom_loja)->toBe('Malharia Paroquial');
+    expect($produto->cod_produto_loja)->toBe('COD-12345');
+
+    // Testar busca por código no componente
+    Volt::test('mercadinho.produtos', ['evento' => $this->evento])
+        ->set('search', 'COD-12345')
+        ->assertSee('Camiseta do Evento')
+        ->set('search', 'COD-INEXISTENTE')
+        ->assertDontSee('Camiseta do Evento');
 
     // Testar os filtros por tipo e loja no componente
     Volt::test('mercadinho.produtos', ['evento' => $this->evento])

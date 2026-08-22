@@ -18,6 +18,7 @@ new class extends Component {
     public bool $ind_favorito = false;
     public bool $ind_consignado = false;
     public string $nom_loja = '';
+    public string $cod_produto_loja = '';
 
     public ?Produto $editingProduct = null;
     public bool $showModal = false;
@@ -36,6 +37,7 @@ new class extends Component {
         'ind_favorito' => 'boolean',
         'ind_consignado' => 'boolean',
         'nom_loja' => 'nullable|string|max:100',
+        'cod_produto_loja' => 'nullable|string|max:50',
     ];
 
     #[Computed]
@@ -49,7 +51,8 @@ new class extends Component {
                 $query->where(function($q) {
                     $q->where('nom_produto', 'like', '%' . $this->search . '%')
                       ->orWhere('des_produto', 'like', '%' . $this->search . '%')
-                      ->orWhere('nom_loja', 'like', '%' . $this->search . '%');
+                      ->orWhere('nom_loja', 'like', '%' . $this->search . '%')
+                      ->orWhere('cod_produto_loja', 'like', '%' . $this->search . '%');
                 });
             })
             ->when($this->lojaFilter, function($query) {
@@ -101,6 +104,7 @@ new class extends Component {
         $this->ind_favorito = false;
         $this->ind_consignado = false;
         $this->nom_loja = '';
+        $this->cod_produto_loja = '';
         $this->showModal = true;
     }
 
@@ -115,6 +119,7 @@ new class extends Component {
         $this->ind_favorito = (bool) $produto->ind_favorito;
         $this->ind_consignado = (bool) $produto->ind_consignado;
         $this->nom_loja = $produto->nom_loja ?? '';
+        $this->cod_produto_loja = $produto->cod_produto_loja ?? '';
         $this->showModal = true;
     }
 
@@ -129,7 +134,7 @@ new class extends Component {
             \Flux::toast(__('messages.alerts.success.product_updated'), variant: 'success');
         } else {
             Produto::create(array_merge($validated, [
-                'idt_evento' => $this->evento->idt_evento,
+                'idt_evento' => $this->evento?->idt_evento,
                 'usu_inclusao' => Auth::id(),
             ]));
             \Flux::toast(__('messages.alerts.success.product_created'), variant: 'success');
@@ -294,6 +299,9 @@ new class extends Component {
                                         @if($prod->nom_loja)
                                             <span class="text-xs text-zinc-500 font-medium">{{ $prod->nom_loja }}</span>
                                         @endif
+                                        @if($prod->cod_produto_loja)
+                                            <span class="text-xs text-zinc-400 font-mono">Cód: {{ $prod->cod_produto_loja }}</span>
+                                        @endif
                                     </div>
                                 @else
                                     <flux:badge color="zinc" size="sm" class="w-fit">Próprio</flux:badge>
@@ -345,10 +353,13 @@ new class extends Component {
                     </div>
 
                     @if($prod->ind_consignado)
-                        <div class="flex items-center gap-2 text-xs">
+                        <div class="flex flex-wrap items-center gap-2 text-xs">
                             <flux:badge color="amber" size="sm">Consignado</flux:badge>
                             @if($prod->nom_loja)
                                 <span class="text-zinc-600 dark:text-zinc-400 font-medium">Loja: {{ $prod->nom_loja }}</span>
+                            @endif
+                            @if($prod->cod_produto_loja)
+                                <span class="text-zinc-500 dark:text-zinc-400 font-mono">(Cód: {{ $prod->cod_produto_loja }})</span>
                             @endif
                         </div>
                     @else
@@ -395,8 +406,9 @@ new class extends Component {
                     <div class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-200 dark:border-zinc-700 space-y-3">
                         <flux:switch wire:model.live="ind_consignado" label="Item Consignado" description="Marque se este produto foi fornecido por consignação." />
                         
-                        <div x-show="$wire.ind_consignado" x-collapse>
+                        <div x-show="$wire.ind_consignado" x-collapse class="space-y-3">
                             <flux:input wire:model="nom_loja" label="Nome da Loja / Fornecedor" placeholder="Ex: Loja Paroquial São José" />
+                            <flux:input wire:model="cod_produto_loja" label="Código do Produto na Loja (Opcional)" placeholder="Ex: COD-10293 ou 789123456789" />
                         </div>
                     </div>
 
