@@ -38,19 +38,28 @@ new class extends Component {
                 ->get();
 
             foreach ($participantes as $part) {
+                if ($part->pessoa->restricoes->isEmpty()) {
+                    continue;
+                }
+
+                $itens = [];
                 foreach ($part->pessoa->restricoes as $restricao) {
                     $txt_complemento = $restricao->pivot?->txt_complemento;
-                    $restricoes[] = (object) [
-                        'nome' => $part->pessoa->nom_pessoa . ($part->pessoa->nom_apelido ? " ({$part->pessoa->nom_apelido})" : ""),
-                        'tipo_cadastro' => 'Participante',
-                        'troca' => $part->tip_cor_troca ? ucfirst($part->tip_cor_troca) : 'Geral',
-                        'troca_cor' => $part->tip_cor_troca ? (\App\Enums\CorTroca::tryFrom(strtolower($part->tip_cor_troca))?->badgeClass() ?? '') : '',
-                        'equipe' => '-',
-                        'tipo_restricao' => $restricao->getTipo(),
-                        'tipo_restricao_cor' => $restricao->getCor(),
-                        'desc_restricao' => $restricao->des_restricao . ($txt_complemento ? " — " . $txt_complemento : ""),
+                    $itens[] = (object) [
+                        'tipo' => $restricao->getTipo(),
+                        'cor' => $restricao->getCor(),
+                        'descricao' => $restricao->des_restricao . ($txt_complemento ? " — " . $txt_complemento : ""),
                     ];
                 }
+
+                $restricoes[] = (object) [
+                    'nome' => $part->pessoa->nom_pessoa . ($part->pessoa->nom_apelido ? " ({$part->pessoa->nom_apelido})" : ""),
+                    'tipo_cadastro' => 'Participante',
+                    'troca' => $part->tip_cor_troca ? ucfirst($part->tip_cor_troca) : 'Não definido',
+                    'troca_cor' => $part->tip_cor_troca ? (\App\Enums\CorTroca::tryFrom(strtolower($part->tip_cor_troca))?->badgeClass() ?? '') : '',
+                    'equipe' => '-',
+                    'itens' => $itens,
+                ];
             }
         }
 
@@ -70,19 +79,28 @@ new class extends Component {
                 ->get();
 
             foreach ($trabalhadores as $trab) {
+                if ($trab->pessoa->restricoes->isEmpty()) {
+                    continue;
+                }
+
+                $itens = [];
                 foreach ($trab->pessoa->restricoes as $restricao) {
                     $txt_complemento = $restricao->pivot?->txt_complemento;
-                    $restricoes[] = (object) [
-                        'nome' => $trab->pessoa->nom_pessoa . ($trab->pessoa->nom_apelido ? " ({$trab->pessoa->nom_apelido})" : ""),
-                        'tipo_cadastro' => 'Trabalhador',
-                        'troca' => '-',
-                        'troca_cor' => '',
-                        'equipe' => $trab->equipe ? $trab->equipe->des_grupo : 'Sem Equipe',
-                        'tipo_restricao' => $restricao->getTipo(),
-                        'tipo_restricao_cor' => $restricao->getCor(),
-                        'desc_restricao' => $restricao->des_restricao . ($txt_complemento ? " — " . $txt_complemento : ""),
+                    $itens[] = (object) [
+                        'tipo' => $restricao->getTipo(),
+                        'cor' => $restricao->getCor(),
+                        'descricao' => $restricao->des_restricao . ($txt_complemento ? " — " . $txt_complemento : ""),
                     ];
                 }
+
+                $restricoes[] = (object) [
+                    'nome' => $trab->pessoa->nom_pessoa . ($trab->pessoa->nom_apelido ? " ({$trab->pessoa->nom_apelido})" : ""),
+                    'tipo_cadastro' => 'Trabalhador',
+                    'troca' => '-',
+                    'troca_cor' => '',
+                    'equipe' => $trab->equipe ? $trab->equipe->des_grupo : 'Sem Equipe',
+                    'itens' => $itens,
+                ];
             }
         }
 
@@ -95,7 +113,7 @@ new class extends Component {
         <div>
             <div class="flex items-center gap-3">
                 <flux:heading size="lg">Restrições de Saúde</flux:heading>
-                <flux:badge size="sm" color="zinc" inset="top bottom" title="Total filtrado">{{ count($this->restricoes) }}</flux:badge>
+                <flux:badge size="sm" color="zinc" inset="top bottom" title="Total de pessoas com restrição">{{ count($this->restricoes) }}</flux:badge>
             </div>
             <flux:subheading>Visualize as restrições alimentares e médicas dos participantes e trabalhadores deste evento.</flux:subheading>
         </div>
@@ -129,22 +147,21 @@ new class extends Component {
                             <th class="p-4 font-bold text-zinc-950 dark:text-white print:py-2">Tipo</th>
                             <th class="p-4 font-bold text-zinc-950 dark:text-white print:py-2">Grupo</th>
                             <th class="p-4 font-bold text-zinc-950 dark:text-white print:py-2">Equipe</th>
-                            <th class="p-4 font-bold text-zinc-950 dark:text-white print:py-2">Restrição</th>
-                            <th class="p-4 font-bold text-zinc-950 dark:text-white print:py-2">Descrição / Detalhes</th>
+                            <th class="p-4 font-bold text-zinc-950 dark:text-white print:py-2">Restrições / Detalhes</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
                         @foreach ($this->restricoes as $r)
                             <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-700/30 transition print:hover:bg-transparent">
-                                <td class="p-4 font-medium text-zinc-900 dark:text-zinc-100 print:py-2">
+                                <td class="p-4 font-medium text-zinc-900 dark:text-zinc-100 print:py-2 align-top">
                                     {{ $r->nome }}
                                 </td>
-                                <td class="p-4 text-zinc-650 dark:text-zinc-400 print:py-2">
+                                <td class="p-4 text-zinc-650 dark:text-zinc-400 print:py-2 align-top">
                                     <flux:badge size="sm" inset="top bottom" color="zinc" class="print:p-0 print:bg-transparent print:text-black">
                                         {{ $r->tipo_cadastro }}
                                     </flux:badge>
                                 </td>
-                                <td class="p-4 print:py-2">
+                                <td class="p-4 print:py-2 align-top">
                                     @if ($r->troca_cor)
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold {{ $r->troca_cor }} print:p-0 print:bg-transparent print:text-black">
                                             {{ $r->troca }}
@@ -153,16 +170,18 @@ new class extends Component {
                                         <span class="text-zinc-650 dark:text-zinc-400 font-semibold">{{ $r->troca }}</span>
                                     @endif
                                 </td>
-                                <td class="p-4 text-zinc-600 dark:text-zinc-400 print:py-2">
+                                <td class="p-4 text-zinc-600 dark:text-zinc-400 print:py-2 align-top">
                                     {{ $r->equipe }}
                                 </td>
-                                <td class="p-4 print:py-2">
-                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold {{ $r->tipo_restricao_cor }} print:p-0 print:bg-transparent print:text-black">
-                                        {{ $r->tipo_restricao }}
-                                    </span>
-                                </td>
-                                <td class="p-4 text-zinc-900 dark:text-zinc-100 print:py-2">
-                                    {{ $r->desc_restricao }}
+                                <td class="p-4 text-zinc-900 dark:text-zinc-100 print:py-2 space-y-2">
+                                    @foreach ($r->itens as $item)
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold shrink-0 {{ $item->cor }} print:p-0 print:bg-transparent print:text-black">
+                                                {{ $item->tipo }}
+                                            </span>
+                                            <span class="text-sm text-zinc-800 dark:text-zinc-200">{{ $item->descricao }}</span>
+                                        </div>
+                                    @endforeach
                                 </td>
                             </tr>
                         @endforeach

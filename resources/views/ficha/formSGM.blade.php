@@ -361,6 +361,20 @@
                 @csrf
                 @if ($ficha->exists) @method('PUT') @endif
 
+                @if ($errors->any())
+                    <div class="p-4 mb-6 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200" role="alert">
+                        <div class="flex items-center gap-2 font-bold mb-2 text-base">
+                            <x-heroicon-o-exclamation-triangle class="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" />
+                            <span>Por favor, verifique os seguintes erros no formulário:</span>
+                        </div>
+                        <ul class="list-disc list-inside text-sm space-y-1">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
                 {{-- ===== DADOS BÁSICOS ===== --}}
                 <div class="bg-white dark:bg-zinc-800 rounded-md shadow p-4 sm:p-6">
                     <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Dados Básicos</h2>
@@ -612,6 +626,12 @@
                 <fieldset class="bg-white dark:bg-zinc-800 rounded-md shadow p-4 sm:p-6">
                     <legend class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Filiação
                     </legend>
+                    @error('filiacao')
+                        <div class="mb-4 flex items-center gap-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 px-4 py-3" role="alert">
+                            <x-heroicon-o-exclamation-circle class="w-5 h-5 text-red-500 shrink-0" aria-hidden="true" />
+                            <p class="text-sm text-red-700 dark:text-red-400">{{ $message }}</p>
+                        </div>
+                    @enderror
                     <div class="space-y-6">
 
                         {{-- Mãe --}}
@@ -1077,11 +1097,18 @@
 
                             @foreach ($restricoes as $restricao)
                                 @php
-                                    $checked = in_array($restricao->idt_restricao, $restricoesSelecionadas);
+                                    $id = $restricao->idt_restricao;
                                     $complemento = old(
-                                        "complementos.{$restricao->idt_restricao}",
-                                        $complementos[$restricao->idt_restricao] ?? '',
+                                        "complementos.{$id}",
+                                        $complementos[$id] ?? '',
                                     );
+                                    if (old('_token')) {
+                                        $hasOldCheck = is_array(old('restricoes')) && !empty(old("restricoes.{$id}"));
+                                        $hasOldText = !empty(trim((string) old("complementos.{$id}")));
+                                        $checked = $hasOldCheck || $hasOldText;
+                                    } else {
+                                        $checked = in_array($id, $restricoesSelecionadas) || !empty(trim((string) ($complementos[$id] ?? '')));
+                                    }
                                 @endphp
 
                                 <div class="space-y-2" x-data="{

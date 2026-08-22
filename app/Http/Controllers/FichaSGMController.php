@@ -90,8 +90,8 @@ class FichaSGMController extends Controller
         $sgmData = array_intersect_key($sgmData, array_flip($fillable));
         $ficha->fichaSGM()->create($sgmData);
 
-        if ($fichaRequest->filled('restricoes')) {
-            foreach ($fichaRequest->restricoes as $idt_restricao => $value) {
+        if ($fichaRequest->input('ind_restricao') == 1) {
+            foreach ($fichaRequest->input('restricoes', []) as $idt_restricao => $value) {
                 if ($value) {
                     $ficha->fichaSaude()->create([
                         'idt_restricao' => $idt_restricao,

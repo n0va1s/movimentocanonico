@@ -24,6 +24,20 @@
                     @method('PUT')
                 @endif
 
+                @if ($errors->any())
+                    <div class="p-4 mb-6 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200" role="alert">
+                        <div class="flex items-center gap-2 font-bold mb-2 text-base">
+                            <x-heroicon-o-exclamation-triangle class="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" />
+                            <span>Por favor, verifique os seguintes erros no formulário:</span>
+                        </div>
+                        <ul class="list-disc list-inside text-sm space-y-1">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                         
                     {{-- Foto --}}
@@ -308,16 +322,17 @@
                             @foreach ($restricoes as $restricao)
                                 @php
                                     $id = $restricao->idt_restricao;
-                                    if (old('_token')) {
-                                        $checked = is_array(old('restricoes')) && array_key_exists($id, old('restricoes'));
-                                    } else {
-                                        $checked = in_array($id, $restricoesSelecionadas);
-                                    }
-                                    
                                     $complemento = old(
                                         "complementos.{$id}",
                                         $complementos[$id] ?? '',
                                     );
+                                    if (old('_token')) {
+                                        $hasOldCheck = is_array(old('restricoes')) && !empty(old("restricoes.{$id}"));
+                                        $hasOldText = !empty(trim((string) old("complementos.{$id}")));
+                                        $checked = $hasOldCheck || $hasOldText;
+                                    } else {
+                                        $checked = in_array($id, $restricoesSelecionadas) || !empty(trim((string) ($complementos[$id] ?? '')));
+                                    }
                                 @endphp
 
                                 <div class="space-y-2"

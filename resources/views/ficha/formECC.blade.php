@@ -273,6 +273,20 @@
                 @csrf
                 @if ($ficha->exists) @method('PUT') @endif
 
+                @if ($errors->any())
+                    <div class="p-4 mb-6 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200" role="alert">
+                        <div class="flex items-center gap-2 font-bold mb-2 text-base">
+                            <x-heroicon-o-exclamation-triangle class="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" />
+                            <span>Por favor, verifique os seguintes erros no formulário:</span>
+                        </div>
+                        <ul class="list-disc list-inside text-sm space-y-1">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
                 {{-- ===== DADOS DO(A) PARTICIPANTE ===== --}}
                 <fieldset class="bg-white dark:bg-zinc-800 rounded-md shadow p-4 sm:p-6">
                     <legend class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
@@ -1096,11 +1110,18 @@
 
                             @foreach ($restricoes as $restricao)
                                 @php
-                                    $checked = in_array($restricao->idt_restricao, $restricoesSelecionadas);
+                                    $id = $restricao->idt_restricao;
                                     $complemento = old(
-                                        "complementos.{$restricao->idt_restricao}",
-                                        $complementos[$restricao->idt_restricao] ?? '',
+                                        "complementos.{$id}",
+                                        $complementos[$id] ?? '',
                                     );
+                                    if (old('_token')) {
+                                        $hasOldCheck = is_array(old('restricoes')) && !empty(old("restricoes.{$id}"));
+                                        $hasOldText = !empty(trim((string) old("complementos.{$id}")));
+                                        $checked = $hasOldCheck || $hasOldText;
+                                    } else {
+                                        $checked = in_array($id, $restricoesSelecionadas) || !empty(trim((string) ($complementos[$id] ?? '')));
+                                    }
                                 @endphp
 
                                 <div class="space-y-2"

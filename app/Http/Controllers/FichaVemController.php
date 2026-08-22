@@ -110,8 +110,8 @@ class FichaVemController extends Controller
             $ficha->fichaVem()->create($vemData);
         }
 
-        if ($vemRequest->filled('restricoes')) {
-            foreach ($vemRequest->restricoes as $idt_restricao => $value) {
+        if ($vemRequest->input('ind_restricao') == 1) {
+            foreach ($vemRequest->input('restricoes', []) as $idt_restricao => $value) {
                 if ($value) {
                     $ficha->fichaSaude()->create([
                         'idt_restricao' => $idt_restricao,

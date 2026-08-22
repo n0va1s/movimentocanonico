@@ -37,7 +37,8 @@ new class extends Component {
         $corEnum = CorTroca::tryFrom($novaCor);
         $corLabel = $corEnum ? $corEnum->label() : 'Nenhuma';
         
-        $this->dispatch('notify', message: "A cor da troca de {$participante->pessoa->nom_apelido} agora é {$corLabel}!");
+        $nome = $participante->pessoa->nom_apelido ?: $participante->pessoa->nom_pessoa;
+        $this->dispatch('notify', message: "A cor da troca de {$nome} agora é {$corLabel}!");
     }
 
 
@@ -260,7 +261,7 @@ new class extends Component {
                     <flux:table.cell class="flex items-center gap-3">
                         <flux:avatar
                             src="{{ $p->pessoa->foto?->url_foto ? asset('storage/'.$p->pessoa->foto->url_foto) : '' }}"
-                            :initials="substr($p->pessoa->nom_pessoa, 0, 2)"
+                            :initials="mb_substr($p->pessoa?->nom_pessoa ?? '??', 0, 2)"
                             size="sm"
                         />
                         <div>
@@ -273,12 +274,12 @@ new class extends Component {
                     <flux:table.cell>
                         <select
                             wire:change="atualizarTroca({{ $p->idt_participante }}, $event.target.value)"
-                            class="w-32 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 px-2.5 py-1.5 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 border-l-[5px] {{ \App\Enums\CorTroca::tryFrom(strtolower($p->tip_cor_troca))?->borderLClass() ?? 'border-l-zinc-200 dark:border-l-zinc-700' }}">
+                            class="w-32 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 px-2.5 py-1.5 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 border-l-[5px] {{ \App\Enums\CorTroca::tryFrom(strtolower($p->tip_cor_troca ?? ''))?->borderLClass() ?? 'border-l-zinc-200 dark:border-l-zinc-700' }}">
                             <option value="" @selected(empty($p->tip_cor_troca)) class="text-zinc-800 bg-white dark:bg-zinc-900 dark:text-zinc-200">
                                 Selecionar...
                             </option>
                             @foreach (CorTroca::cases() as $cor)
-                                <option value="{{ $cor->value }}" @selected(strtolower($p->tip_cor_troca) === $cor->value) class="text-zinc-800 bg-white dark:bg-zinc-900 dark:text-zinc-200">
+                                <option value="{{ $cor->value }}" @selected(strtolower($p->tip_cor_troca ?? '') === $cor->value) class="text-zinc-800 bg-white dark:bg-zinc-900 dark:text-zinc-200">
                                     {{ $cor->label() }}
                                 </option>
                             @endforeach
