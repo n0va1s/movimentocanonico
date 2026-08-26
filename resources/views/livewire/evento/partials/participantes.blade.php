@@ -337,7 +337,7 @@ new class extends Component {
         $quantidades = $this->getQuantidadePorCor();
         $totalParticipantes = \App\Models\Participante::where('idt_evento', $this->evento->idt_evento)->count();
 
-        $gruposCadastrados = array_filter(CorTroca::cases(), function($cor) use ($quantidades) {
+        $gruposCadastrados = array_filter(\App\Enums\CorTroca::cases(), function($cor) use ($quantidades) {
             $val = $cor->value;
             $qtd = $quantidades[strtolower($val)] ?? $quantidades[ucfirst($val)] ?? $quantidades[$val] ?? 0;
             return $qtd > 0;
@@ -363,7 +363,7 @@ new class extends Component {
         <div class="w-full sm:w-64">
             <flux:select wire:model.live="corTroca" icon="funnel" placeholder="Todas as cores" class="w-full">
                 <option value="">Todas as cores ({{ $totalParticipantes }})</option>
-                @foreach (CorTroca::cases() as $cor)
+                @foreach (\App\Enums\CorTroca::cases() as $cor)
                     @php
                         $qtd = $quantidades[strtolower($cor->value)] ?? $quantidades[ucfirst($cor->value)] ?? $quantidades[$cor->value] ?? 0;
                     @endphp
@@ -575,7 +575,7 @@ new class extends Component {
                                 <option value="" @selected(empty($p->tip_cor_troca)) class="text-zinc-800 bg-white dark:bg-zinc-900 dark:text-zinc-200">
                                     Selecionar...
                                 </option>
-                                @foreach (CorTroca::cases() as $cor)
+                                @foreach (\App\Enums\CorTroca::cases() as $cor)
                                     <option value="{{ $cor->value }}" @selected(strtolower($p->tip_cor_troca ?? '') === $cor->value) class="text-zinc-800 bg-white dark:bg-zinc-900 dark:text-zinc-200">
                                         {{ $cor->label() }}
                                     </option>
