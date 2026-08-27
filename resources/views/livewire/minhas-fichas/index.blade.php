@@ -539,7 +539,7 @@ new class extends Component {
 
         $nomeArquivo = 'fichas_' . ($isAdmin ? 'admin_' : '') . \Str::slug($this->evento->des_evento ?? 'evento') . '_' . now()->format('Y-m-d') . '.csv';
 
-        return new StreamedResponse(function () use ($fichas, $cabecalho, $isAdmin) {
+        return response()->streamDownload(function () use ($fichas, $cabecalho, $isAdmin) {
             $handle = fopen('php://output', 'w');
             fprintf($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
             fputcsv($handle, $cabecalho, ';');
@@ -556,12 +556,20 @@ new class extends Component {
                 $isParoquiano = preg_match('/PNSL|Nossa Senhora do Lago/i', (string) $nomParoquia) ? 'Sim' : 'Não';
                 $isRegiao = preg_match('/Lago Norte|SHIN|Setor de Mans.es|Taquari|Varj.o/iu', (string) $ficha->des_endereco) ? 'Sim' : 'Não';
 
+                $visitadorNome = '';
+                if ($ficha->visitador) {
+                    $visitadorNome = $ficha->visitador->nom_pessoa;
+                    if ($ficha->visitador->parceiro) {
+                        $visitadorNome .= ' & ' . $ficha->visitador->parceiro->nom_pessoa;
+                    }
+                }
+
                 $row = [
                     $ficha->nom_candidato,
                     $ficha->tip_genero ? $ficha->tip_genero->value : '',
                     $ficha->dat_nascimento ? $ficha->dat_nascimento->format('d/m/Y') : '',
                     $ficha->des_endereco,
-                    $ficha->visitador ? $ficha->visitador->nom_pessoa : '',
+                    $visitadorNome,
                     $ficha->tip_situacao ? $ficha->tip_situacao->label() : '',
                     $ficha->tam_camiseta ? $ficha->tam_camiseta->value : '',
                     $ficha->ind_restricao ? 'Sim' : 'Não',
@@ -593,7 +601,9 @@ new class extends Component {
                 fputcsv($handle, $row, ';');
             }
             fclose($handle);
-        });
+        }, $nomeArquivo, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 }; ?>
 

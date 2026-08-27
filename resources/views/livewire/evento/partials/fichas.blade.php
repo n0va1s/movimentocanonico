@@ -162,7 +162,7 @@ new class extends Component {
 
     private function gerarExportacao(bool $isAdmin): StreamedResponse
     {
-        $fichas = \App\Models\Ficha::with(['visitador', 'fichaVem', 'fichaEcc', 'fichaSGM'])
+        $fichas = \App\Models\Ficha::with(['visitador.parceiro', 'fichaVem', 'fichaEcc', 'fichaSGM'])
             ->where('idt_evento', $this->evento->idt_evento)
             ->when($this->filtroSituacao, function ($query) {
                 $query->where('tip_situacao', $this->filtroSituacao);
@@ -235,7 +235,7 @@ new class extends Component {
 
         $nomeArquivo = 'fichas_' . ($isAdmin ? 'admin_' : '') . \Str::slug($this->evento->des_evento ?? 'evento') . '_' . now()->format('Y-m-d') . '.csv';
 
-        $response = new StreamedResponse(function () use ($fichas, $cabecalho, $isAdmin) {
+        return response()->streamDownload(function () use ($fichas, $cabecalho, $isAdmin) {
             $handle = fopen('php://output', 'w');
 
             // BOM para o Excel reconhecer UTF-8 corretamente
@@ -259,12 +259,20 @@ new class extends Component {
                 // Região: Lago Norte, SHIN, Setor de Mansões, Taquari, Varjão
                 $isRegiao = preg_match('/Lago Norte|SHIN|Setor de Mans.es|Taquari|Varj.o/iu', (string) $ficha->des_endereco) ? 'Sim' : 'Não';
 
+                $visitadorNome = '';
+                if ($ficha->visitador) {
+                    $visitadorNome = $ficha->visitador->nom_pessoa;
+                    if ($ficha->visitador->parceiro) {
+                        $visitadorNome .= ' & ' . $ficha->visitador->parceiro->nom_pessoa;
+                    }
+                }
+
                 $row = [
                     $ficha->nom_candidato,
                     $ficha->tip_genero ? $ficha->tip_genero->value : '',
                     $ficha->dat_nascimento ? $ficha->dat_nascimento->format('d/m/Y') : '',
                     $ficha->des_endereco,
-                    $ficha->visitador ? $ficha->visitador->nom_pessoa : '',
+                    $visitadorNome,
                     $ficha->tip_situacao ? $ficha->tip_situacao->label() : '',
                     $ficha->tam_camiseta ? $ficha->tam_camiseta->value : '',
                     $ficha->ind_restricao ? 'Sim' : 'Não',
@@ -297,12 +305,9 @@ new class extends Component {
             }
 
             fclose($handle);
-        });
-
-        $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
-        $response->headers->set('Content-Disposition', 'attachment; filename="' . $nomeArquivo . '"');
-
-        return $response;
+        }, $nomeArquivo, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 
     #[Computed]
