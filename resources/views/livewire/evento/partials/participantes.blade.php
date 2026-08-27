@@ -101,10 +101,10 @@ new class extends Component {
     public function atualizarTroca(int $participanteId, string $novaCor): void
     {
         $participante = \App\Models\Participante::with('pessoa')->findOrFail($participanteId);
-        $novaCorSalvar = empty($novaCor) ? null : $novaCor;
+        $novaCorSalvar = empty($novaCor) ? null : strtolower(trim($novaCor));
         $participante->update(['tip_cor_troca' => $novaCorSalvar]);
         
-        $corEnum = CorTroca::tryFrom($novaCor);
+        $corEnum = $novaCorSalvar ? CorTroca::tryFrom($novaCorSalvar) : null;
         $corLabel = $corEnum ? $corEnum->label() : 'Nenhuma';
         
         
@@ -379,7 +379,7 @@ new class extends Component {
         $quantidades = $this->getQuantidadePorCor();
         $totalParticipantes = \App\Models\Participante::where('idt_evento', $this->evento->idt_evento)->count();
 
-        $gruposCadastrados = array_filter(CorTroca::cases(), function($cor) use ($quantidades) {
+        $gruposCadastrados = array_filter(\App\Enums\CorTroca::cases(), function($cor) use ($quantidades) {
             $val = $cor->value;
             $qtd = $quantidades[strtolower($val)] ?? $quantidades[ucfirst($val)] ?? $quantidades[$val] ?? 0;
             return $qtd > 0;
@@ -405,7 +405,7 @@ new class extends Component {
         <div class="w-full sm:w-64">
             <flux:select wire:model.live="corTroca" icon="funnel" placeholder="Todas as cores" class="w-full">
                 <option value="">Todas as cores ({{ $totalParticipantes }})</option>
-                @foreach (CorTroca::cases() as $cor)
+                @foreach (\App\Enums\CorTroca::cases() as $cor)
                     @php
                         $qtd = $quantidades[strtolower($cor->value)] ?? $quantidades[ucfirst($cor->value)] ?? $quantidades[$cor->value] ?? 0;
                     @endphp
@@ -557,7 +557,7 @@ new class extends Component {
             </thead>
             <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700/60">
                 @forelse ($participantes as $p)
-                    <tr class="hover:bg-zinc-50/50 dark:hover:bg-zinc-700/20 transition-colors">
+                    <tr wire:key="participante-row-{{ $p->idt_participante }}" class="hover:bg-zinc-50/50 dark:hover:bg-zinc-700/20 transition-colors">
                         {{-- Nome --}}
                         <td class="px-6 py-4 align-middle">
                             <div class="flex items-center gap-3">
@@ -611,13 +611,14 @@ new class extends Component {
                         {{-- Cor da Troca --}}
                         <td class="px-6 py-4 align-middle whitespace-nowrap">
                             <select
+                                wire:key="select-cor-{{ $p->idt_participante }}-{{ $p->tip_cor_troca }}"
                                 wire:change="atualizarTroca({{ $p->idt_participante }}, $event.target.value)"
-                                class="w-32 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 px-2.5 py-1.5 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 border-l-[5px] {{ \App\Enums\CorTroca::tryFrom(strtolower($p->tip_cor_troca))?->borderLClass() ?? 'border-l-zinc-200 dark:border-l-zinc-700' }}">
+                                class="w-32 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 px-2.5 py-1.5 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 border-l-[5px] {{ \App\Enums\CorTroca::tryFrom(strtolower($p->tip_cor_troca ?? ''))?->borderLClass() ?? 'border-l-zinc-200 dark:border-l-zinc-700' }}">
                                 <option value="" @selected(empty($p->tip_cor_troca)) class="text-zinc-800 bg-white dark:bg-zinc-900 dark:text-zinc-200">
                                     Selecionar...
                                 </option>
-                                @foreach (CorTroca::cases() as $cor)
-                                    <option value="{{ $cor->value }}" @selected(strtolower($p->tip_cor_troca) === $cor->value) class="text-zinc-800 bg-white dark:bg-zinc-900 dark:text-zinc-200">
+                                @foreach (\App\Enums\CorTroca::cases() as $cor)
+                                    <option value="{{ $cor->value }}" @selected(strtolower($p->tip_cor_troca ?? '') === $cor->value) class="text-zinc-800 bg-white dark:bg-zinc-900 dark:text-zinc-200">
                                         {{ $cor->label() }}
                                     </option>
                                 @endforeach
