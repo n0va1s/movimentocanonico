@@ -29,6 +29,10 @@ NTM significa "Não tenhais medo!", frase icônica do Papa São João Paulo II, 
 5. Iniciar o servidor de desenvolvimento Laravel:  
    `php artisan serve`  
 
+## Desenvolvimento do front-end
+
+Veja o [guia de ferramentas de front-end](docs/frontend-tools.md) para instalar as skills de design e acessibilidade e configurar Figma, Penpot e Screenshot to Code.
+
 ## Como Contribuir
 - Forkar o repositório e criar branches para novas funcionalidades ou correções.  
 - Seguir as boas práticas do Laravel e padrões já adotados. 

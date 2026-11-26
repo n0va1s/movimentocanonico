@@ -23,3 +23,5 @@ yarn-error.log
 /.vscode
 /.kiro
 /.zed
+/.agents/skills/
+/.frontend-tools/
