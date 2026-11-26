@@ -13,12 +13,7 @@ new class extends Component {
     {
         \Illuminate\Support\Facades\Gate::authorize('acessar-gerenciamento-evento', $evento);
 
-        $this->evento = $evento->load(['movimento'])->loadCount([
-            'fichas',
-            'participantes',
-            'trabalhadores',
-            'voluntarios as voluntarios_count' => fn($q) => $q->whereNull('idt_trabalhador')->distinct('idt_pessoa'),
-        ]);
+        $this->evento = $evento->load('movimento:idt_movimento,des_sigla');
 
         $abas = array_keys($this->tabs());
         if (!in_array($this->activeTab, $abas) && !empty($abas)) {
@@ -151,7 +146,7 @@ new class extends Component {
         {{-- Loading Overlay --}}
         <div wire:loading wire:target="setTab" class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm">
             <div class="flex items-center gap-3 text-zinc-500 dark:text-zinc-400">
-                <flux:icon.arrow-path class="h-5 w-5 animate-spin" />
+                <flux:icon.arrow-path class="h-5 w-5 motion-safe:animate-spin" />
                 <span class="text-sm font-medium">Processando...</span>
             </div>
         </div>
@@ -159,11 +154,11 @@ new class extends Component {
         {{-- Renderização Dinâmica Segura --}}
         @if(array_key_exists($activeTab, $this->tabs))
             @switch($activeTab)
-                @case('resumo') <livewire:evento.partials.resumo :evento="$evento" lazy /> @break
+                @case('resumo') <livewire:evento.partials.resumo :evento="$evento" /> @break
                 @case('fichas') <livewire:evento.partials.fichas :evento="$evento" lazy /> @break
                 @case('participantes') <livewire:evento.partials.participantes :evento="$evento" lazy /> @break
-                @case('voluntarios') <livewire:evento.partials.voluntarios :evento="$evento" lazy /> @break
-                @case('trabalhadores') <livewire:evento.partials.trabalhadores :evento="$evento" lazy /> @break
+                @case('voluntarios') <livewire:evento.partials.voluntarios :evento="$evento" /> @break
+                @case('trabalhadores') <livewire:evento.partials.trabalhadores :evento="$evento" /> @break
                 @case('presenca') <livewire:evento.partials.presenca :evento="$evento" lazy /> @break
                 @case('quadrante') <livewire:evento.partials.quadrante :evento="$evento" lazy /> @break
                 @case('crachas') <livewire:evento.partials.crachas :evento="$evento" lazy /> @break

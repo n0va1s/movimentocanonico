@@ -131,6 +131,9 @@
         </nav>
 
         {{-- Grid de Cards --}}
+        @php
+            $eventosComCandidatura = \App\Models\Evento::comCandidaturaAberta()->pluck('idt_evento')->flip();
+        @endphp
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             @forelse ($eventos as $evento)
                 <article class="flex flex-col bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 shadow-sm overflow-hidden hover:shadow-md transition-all duration-300">
@@ -180,9 +183,11 @@
                             @endphp
 
                             @if ($tipoValue === 'E' && auth()->user()->pessoa)
-                                <flux:button href="{{ route('trabalhadores.create', ['evento' => $evento]) }}" variant="primary" class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md">
-                                    Quero Trabalhar
-                                </flux:button>
+                                @if ($eventosComCandidatura->has($evento->idt_evento))
+                                    <flux:button href="{{ route('trabalhadores.create', ['evento' => $evento]) }}" variant="primary" class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-none shadow-md">
+                                        Quero Trabalhar
+                                    </flux:button>
+                                @endif
                             @elseif (Auth::user()->pessoa)
                                 @php
                                     $textoBotao = ($tipoValue === 'P') ? 'Vou Participar' : 'Bora pro Desafio';

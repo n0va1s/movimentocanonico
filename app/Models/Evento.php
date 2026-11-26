@@ -26,6 +26,7 @@ class Evento extends Model
         'dat_inicio',
         'dat_termino',
         'dat_limite_inscricao',
+        'ind_candidatura_aberta',
         'qtd_vaga',
         'val_camiseta',
         'val_trabalhador',
@@ -42,6 +43,7 @@ class Evento extends Model
     ];
 
     protected $casts = [
+        'ind_candidatura_aberta' => 'boolean',
         'idt_movimento' => 'integer',
         'dat_limite_inscricao' => 'date',
         'qtd_vaga' => 'integer',
@@ -147,6 +149,16 @@ class Evento extends Model
     public function scopeAtivos(Builder $query)
     {
         return $query->withoutTrashed();
+    }
+
+    public function scopeComCandidaturaAberta(Builder $query): Builder
+    {
+        return $query->ativos()
+            ->where('tip_evento', TipoEvento::ENCONTRO->value)
+            ->where('ind_candidatura_aberta', true)
+            ->whereIn('idt_movimento', TipoEquipe::query()
+                ->where('ind_disponivel_candidatura', true)
+                ->select('idt_movimento'));
     }
 
     /**

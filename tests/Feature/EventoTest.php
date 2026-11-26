@@ -66,7 +66,7 @@ describe('Evento Model', function () {
     test('fillable contém todos os campos esperados', function () {
         $expected = [
             'idt_movimento', 'des_evento', 'num_evento',
-            'dat_inicio', 'dat_termino', 'dat_limite_inscricao', 'qtd_vaga',
+            'dat_inicio', 'dat_termino', 'dat_limite_inscricao', 'ind_candidatura_aberta', 'qtd_vaga',
             'val_camiseta', 'val_trabalhador', 'val_venista', 'val_entrada',
             'val_receita', 'val_despesa',
             'tip_evento', 'tip_faixa_etaria',

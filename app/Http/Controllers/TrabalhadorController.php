@@ -89,6 +89,27 @@ class TrabalhadorController extends Controller
         ));
     }
 
+    public function publicEvents(): View
+    {
+        $eventos = Evento::comCandidaturaAberta()
+            ->with('movimento:idt_movimento,des_sigla')
+            ->orderByDesc('dat_inicio')
+            ->orderBy('des_evento')
+            ->get(['idt_evento', 'idt_movimento', 'des_evento', 'dat_inicio']);
+
+        return view('trabalhador.candidatura-eventos', compact('eventos'));
+    }
+
+    public function publicForm(Evento $evento): View
+    {
+        abort_unless(Evento::comCandidaturaAberta()->whereKey($evento->getKey())->exists(), 404);
+        $equipesAnteriores = TipoEquipe::catalogo($evento->idt_movimento);
+
+        $equipesDisponiveis = $equipesAnteriores->where('ind_disponivel_candidatura', true);
+
+        return view('trabalhador.candidatura', compact('evento', 'equipesAnteriores', 'equipesDisponiveis'));
+    }
+
     public function create(Request $request): View
     {
         $start = microtime(true);

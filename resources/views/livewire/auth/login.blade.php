@@ -40,6 +40,18 @@ new #[Layout('components.layouts.auth')] class extends Component {
         RateLimiter::clear($this->throttleKey());
         Session::regenerate();
 
+        if ($expiracao = Auth::user()->senha_temporaria_expira_em) {
+            if (now()->greaterThan($expiracao)) {
+                Auth::logout();
+                Session::invalidate();
+                Session::regenerateToken();
+                throw ValidationException::withMessages(['email' => 'A senha temporária expirou. Use a opção Esqueci minha senha.']);
+            }
+
+            $this->redirectRoute('primeira-senha.edit');
+            return;
+        }
+
         $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
     }
 

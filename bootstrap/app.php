@@ -28,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->append(TraceIdMiddleware::class);
         $middleware->web(append: [
+            \App\Http\Middleware\ExigirTrocaDeSenhaTemporaria::class,
             DisableBackButtonCacheMiddleware::class,
         ]);
     })

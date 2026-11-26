@@ -71,6 +71,18 @@
     @apply !mb-0 !leading-tight;
 }
 
+[data-flux-modal] > dialog.triagem-modal::backdrop {
+    background-color: rgb(0 0 0 / 50%);
+    backdrop-filter: blur(4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-flux-modal] > dialog.triagem-modal,
+    [data-flux-modal] > dialog.triagem-modal::backdrop {
+        transition: none;
+    }
+}
+
 input:focus[data-flux-control],
 textarea:focus[data-flux-control],
 select:focus[data-flux-control] {

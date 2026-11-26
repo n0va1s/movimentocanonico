@@ -185,6 +185,16 @@
 
                 </div>
 
+                <div>
+                    <input type="hidden" name="ind_candidatura_aberta" value="0">
+                    <label class="flex items-center gap-2 font-medium">
+                        <input type="checkbox" name="ind_candidatura_aberta" value="1"
+                            @checked(old('ind_candidatura_aberta', $evento->ind_candidatura_aberta))>
+                        Abrir candidaturas de voluntários
+                    </label>
+                    <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">Disponível para encontros ativos com pelo menos uma equipe que aceite candidaturas.</p>
+                </div>
+
                 {{-- Datas --}}
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 

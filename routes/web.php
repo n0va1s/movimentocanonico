@@ -76,6 +76,15 @@ Route::get('/encerrar-eventos', function () {
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::post('/', [HomeController::class, 'contato'])->name('home.contato');
+Route::get('/candidatura', [TrabalhadorController::class, 'publicEvents'])
+    ->name('trabalhadores.candidatura.eventos');
+Route::view('/previa/triagem-voluntarios', 'trabalhador.previa-triagem');
+Route::view('/previa/indicacao-coordenadores', 'trabalhador.previa-coordenadores');
+Route::redirect('/previa/vinculo-participantes', '/previa/triagem-voluntarios');
+Route::get('/eventos/{evento}/candidatura', [TrabalhadorController::class, 'publicForm'])
+    ->name('trabalhadores.candidatura');
+Route::post('/eventos/{evento}/candidatura', [\App\Http\Controllers\CandidaturaPublicaController::class, 'store'])
+    ->middleware('throttle:10,1')->name('trabalhadores.candidatura.store');
 
 // Formulários públicos de inscrição — acessíveis apenas a partir da welcome page.
 // O middleware EnsureFromWelcome valida o token de sessão gerado pelo HomeController::index().
@@ -98,6 +107,9 @@ Route::get('/fichas/{ficha}/autorizar', function (App\Models\Ficha $ficha) {
 // ---------------------------------------------------------------------------
 
 Route::middleware(['auth'])->group(function () {
+    Route::view('/primeira-senha', 'trabalhador.primeira-senha')->name('primeira-senha.edit');
+    Route::post('/primeira-senha', [\App\Http\Controllers\PrimeiraSenhaController::class, 'update'])
+        ->middleware('throttle:10,1')->name('primeira-senha.update');
 
 
 

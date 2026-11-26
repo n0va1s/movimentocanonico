@@ -155,7 +155,7 @@ describe('Prestação de Contas — contas.blade.php', function () {
 // Voluntários → Trabalhadores — componente Livewire Volt
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Voluntários — confirmarTrabalhador', function () {
+describe('Voluntários — escalar', function () {
 
     beforeEach(function () {
         $this->actingAs($this->admin);
@@ -170,12 +170,11 @@ describe('Voluntários — confirmarTrabalhador', function () {
         ]);
     });
 
-    test('confirmarTrabalhador cria Trabalhador e vincula voluntário', function () {
+    test('escalar cria Trabalhador e vincula voluntário', function () {
         Volt::test('evento.partials.voluntarios', ['evento' => $this->evento])
-            ->set("selectedEquipes.{$this->pessoaVol->idt_pessoa}", $this->equipe->idt_equipe)
-            ->call('confirmarTrabalhador', $this->pessoaVol->idt_pessoa)
-            ->assertHasNoErrors()
-            ->assertDispatched('notify');
+            ->set("equipe", (string) $this->equipe->idt_equipe)
+            ->call('escalar', $this->pessoaVol->idt_pessoa)
+            ->assertHasNoErrors();
 
         $this->assertDatabaseHas('trabalhador', [
             'idt_pessoa' => $this->pessoaVol->idt_pessoa,
@@ -191,26 +190,26 @@ describe('Voluntários — confirmarTrabalhador', function () {
         )->toBe(0);
     });
 
-    test('confirmarTrabalhador sem equipe selecionada dispara notify de erro', function () {
+    test('escalar sem equipe apresenta erro de validação', function () {
         Volt::test('evento.partials.voluntarios', ['evento' => $this->evento])
-            ->call('confirmarTrabalhador', $this->pessoaVol->idt_pessoa)
-            ->assertDispatched('notify');
+            ->call('escalar', $this->pessoaVol->idt_pessoa)
+            ->assertHasErrors(['equipe']);
 
         $this->assertDatabaseMissing('trabalhador', [
             'idt_pessoa' => $this->pessoaVol->idt_pessoa,
         ]);
     });
 
-    test('confirmarTrabalhador duas vezes não cria duplicata', function () {
+    test('escalar duas vezes não cria duplicata', function () {
         Volt::test('evento.partials.voluntarios', ['evento' => $this->evento])
-            ->set("selectedEquipes.{$this->pessoaVol->idt_pessoa}", $this->equipe->idt_equipe)
-            ->call('confirmarTrabalhador', $this->pessoaVol->idt_pessoa);
+            ->set("equipe", (string) $this->equipe->idt_equipe)
+            ->call('escalar', $this->pessoaVol->idt_pessoa);
 
         // Segunda chamada — já existe trabalhador
         Volt::test('evento.partials.voluntarios', ['evento' => $this->evento])
-            ->set("selectedEquipes.{$this->pessoaVol->idt_pessoa}", $this->equipe->idt_equipe)
-            ->call('confirmarTrabalhador', $this->pessoaVol->idt_pessoa)
-            ->assertDispatched('notify');
+            ->set("equipe", (string) $this->equipe->idt_equipe)
+            ->call('escalar', $this->pessoaVol->idt_pessoa)
+            ->assertSet('aviso', 'A situação da candidatura já mudou.');
 
         expect(
             Trabalhador::where('idt_pessoa', $this->pessoaVol->idt_pessoa)
@@ -219,7 +218,7 @@ describe('Voluntários — confirmarTrabalhador', function () {
         )->toBe(1);
     });
 
-    test('confirmarTrabalhador vincula todos os voluntários pendentes da pessoa', function () {
+    test('escalar vincula todos os voluntários pendentes da pessoa', function () {
         $equipe2 = TipoEquipe::skip(1)->first();
 
         // Segunda candidatura da mesma pessoa
@@ -231,8 +230,8 @@ describe('Voluntários — confirmarTrabalhador', function () {
         ]);
 
         Volt::test('evento.partials.voluntarios', ['evento' => $this->evento])
-            ->set("selectedEquipes.{$this->pessoaVol->idt_pessoa}", $this->equipe->idt_equipe)
-            ->call('confirmarTrabalhador', $this->pessoaVol->idt_pessoa);
+            ->set("equipe", (string) $this->equipe->idt_equipe)
+            ->call('escalar', $this->pessoaVol->idt_pessoa);
 
         $pendentes = Voluntario::where('idt_pessoa', $this->pessoaVol->idt_pessoa)
             ->where('idt_evento', $this->evento->idt_evento)
@@ -242,35 +241,26 @@ describe('Voluntários — confirmarTrabalhador', function () {
         expect($pendentes)->toBe(0);
     });
 
-    test('confirmarTrabalhador como admin definindo coordenação e primeira vez', function () {
+    test('escalar como admin definindo primeira vez', function () {
         Volt::test('evento.partials.voluntarios', ['evento' => $this->evento])
-            ->set("selectedEquipes.{$this->pessoaVol->idt_pessoa}", $this->equipe->idt_equipe)
-            ->set("indCoordenador.{$this->pessoaVol->idt_pessoa}", true)
-            ->set("indPrimeiraVez.{$this->pessoaVol->idt_pessoa}", true)
-            ->call('confirmarTrabalhador', $this->pessoaVol->idt_pessoa)
+            ->set("equipe", (string) $this->equipe->idt_equipe)
+            ->set("primeiraVez", true)
+            ->call('escalar', $this->pessoaVol->idt_pessoa)
             ->assertHasNoErrors();
 
         $this->assertDatabaseHas('trabalhador', [
             'idt_pessoa' => $this->pessoaVol->idt_pessoa,
             'idt_evento' => $this->evento->idt_evento,
             'idt_equipe' => $this->equipe->idt_equipe,
-            'ind_coordenador' => true,
+            'ind_coordenador' => false,
             'ind_primeira_vez' => true,
         ]);
     });
 
-    test('coordenador do evento pode confirmar voluntário', function () {
+    test('perfil sem acesso à aba não consegue abrir a triagem', function () {
         Volt::actingAs($this->coord)
             ->test('evento.partials.voluntarios', ['evento' => $this->evento])
-            ->set("selectedEquipes.{$this->pessoaVol->idt_pessoa}", $this->equipe->idt_equipe)
-            ->call('confirmarTrabalhador', $this->pessoaVol->idt_pessoa)
-            ->assertHasNoErrors();
-
-        $this->assertDatabaseHas('trabalhador', [
-            'idt_pessoa' => $this->pessoaVol->idt_pessoa,
-            'idt_evento' => $this->evento->idt_evento,
-            'idt_equipe' => $this->equipe->idt_equipe,
-        ]);
+            ->assertForbidden();
     });
 });
 

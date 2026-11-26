@@ -24,6 +24,7 @@ class EventoRequest extends FormRequest
             'des_evento' => 'required|string|max:255',
             'num_evento' => 'nullable|string|max:5',
             'dat_limite_inscricao' => 'nullable|date|before_or_equal:dat_inicio',
+            'ind_candidatura_aberta' => 'sometimes|boolean',
             'qtd_vaga' => 'nullable|integer|min:0',
             'dat_inicio' => 'required|date',
             'dat_termino' => 'nullable|date|after_or_equal:dat_inicio',
