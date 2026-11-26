@@ -79,9 +79,19 @@ if ('Skills' -in $Tools) {
     Install-Skills 'Leonxlnx/taste-skill' 'd1a2bb41d927083ac7118f60cfc9cdf711810ea0' @('skills/taste-skill')
     Install-Skills 'anthropics/skills' 'e4bb5d960d87126ff3b3a8af1a104b7db67560ba' @('skills/frontend-design')
     Install-Skills 'nextlevelbuilder/ui-ux-pro-max-skill' '01706130e32f2af1d12923cce8d64a85fd76a3cd' @('.claude/skills/ui-ux-pro-max')
+    Install-Skills 'greensock/gsap-skills' 'aed9cfd3277740755f6bfc1155c7aa645403b760' @(
+        'skills/gsap-core'
+        'skills/gsap-timeline'
+        'skills/gsap-performance'
+    )
+    Install-Skills 'lottiefiles/motion-design-skill' 'd77a9fc8cb371cab1ba5420df5bfd232cd14c9bb' @('skills/motion-design')
+    Install-Skills 'noklip-io/agent-skills' '319a0f1aac3b3580e736d457f217d716b356aa35' @('skills/three-js')
     Install-Skills 'openai/skills' '49f948faa9258a0c61caceaf225e179651397431' @(
         'skills/.curated/figma-create-design-system-rules'
+        'skills/.curated/figma-create-new-file'
+        'skills/.curated/figma-generate-design'
         'skills/.curated/figma-implement-design'
+        'skills/.curated/figma-use'
     )
 }
 
